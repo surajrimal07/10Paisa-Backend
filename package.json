@@ -1,0 +1,25 @@
+{
+  "name": "backend",
+  "version": "1.2.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon index.js"
+  },
+  "type": "module",
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bcrypt": "^5.1.1",
+    "body-parser": "^1.19.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.17.1",
+    "mongoose": "^5.13.20",
+    "nodemailer": "^6.9.7",
+    "nodemon": "^3.0.1",
+    "otp-generator": "^4.0.1"
+  }
+}
