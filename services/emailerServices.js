@@ -19,9 +19,13 @@ const sendEmail = (params, callback) => {
 
     transporter.sendMail(mailOptions, function (error, info) {
         if (error) {
+            //return callback(error);
             return callback(error);
         } else {
+            console.log("line 24 of emailer service, email sent successfully");
+            console.log(info.response);
             return callback(null, info.response);
+            //return res.status(200).json({ error: 'Email sent' });
         }
     });
 };
