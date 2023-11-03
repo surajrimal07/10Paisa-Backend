@@ -71,74 +71,110 @@ export const loginUser = async (req, res) => {
     }
 };
 
+// export const forgetPass = async (req, res) => {
+//   const email = req.body.email;
+//   console.log("line 76 raw req is "+req);
+//   console.log("Email: line 77 of user controllers "+email);
+//   try {
+//     User.findOne({ email }, async (err, user) => {
+
+//       if (err) {
+//         console.error(err);
+//         res.status(500).json(err);
+//       } else {
+//         if (user !== null) {
+//           console.log("Existing user found " + email)
+
+//           forgetPassword(email, (error, hash) => {  //results
+//             console.log("90 code");
+//             if (error) {
+//               return res.status(400).send({ //return res.
+//                 message: "error occured with user controller, 92",
+//                 data: error
+//             });
+
+//             }else{
+//               res.status(200).json({ //res.status(200).json({
+//                 message: 'OTP Sent successfully 98',
+//                 //hash: results
+//                 hash: hash
+//               });
+//             }
+
+//           });
+
+//         } else {
+//           res.status(500).json({
+//             message: 'Email Not found',
+//           });
+//           console.log("Existing user not found, line 93 user controller")
+//         }
+//       }
+//     });
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json(err);
+//   }
+// };
+
+
 export const forgetPass = async (req, res) => {
   const email = req.body.email;
-  console.log("line 76 raw req is "+req);
-  console.log("Email: line 77 of user controllers "+email);
+  console.log("Received email: " + email);
+
   try {
-    User.findOne({ email }, async (err, user) => {
-      if (err) {
-        console.error(err);
-        res.status(500).json(err);
-      } else {
-        if (user !== null) {
-          console.log("Existing user found " + email)
-
+      const user = await User.findOne({ email });
+      if (user) {
+          console.log("Existing user found: " + email);
+          const hash = await forgetPassword(email);
           res.status(200).json({
-            message: 'OTP Sent successfully',
+              message: 'OTP Sent successfully, Final task completed',
+              hash: hash
           });
-
-          forgetPassword(email,email) //forgetPassword(email,email)
-
-
-
-        //   otpService.forgotpass(email, (error, results) => {
-        //     console.log("We got this email from use controller "+req.body.email)
-
-        //     if (error) {
-        //         console.log("error occured, 44, otp controllers")
-
-        //         return res.status(400).send({
-        //             message: "error occured with otp service",
-        //             data: error,
-        //         });
-        //     } else {
-        //         return res.status(200).send({
-        //         message: "Success, otp sent",
-        //         data: results,
-        //     });
-        // }
-        // });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        } else {
-          res.status(500).json({
-            message: 'Email Not found',
+      } else {
+          res.status(404).json({
+              message: 'Email Not found'
           });
-          // res.status(600).json({
-          //   message: 'No Existing user found'
-          // })
-          console.log("Existing user not found, line 93 user controller")
-        }
+          console.log("Existing user not found");
       }
-    });
   } catch (err) {
-    console.error(err);
-    res.status(500).json(err);
+      console.error(err);
+      res.status(500).json(err);
+  }
+};
+
+////async function updatePassword(email, newPassword) {
+
+// export const updatePassword = async (email, newPassword) => {
+//   try {
+//     const user = await User.findOne({ email });
+//       user.password = newPassword;
+//       await user.save();
+//       return { message: 'Password updated successfully' };
+
+//   } catch (error) {
+//     console.error('Error updating password:', error);
+//     return { error: 'An error occurred while updating password' };
+//   }
+// }
+
+export const updatePassword = async (req, res) => {
+  const email = req.body.email;
+  const pass = req.body.newpass;
+  const newpass = await bcrypt.hash(pass, 10);
+
+  try {
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    user.password = newpass;
+    await user.save();
+    return res.status(200).json({ message: 'Password updated successfully' });
+
+  } catch (error) {
+    console.error('Error updating password:', error);
+    return res.status(500).json({ error: 'An error occurred while updating password' });
   }
 };

@@ -59,8 +59,6 @@ export const verifyOTP = (params, callback) => {
     return callback("Invalid OTP");
 };
 
-
-
 export const forgotpass = (emails, callback) => {
     const otp = otpGenerator.generate(4, {
         digits: true,
@@ -91,7 +89,8 @@ export const forgotpass = (emails, callback) => {
         if (error) {
             return callback(error);
         } else{
-            console.log("line 94 of otpservices, email service bata success vayo, no error")
+            console.log(callback);
+            console.log("line 94 of otpservices, email service bata success vayo, no error, hash is "+ fullhash)
             return callback(null, fullhash); //null
 
     }
