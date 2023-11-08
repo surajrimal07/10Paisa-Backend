@@ -3,12 +3,16 @@ import User from '..//models/User.js';
 import { forgetPassword } from '../controllers/otpControllers.js';
 
 
+
 export const createUser = async (req, res) => {
   const name = req.body.name;
   const email = req.body.email;
   const password = req.body.password;
+  const phone = req.body.phone !== undefined ? req.body.phone : undefined; //new code
+  const style = req.body.style !== undefined ? req.body.style : undefined; //new code
 
-  console.log("Name: "+name, "Email: "+email, "Password: "+password);
+  console.log("Create user command passed")
+  console.log("Name: "+name, "Email: "+email, "Password: "+password, "phone: "+phone, "Style: "+style);
 
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -23,6 +27,8 @@ export const createUser = async (req, res) => {
             name,
             email,
             password: hashedPassword,
+            phone,  //new code
+            style,  //new code
           });
           try {
             const savedUser = await newUser.save();
@@ -30,6 +36,10 @@ export const createUser = async (req, res) => {
               _id: savedUser._id,
               name: savedUser.name,  //this might throw error  //fixed now
               email: savedUser.email,
+              pass: savedUser.password,
+              phone: savedUser.phone, //might throw error  //new code
+              style: savedUser.style //might throw error     //new code
+
             };
             console.log(userData);
             res.status(200).json(userData);
@@ -42,6 +52,7 @@ export const createUser = async (req, res) => {
           res.status(400).json({
             message: 'Email already exists',
           });
+          console.log("Singup failed, user already exists");
         }
       }
     });
@@ -143,25 +154,36 @@ export const forgetPass = async (req, res) => {
   }
 };
 
-////async function updatePassword(email, newPassword) {
 
-// export const updatePassword = async (email, newPassword) => {
+// export const updatePassword = async (req, res) => {
+//   const email = req.body.email;
+//   const pass = req.body.newpass;
+//   const newpass = await bcrypt.hash(pass, 10);
+
 //   try {
 //     const user = await User.findOne({ email });
-//       user.password = newPassword;
-//       await user.save();
-//       return { message: 'Password updated successfully' };
+
+//     if (!user) {
+//       return res.status(404).json({ error: 'User not found' });
+//     }
+//     user.password = newpass;
+//     await user.save();
+//     return res.status(200).json({ message: 'Password updated successfully' });
 
 //   } catch (error) {
 //     console.error('Error updating password:', error);
-//     return { error: 'An error occurred while updating password' };
+//     return res.status(500).json({ error: 'An error occurred while updating password' });
 //   }
-// }
+// };
 
-export const updatePassword = async (req, res) => {
+//new code
+export const updateUser = async (req, res) => {
   const email = req.body.email;
-  const pass = req.body.newpass;
-  const newpass = await bcrypt.hash(pass, 10);
+  const newPassword  = req.body.password;
+  const phone = req.body.phone;
+  const invStyle = req.body.style;
+  const fieldToUpdate = req.body.field; // Field to be updated
+  const valueToUpdate = req.body.value; // New value
 
   try {
     const user = await User.findOne({ email });
@@ -169,12 +191,44 @@ export const updatePassword = async (req, res) => {
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
-    user.password = newpass;
-    await user.save();
-    return res.status(200).json({ message: 'Password updated successfully' });
+
+    if (fieldToUpdate === 'password') {
+      const newPassword = await bcrypt.hash(valueToUpdate, 10);
+      console.log("User password updated, new "+fieldToUpdate+ " is "+valueToUpdate)
+      user.password = newPassword;
+    }
+
+    else if (fieldToUpdate === 'phone') {
+      user.phone = valueToUpdate;
+      console.log("User phone updated, new "+fieldToUpdate+ " is "+valueToUpdate)
+    } else if (fieldToUpdate === 'style') {
+      user.style = valueToUpdate;
+      console.log("User Style updated, new "+fieldToUpdate+ " is " +valueToUpdate)
+    } else if (fieldToUpdate === 'name') {
+      user.name = valueToUpdate;
+      console.log("User password updated, new "+fieldToUpdate+ " is " +valueToUpdate)
+    } // Add more conditions for other fields as necessary
+
+    // await user.save();
+    // console.error('User ' + fieldToUpdate+' updated successfully');
+    // return res.status(200).json({ message: 'User ' + fieldToUpdate+' updated successfully' });
+
+    //
+
+    try {
+      await user.save();
+      console.log('User ' + fieldToUpdate + ' updated successfully');
+      return res.status(200).json({ message: 'User ' + fieldToUpdate + ' updated successfully' });
+    } catch (error) {
+      console.error('User ' + fieldToUpdate + ' update failed: ' + error);
+      return res.status(500).json({ error: 'Failed to update user ' + fieldToUpdate });
+    }
+
+//
+
 
   } catch (error) {
-    console.error('Error updating password:', error);
-    return res.status(500).json({ error: 'An error occurred while updating password' });
+    console.error('Error updating user data:', error);
+    return res.status(500).json({ error: 'An error occurred while updating user data' });
   }
 };

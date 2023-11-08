@@ -1,7 +1,7 @@
 {
   "name": "backend",
   "version": "1.2.0",
-  "description": "",
+  "description": "This is 10 paisa backend server and api",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -9,17 +9,20 @@
   },
   "type": "module",
   "keywords": [],
-  "author": "",
+  "author": "Suraj Rimal",
   "license": "ISC",
   "dependencies": {
+    "axios": "^1.6.0",
     "bcrypt": "^5.1.1",
     "body-parser": "^1.19.0",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "express": "^4.17.1",
+    "jsdom": "^22.1.0",
     "mongoose": "^5.13.20",
     "nodemailer": "^6.9.7",
     "nodemon": "^3.0.1",
-    "otp-generator": "^4.0.1"
+    "otp-generator": "^4.0.1",
+    "xml2js": "^0.6.2"
   }
 }

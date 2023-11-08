@@ -2,9 +2,9 @@ import bodyParser from 'body-parser';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import express from 'express';
-
-import connectDB from './database/db.js';
+import { mainDB } from './database/db.js';
 import userRouter from './routes/userRoutes.js';
+import { startNewsServer } from './server/bad.js';
 
 // Load environment variables
 dotenv.config();
@@ -15,7 +15,8 @@ const port = process.env.PORT || 8000;
 //const database_name = process.env.DATABASE;
 
 //connecting db from db.js using cloud Atlas
-connectDB();
+//connectDB();
+mainDB();
 
 // Start the server
 app.listen(port, () => {
@@ -35,3 +36,5 @@ app.use('/api', userRouter);
 app.get('/', (req, res) => {
   res.send('This API is running live🥳');
 });
+
+startNewsServer(app);
