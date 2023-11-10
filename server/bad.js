@@ -2,6 +2,7 @@ import axios from 'axios';
 import dotenv from 'dotenv';
 import { JSDOM } from 'jsdom';
 import mongoose from 'mongoose';
+import wss from 'ws';
 import xml2js from 'xml2js';
 import { secondDB } from '../database/db.js';
 
@@ -17,14 +18,6 @@ export async function startNewsServer(app) {
     }
 
     const connection = db;
-
-    // Create a Mongoose schema for the news items
-    // const newsItemSchema = new mongoose.Schema({
-    //   title: String,
-    //   link: String,
-    //   description: String,
-    //   img_url: String,
-    // });
 
     const newsItemSchema = new mongoose.Schema({
       title: String,
@@ -75,6 +68,7 @@ export async function startNewsServer(app) {
     };
 
 
+
     // const htmlToText = (html) => {
     //   const element = document.createElement('div');
     //   element.innerHTML = html;
@@ -112,11 +106,6 @@ export async function startNewsServer(app) {
                 : [];
 
               const img_src = img_tags.length > 0 ? img_tags[0].src : null;
-
-              //new
-              // const url = new URL(link);
-              // const domainParts = url.hostname.split('.');
-              // const source = domainParts.length > 1 ? domainParts[1] : domainParts[0];
 
               const source = extractSource(link);
               const cleanedDescription = cleanDescription(description); // Clean description

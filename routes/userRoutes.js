@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { sendOTP, verifyOTP } from '../controllers/otpControllers.js';
 import { createUser, forgetPass, loginUser, updateUser } from '../controllers/userController.js';
-import { startNewsServer } from '../server/bad.js';
+import { startNewsServer } from '../server/testserver.js';
 
 // Create an instance of Router
 const router = Router();

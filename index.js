@@ -4,7 +4,7 @@ import dotenv from 'dotenv';
 import express from 'express';
 import { mainDB } from './database/db.js';
 import userRouter from './routes/userRoutes.js';
-import { startNewsServer } from './server/bad.js';
+import { startNewsServer } from './server/testserver.js';
 
 // Load environment variables
 dotenv.config();
