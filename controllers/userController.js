@@ -1,7 +1,6 @@
 import bcrypt from 'bcrypt';
-import User from '..//models/User.js';
 import { forgetPassword } from '../controllers/otpControllers.js';
-
+import User from '../models/userModel.js';
 
 
 export const createUser = async (req, res) => {
@@ -82,52 +81,6 @@ export const loginUser = async (req, res) => {
     }
 };
 
-// export const forgetPass = async (req, res) => {
-//   const email = req.body.email;
-//   console.log("line 76 raw req is "+req);
-//   console.log("Email: line 77 of user controllers "+email);
-//   try {
-//     User.findOne({ email }, async (err, user) => {
-
-//       if (err) {
-//         console.error(err);
-//         res.status(500).json(err);
-//       } else {
-//         if (user !== null) {
-//           console.log("Existing user found " + email)
-
-//           forgetPassword(email, (error, hash) => {  //results
-//             console.log("90 code");
-//             if (error) {
-//               return res.status(400).send({ //return res.
-//                 message: "error occured with user controller, 92",
-//                 data: error
-//             });
-
-//             }else{
-//               res.status(200).json({ //res.status(200).json({
-//                 message: 'OTP Sent successfully 98',
-//                 //hash: results
-//                 hash: hash
-//               });
-//             }
-
-//           });
-
-//         } else {
-//           res.status(500).json({
-//             message: 'Email Not found',
-//           });
-//           console.log("Existing user not found, line 93 user controller")
-//         }
-//       }
-//     });
-//   } catch (err) {
-//     console.error(err);
-//     res.status(500).json(err);
-//   }
-// };
-
 
 export const forgetPass = async (req, res) => {
   const email = req.body.email;
@@ -154,30 +107,8 @@ export const forgetPass = async (req, res) => {
   }
 };
 
-
-// export const updatePassword = async (req, res) => {
-//   const email = req.body.email;
-//   const pass = req.body.newpass;
-//   const newpass = await bcrypt.hash(pass, 10);
-
-//   try {
-//     const user = await User.findOne({ email });
-
-//     if (!user) {
-//       return res.status(404).json({ error: 'User not found' });
-//     }
-//     user.password = newpass;
-//     await user.save();
-//     return res.status(200).json({ message: 'Password updated successfully' });
-
-//   } catch (error) {
-//     console.error('Error updating password:', error);
-//     return res.status(500).json({ error: 'An error occurred while updating password' });
-//   }
-// };
-
-//new code
 export const updateUser = async (req, res) => {
+  const token = req.body.token;
   const email = req.body.email;
   const newPassword  = req.body.password;
   const phone = req.body.phone;
@@ -186,16 +117,24 @@ export const updateUser = async (req, res) => {
   const valueToUpdate = req.body.value; // New value
 
   try {
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ token });
 
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
-
+    if (fieldToUpdate === 'name') {
+      console.log("Username updated, new "+fieldToUpdate+ " is "+valueToUpdate)
+      user.name = valueToUpdate;
+    }
     if (fieldToUpdate === 'password') {
       const newPassword = await bcrypt.hash(valueToUpdate, 10);
       console.log("User password updated, new "+fieldToUpdate+ " is "+valueToUpdate)
       user.password = newPassword;
+    }
+
+    if (fieldToUpdate === 'email') {
+      console.log("User mail updated, new "+fieldToUpdate+ " is "+valueToUpdate)
+      user.email = valueToUpdate;
     }
 
     else if (fieldToUpdate === 'phone') {
@@ -204,16 +143,11 @@ export const updateUser = async (req, res) => {
     } else if (fieldToUpdate === 'style') {
       user.style = valueToUpdate;
       console.log("User Style updated, new "+fieldToUpdate+ " is " +valueToUpdate)
-    } else if (fieldToUpdate === 'name') {
-      user.name = valueToUpdate;
-      console.log("User password updated, new "+fieldToUpdate+ " is " +valueToUpdate)
-    } // Add more conditions for other fields as necessary
-
-    // await user.save();
-    // console.error('User ' + fieldToUpdate+' updated successfully');
-    // return res.status(200).json({ message: 'User ' + fieldToUpdate+' updated successfully' });
-
-    //
+    }
+    // } else if (fieldToUpdate === 'name') {
+    //   user.name = valueToUpdate;
+    //   console.log("User password updated, new "+fieldToUpdate+ " is " +valueToUpdate)
+    // } // Add more conditions for other fields as necessary
 
     try {
       await user.save();
@@ -224,11 +158,62 @@ export const updateUser = async (req, res) => {
       return res.status(500).json({ error: 'Failed to update user ' + fieldToUpdate });
     }
 
-//
-
-
   } catch (error) {
     console.error('Error updating user data:', error);
     return res.status(500).json({ error: 'An error occurred while updating user data' });
+  }
+};
+
+
+export const verifyUser = async (req, res) => {
+  const token = req.body.token;
+
+  console.log("Token is: " + token);
+
+  try {
+    const user = await User.findOne({ token });
+
+    if (!user) {
+      console.log("401 Invalid token.");
+      return res.status(401).json({ error: 'Invalid token.' });
+    } else {
+      console.log("200 User verification was successful");
+      // Send user details back to the Flutter app (excluding password)
+      res.json({
+        username: user.name,
+        email: user.email,
+        phone: user.phone,
+        profilePicture: user.profilePicture,
+        style: user.style
+      });
+    }
+  } catch (error) {
+    console.log("500 An error occurred during user verification.");
+    return res.status(500).json({ error: 'An error occurred during verification.' });
+  }
+};
+
+
+export const saveToken = async (req, res) => {
+  const email = req.body.email;
+  const token = req.body.token;
+
+  console.log("Email: " + email, "Token: " + token);
+  try {
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      console.log("401 Invalid email");
+      return res.status(401).json({ error: 'Invalid email' });
+    } else {
+      user.token = token;
+      await user.save();
+
+      console.log("200 Token saved");
+    }
+    res.json(user);
+  } catch (error) {
+    console.log("500 An error occurred saving token");
+    return res.status(500).json({ error: 'An error occurred saving token' });
   }
 };

@@ -1,158 +1,257 @@
 import axios from 'axios';
-import dotenv from 'dotenv';
-import { JSDOM } from 'jsdom';
-import mongoose from 'mongoose';
-import xml2js from 'xml2js';
-import { secondDB } from '../database/db.js';
+import crypto from 'crypto';
+import { createServer } from 'http';
+import { WebSocket } from 'ws';
+//import { WebSocketServer } from 'ws';
 
-dotenv.config();
+import xml2js from 'xml2js';
+import newsSources from '../middleware/newsUrl.js';
+import newsModel from '../models/newsModel.js';
+//import extractFeaturedImage from '../server/imageServer.js';
 
 export async function startNewsServer(app) {
-  try {
-    const db = await secondDB();
+    const processedTitles = new Set();
 
-    if (!db) {
-      console.error('Failed to establish the database connection');
-      return;
+    const newsCountBySource = {};
+    const fallbackDate = new Date('2023-01-01T00:00:00.000Z'); // Use a specific date
+
+    function generateUniqueKey(title, pubDate) {
+      const hash = crypto.createHash('sha256');
+      hash.update(title + pubDate);
+      return hash.digest('hex');
     }
 
-    const connection = db;
+    async function isDuplicateArticle(title, pubDate) {
+      const uniqueKey = generateUniqueKey(title, pubDate);
 
-    // Create a Mongoose schema for the news items
-    const newsItemSchema = new mongoose.Schema({
-      title: String,
-      link: String,
-      description: String,
-      img_url: String,
-    });
+      const existing_item = await newsModel.findOne({
+        unique_key: uniqueKey,
+      });
 
-    // Create a Mongoose model based on the schema
-    const NewsItem = connection.model('NewsItem', newsItemSchema);
-
-    // URLs (your URL configurations go here)
-    const tele_url = "https://telegraphnepal.com/feed/";
-    const online_url = "https://english.onlinekhabar.com/feed/";
-    const onlinenp_url = "https://www.onlinekhabar.com/feed";
-    const ratoen_url = "https://english.ratopati.com/rss/";
-    const setoen_url = "https://en.setopati.com/feed";
-    const radhanien_url = "https://rajdhanidaily.com/feed/";
-    const nagariknp_url = "https://nagariknews.nagariknetwork.com/feed";
-    const osnnp_url = "https://www.osnepal.com/feed";
-    const arthik_url = "https://abhiyandaily.com/abhiyanrss";
-    const arthasarokar_url = "https://arthasarokar.com/feed";
-    const karobardaily_url = "https://www.karobardaily.com/feed";
-    const khabarhub_url = "https://english.khabarhub.com/feed";
-
-    // Function to compare two objects
-    function isEqual(obj1, obj2) {
-      return JSON.stringify(obj1) === JSON.stringify(obj2);
+      return existing_item !== null;
     }
 
-    // Fetch data function
-    async function fetch_data(url) {
-      try {
-        console.log(`running fetch on ${url}`);
-        const response = await axios.get(url);
-        if (response.status === 200) {
-          const xml_data = response.data;
-          const parser = new xml2js.Parser();
-          const result = await parser.parseStringPromise(xml_data);
+    const cleanDescription = (desc) => {
+        return desc
+          .replace(/<[^>]+>/g, '')
+          .replace(/\n\s+/g, '')
+          .replace(/&#8220/g, '')
+          .replace(/\[&#8230;\]/g, '')
+          .replace(/_{76}\s*&#8220;/g, '')
+          .replace(/&nbsp;/g, '')
+          .replace(/&#8216;/g, '')
+          .replace(/&#8217;/g, '')
+          .replace(/&#\d+;/g, '')
+          .trim();
+      };
 
-          if (result.rss && result.rss.channel && result.rss.channel[0] && result.rss.channel[0].item) {
-            for (const item_elem of result.rss.channel[0].item) {
-              const title = item_elem.title && item_elem.title[0];
-              const link = item_elem.link && item_elem.link[0];
-              const description = item_elem.description && item_elem.description[0];
+      // function extractSource(link) {
+      //   try {
+      //     const url = new URL(link);
+      //     const domainParts = url.hostname.split('.');
+      //     const knownTLDs = ['com', 'org', 'net', 'gov', 'edu','.com.np','.np'];
 
-              const img_tags = item_elem['content:encoded']
-                ? new JSDOM(item_elem['content:encoded'][0]).window.document.querySelectorAll('img')
-                : [];
+      //     let source;
 
-              const img_src = img_tags.length > 0 ? img_tags[0].src : null;
+      //     if (knownTLDs.includes(domainParts[domainParts.length - 1])) {
+      //       source = domainParts.length > 1 ? domainParts[domainParts.length - 2] : domainParts[0];
+      //     } else {
+      //       source = domainParts[domainParts.length - 1];
+      //     }
 
-              const new_item_data = {
-                title,
-                link,
-                description,
-                img_url: img_src,
-              };
+      //     return source;
+      //   } catch (error) {
+      //     console.error('Error extracting source:', error);
+      //     return '';
+      //   }
+      // }
 
-              const existing_item = await NewsItem.findOne({ title, link, description, img_url: img_src });
+    let wss; // Declare the WebSocket server
 
-              if (existing_item === null) {
-                console.log(`found new item: ${title}`);
-                await NewsItem.create(new_item_data);
-                console.log(`added new item ${title}`);
-              } else {
-                // Check for duplicates using isEqual function
-                if (isEqual(new_item_data, existing_item)) {
-                  console.log(`duplicate element from ${title}`);
-                } else {
-                  console.log(`found new item: ${title}`);
-                  await NewsItem.create(new_item_data);
-                  console.log(`added new item ${title}`);
-                }
-              }
-            }
-          } else {
-            console.error('Required XML structure not found for', url);
-          }
+    function createWebSocketServer() {
+      const server = createServer(app);
+
+      //wss = new WebSocketServer({ server }); //
+      wss = new WebSocket.Server({ server });
+
+      wss.on('connection', function connection(ws) {
+        console.log('Client connected to WebSocket server');
+      });
+
+      wss.on('message', function incoming(message) {
+        console.log('received: %s', message);
+      });
+
+      wss.on('close', function close() {
+        console.log('WebSocket Server closed');
+      });
+
+      wss.on('error', function error(err) {
+        console.error('WebSocket Server Error:', err);
+      });
+
+//if (wss.readyState === WebSocketServer.OPEN) {
+
+      if (wss.readyState === webSocket.OPEN) {   //webSocket.OPEN
+        console.log('WebSocket connection is open.');
+      }
+
+      server.listen(8081, () => {
+        console.log('WebSocket server is running on port 8081');
+      });
+
+      return wss;
+    }
+
+    createWebSocketServer();
+
+    function notifyClients(wss, message) {
+        if (!wss) {
+          console.log("WSS ERROR: Web Socket Server is not available!");
+          return;
         }
-      } catch (error) {
-        console.error('Error fetching or parsing data:', error);
+
+        wss.clients.forEach(function each(client) {   // === WebSockets.OPEN) {
+          if (client.readyState === WebSocket.OPEN) { //=== WebSockets.OPEN) {
+            const messageString = JSON.stringify(message);
+            client.send(messageString);
+          } else {
+            console.log("Client state is not OPEN. Error occurred.");
+          }
+        });
       }
-    }
 
-    // Route to get items
-    app.get('/news', async (req, res) => {
-      try {
-        const items = await NewsItem.find().exec();
-        const item_list = items.map((item) => ({
-          title: item.title,
-          link: item.link,
-          description: item.description,
-          img_url: item.img_url,
-        }));
-        const reversedItemList = item_list.reverse();
-        res.json(reversedItemList);
-      } catch (error) {
-        console.error('Error retrieving items:', error);
-        res.status(500).json({ error: 'Internal Server Error' });
+
+      // async function fetch_image(link, sources) {
+      //   for (const source of sources) {
+      //     try {
+      //       const img_src = await extractFeaturedImage(link, source);
+      //       console.log(link,source)
+      //       console.log('Image Source:', img_src);
+      //       return img_src;
+      //     } catch (error) {
+      //       console.error('Featured image extraction failed for the specified publisher.');
+      //     }
+      //   }
+      // }
+
+    async function fetch_data(url,sources) {
+        try {
+          //console.log(`Running Fetch Cycle`);
+          const response = await axios.get(url);
+
+          if (response.status === 200) {
+            const xml_data = response.data;
+            const parser = new xml2js.Parser();
+            const result = await parser.parseStringPromise(xml_data);
+
+            if (result.rss && result.rss.channel && result.rss.channel[0] && result.rss.channel[0].item) {
+              for (const item_elem of result.rss.channel[0].item) {
+                const title = item_elem.title && item_elem.title[0];
+
+                const link = item_elem.link && item_elem.link[0].trim();
+                const description = item_elem.description && item_elem.description[0];
+                const pubDateN = item_elem.pubDate && new Date(item_elem.pubDate[0]);
+                const pubDate = pubDateN || fallbackDate;  //check if pub date is null or not
+
+                const img_src = item_elem.link && item_elem.link[0].trim();
+                //const img_src = await extractFeaturedImage(link, sources);
+
+                const cleanedDescription = cleanDescription(description); // Clean description
+
+                if (await isDuplicateArticle(title, pubDate)) {
+                  continue;
+                }
+
+                const uniqueKey = generateUniqueKey(title, pubDate);
+
+                newsCountBySource[sources] = (newsCountBySource[sources] || 0) + 1;
+
+                const new_item_data = {
+                  title,
+                  link,
+                  description: cleanedDescription,
+                  img_url: img_src,
+                  pubDate,
+                  sources,
+                  unique_key: uniqueKey,
+                };
+
+                  processedTitles.add(title);
+
+                  if (!newsCountBySource[sources]) {
+                    newsCountBySource[sources] = 1;
+                    console.log(`found new item from ${sources}. Total count: ${newsCountBySource[sources]}`);
+                  } else {
+                    newsCountBySource[sources]++;
+                    console.log(`found new item from ${sources}. Total count: ${newsCountBySource[sources]}`);
+                  }
+
+                  try {
+                    await newsModel.create(new_item_data);
+                    //console.log(`found new item from ${source}. Total count: ${newsCountBySource[source]}`);
+
+                    const messageData = {
+                      title: new_item_data.title,
+                      description: new_item_data.description,
+                      image: new_item_data.img_url,
+                      url: new_item_data.link
+                    };
+
+                    notifyClients(wss, messageData);
+
+                  } catch (error) {
+                    console.error('Error adding item:', error);
+                  }
+
+                  newsCountBySource[sources]++;
+                 // exp
+              }
+            } else {
+              console.error('Required XML structure not found for', url);
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching or parsing data:', error);
+        }
       }
-    });
 
-    //Fetch data initially and periodically
-    setTimeout(async () => {
-        await fetch_data(tele_url);
-        await fetch_data(online_url);
-        await fetch_data(onlinenp_url);
-        await fetch_data(ratoen_url);
-        await fetch_data(setoen_url);
-        await fetch_data(radhanien_url);
-        await fetch_data(nagariknp_url);
-        await fetch_data(osnnp_url);
-        await fetch_data(arthik_url);
-        await fetch_data(arthasarokar_url);
-        await fetch_data(karobardaily_url);
-        await fetch_data(khabarhub_url);
-      }, 5000);
+      app.get('/news', async (req, res) => {
+        try {
+          const items = await newsModel.find().exec();
+          const item_list = items.map((item) => ({
+            title: item.title,
+            link: item.link,
+            description: item.description,
+            img_url: item.img_url,
+            source: item.source
+          }));
+          const reversedItemList = item_list.reverse();
+          res.json(reversedItemList);
+        } catch (error) {
+          console.error('Error retrieving items:', error);
+          res.status(500).json({ error: 'Internal Server Error' });
+        }
+      });
 
-    setInterval(async () => {
-      await fetch_data(tele_url);
-      await fetch_data(online_url);
-      await fetch_data(onlinenp_url);
-      await fetch_data(ratoen_url);
-      await fetch_data(setoen_url);
-      await fetch_data(radhanien_url);
-      await fetch_data(nagariknp_url);
-      await fetch_data(osnnp_url);
-      await fetch_data(arthik_url);
-      await fetch_data(arthasarokar_url);
-      await fetch_data(karobardaily_url);
-      await fetch_data(khabarhub_url);
-    }, 1 * 60 * 1000); // Run every 5 minutes
+    async function initiateFetchCycle() {
 
-  } catch (error) {
-    console.error('Error establishing the connection:', error);
-  }
+    async function fetchAndRecurse(wss) {
+      console.log(`Running Fetch Cycle`);
+          for (const { url, source } of newsSources) {
+            console.log("line 255 debug source is"+ source);
+            await fetch_data(url,source);
+
+          }
+          const pauseDuration = 30 * 1000;
+          console.log(`Pausing fetch for ${pauseDuration / 1000} seconds`);
+          setTimeout(() => fetchAndRecurse(wss), pauseDuration);
+
+        }
+
+        fetchAndRecurse();
+
+      }
+
+    initiateFetchCycle();
 }
