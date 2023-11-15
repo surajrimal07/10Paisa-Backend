@@ -4,15 +4,17 @@ import User from '../models/userModel.js';
 
 
 export const createUser = async (req, res) => {
+  const token = req.body.token;
   const name = req.body.name;
   const email = req.body.email;
   const password = req.body.password;
-  const phone = req.body.phone !== undefined ? req.body.phone : undefined; //new code
+  const phone = req.body.phone; //!== undefined ? req.body.phone : undefined; //new code
   const style = req.body.style !== undefined ? req.body.style : undefined; //new code
 
   console.log("Create user command passed")
-  console.log("Name: "+name, "Email: "+email, "Password: "+password, "phone: "+phone, "Style: "+style);
+  console.log("Name: "+name,"token "+ token,  "Email: "+email, "Password: "+password, "phone: "+phone, "Style: "+style);
 
+  console.log(token);
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -23,6 +25,7 @@ export const createUser = async (req, res) => {
       } else {
         if (user === null) {
           const newUser = new User({
+            token,
             name,
             email,
             password: hashedPassword,
@@ -33,11 +36,12 @@ export const createUser = async (req, res) => {
             const savedUser = await newUser.save();
             const userData = {
               _id: savedUser._id,
-              name: savedUser.name,  //this might throw error  //fixed now
+              token: savedUser.token,
+              name: savedUser.name,
               email: savedUser.email,
               pass: savedUser.password,
-              phone: savedUser.phone, //might throw error  //new code
-              style: savedUser.style //might throw error     //new code
+              phone: savedUser.phone,
+              style: savedUser.style
 
             };
             console.log(userData);
@@ -51,7 +55,6 @@ export const createUser = async (req, res) => {
           res.status(400).json({
             message: 'Email already exists',
           });
-          console.log("Singup failed, user already exists");
         }
       }
     });
@@ -107,6 +110,44 @@ export const forgetPass = async (req, res) => {
   }
 };
 
+export const verifyData = async (req, res) => {
+  const fieldToUpdate = req.body.field; // Field to be updated
+  const valueToCheck = req.body.value; // New value
+
+  if (fieldToUpdate === 'email') {
+  try {
+    const existingUser = await User.findOne({ email: valueToCheck });
+    if (!existingUser) {
+
+      console.log("Email is fresh");
+      return res.status(200).json({ message: "Email is fresh" });
+
+    } else {
+      console.log("Email already exists");
+      return res.status(400).json({ message: "Email already exists" });
+    }
+  } catch (error) {
+    console.error("Error looking for data:", error);
+    return res.status(500).json({ message: "Error occured" });
+  }}
+
+  if (fieldToUpdate === 'phone') {
+
+    try {
+      const existingUser = await User.findOne({ phone: valueToCheck });
+      if (!existingUser) {
+        console.log("Phone is fresh");
+        return res.status(200).json({ message: "Phone is fresh" });
+      } else {
+        console.log("Phone already exists");
+        return res.status(400).json({ message: "Phone already exists" });
+      }
+    } catch (error) {
+      console.error("Error checking phone:", error);
+      return res.status(500).json({ message: "Error checking Phone" });
+    }}
+};
+
 export const updateUser = async (req, res) => {
   const token = req.body.token;
   const email = req.body.email;
@@ -117,11 +158,18 @@ export const updateUser = async (req, res) => {
   const valueToUpdate = req.body.value; // New value
 
   try {
+    //console.log(token);
+
     const user = await User.findOne({ token });
+    console.log("we are here");
+    console.log(token);
 
     if (!user) {
+      console.log("User not found");
       return res.status(404).json({ error: 'User not found' });
     }
+    console.log (user);
+
     if (fieldToUpdate === 'name') {
       console.log("Username updated, new "+fieldToUpdate+ " is "+valueToUpdate)
       user.name = valueToUpdate;
@@ -133,21 +181,51 @@ export const updateUser = async (req, res) => {
     }
 
     if (fieldToUpdate === 'email') {
-      console.log("User mail updated, new "+fieldToUpdate+ " is "+valueToUpdate)
-      user.email = valueToUpdate;
+      try {
+        const existingUser = await User.findOne({ email: valueToUpdate });
+        if (!existingUser) {
+          console.log("User email updated, new " + fieldToUpdate + " is " + valueToUpdate);
+
+          user.email = valueToUpdate;
+
+          await user.save();
+
+          return res.status(200).json({ message: "Email updated successfully" });
+        } else {
+          console.log("Email already exists");
+          return res.status(400).json({ message: "Email already exists" });
+        }
+      } catch (error) {
+        console.error("Error updating user email:", error);
+        return res.status(500).json({ message: "Error updating email" });
+      }
     }
 
-    else if (fieldToUpdate === 'phone') {
-      user.phone = valueToUpdate;
-      console.log("User phone updated, new "+fieldToUpdate+ " is "+valueToUpdate)
-    } else if (fieldToUpdate === 'style') {
+    if (fieldToUpdate === 'phone') {
+      try {
+        const existingUser = await User.findOne({ phone: valueToUpdate });
+        if (!existingUser) {
+          console.log("User phone updated, new " + fieldToUpdate + " is " + valueToUpdate);
+
+          user.phone = valueToUpdate;
+
+          await user.save();
+
+          return res.status(200).json({ message: "Phone updated successfully" });
+        } else {
+          console.log("Phone already exists");
+          return res.status(400).json({ message: "Phone already exists" });
+        }
+      } catch (error) {
+        console.error("Error updating user Phone:", error);
+        return res.status(500).json({ message: "Error updating Phone" });
+      }
+    }
+
+    else if (fieldToUpdate === 'style') {
       user.style = valueToUpdate;
       console.log("User Style updated, new "+fieldToUpdate+ " is " +valueToUpdate)
     }
-    // } else if (fieldToUpdate === 'name') {
-    //   user.name = valueToUpdate;
-    //   console.log("User password updated, new "+fieldToUpdate+ " is " +valueToUpdate)
-    // } // Add more conditions for other fields as necessary
 
     try {
       await user.save();
@@ -165,13 +243,101 @@ export const updateUser = async (req, res) => {
 };
 
 
+// export const updateUser = async (req, res) => {
+//   const token = req.body.token;
+//   const email = req.body.email;
+//   const newPassword  = req.body.password;
+//   const phone = req.body.phone;
+//   const invStyle = req.body.style;
+//   const fieldToUpdate = req.body.field; // Field to be updated
+//   const valueToUpdate = req.body.value; // New value
+
+//   try {
+
+//     const user = await User.findOne({ token });
+
+//     if (!user) {
+//       return res.status(404).json({ error: 'User not found' });
+//     }
+//     if (fieldToUpdate === 'name') {
+//       console.log("Username updated, new "+fieldToUpdate+ " is "+valueToUpdate)
+//       user.name = valueToUpdate;
+//     }
+//     if (fieldToUpdate === 'password') {
+//       const newPassword = await bcrypt.hash(valueToUpdate, 10);
+//       console.log("User password updated, new "+fieldToUpdate+ " is "+valueToUpdate)
+//       user.password = newPassword;
+//     }
+
+//     if (fieldToUpdate === 'email') {
+//       try {
+//         const existingUser = await User.findOne({ email: valueToUpdate });
+//         if (!existingUser) {
+//           console.log("User email updated, new " + fieldToUpdate + " is " + valueToUpdate);
+
+//           user.email = valueToUpdate;
+
+//           await user.save();
+
+//           return res.status(200).json({ message: "Email updated successfully" });
+//         } else {
+//           console.log("Email already exists");
+//           return res.status(400).json({ message: "Email already exists" });
+//         }
+//       } catch (error) {
+//         console.error("Error updating user email:", error);
+//         return res.status(500).json({ message: "Error updating email" });
+//       }
+//     }
+
+//     if (fieldToUpdate === 'phone') {
+//       try {
+//         const existingUser = await User.findOne({ phone: valueToUpdate });
+//         if (!existingUser) {
+//           console.log("User phone updated, new " + fieldToUpdate + " is " + valueToUpdate);
+
+//           user.phone = valueToUpdate;
+
+//           await user.save();
+
+//           return res.status(200).json({ message: "Phone updated successfully" });
+//         } else {
+//           console.log("Phone already exists");
+//           return res.status(400).json({ message: "Phone already exists" });
+//         }
+//       } catch (error) {
+//         console.error("Error updating user Phone:", error);
+//         return res.status(500).json({ message: "Error updating Phone" });
+//       }
+//     }
+
+//     else if (fieldToUpdate === 'style') {
+//       user.style = valueToUpdate;
+//       console.log("User Style updated, new "+fieldToUpdate+ " is " +valueToUpdate)
+//     }
+
+//     try {
+//       await user.save();
+//       console.log('User ' + fieldToUpdate + ' updated successfully');
+//       return res.status(200).json({ message: 'User ' + fieldToUpdate + ' updated successfully' });
+//     } catch (error) {
+//       console.error('User ' + fieldToUpdate + ' update failed: ' + error);
+//       return res.status(500).json({ error: 'Failed to update user ' + fieldToUpdate });
+//     }
+
+//   } catch (error) {
+//     console.error('Error updating user data:', error);
+//     return res.status(500).json({ error: 'An error occurred while updating user data' });
+//   }
+// };
+
 export const verifyUser = async (req, res) => {
   const token = req.body.token;
 
   console.log("Token is: " + token);
 
   try {
-    const user = await User.findOne({ token });
+    const user = await User.findOne({ token: token });
 
     if (!user) {
       console.log("401 Invalid token.");
@@ -193,12 +359,9 @@ export const verifyUser = async (req, res) => {
   }
 };
 
-
-export const saveToken = async (req, res) => {
+export const fetchToken = async (req, res) => {
   const email = req.body.email;
-  const token = req.body.token;
 
-  console.log("Email: " + email, "Token: " + token);
   try {
     const user = await User.findOne({ email });
 
@@ -206,14 +369,66 @@ export const saveToken = async (req, res) => {
       console.log("401 Invalid email");
       return res.status(401).json({ error: 'Invalid email' });
     } else {
-      user.token = token;
-      await user.save();
-
-      console.log("200 Token saved");
+      res.status(200).json({
+        token: user.token,
+      });
     }
-    res.json(user);
-  } catch (error) {
-    console.log("500 An error occurred saving token");
-    return res.status(500).json({ error: 'An error occurred saving token' });
+  } catch (error){
+    console.log("error occured");
+    return res.status(500).json({ error: 'An error occurred fetching token' });
   }
 };
+
+// export const saveToken = async (req, res) => {
+//   const email = req.body.email;
+//   const token = req.body.token;
+
+//   console.log("Email: " + email, "Token: " + token);
+//   try {
+//     const user = await User.findOne({ email });
+
+//     if (!user) {
+//       console.log("401 Invalid email");
+//       return res.status(401).json({ error: 'Invalid email' });
+//     } else {
+//       user.token = token;
+//       await user.save();
+
+//       console.log("200 Token saved");
+//     }
+//     res.json(user);
+//   } catch (error) {
+//     console.log("500 An error occurred saving token");
+//     return res.status(500).json({ error: 'An error occurred saving token' });
+//   }
+// };
+
+
+export const deleteAccount = async (req, res) => {
+  const tokens = req.body.token;
+  const passwords = req.body.password;
+  try {
+    const user = await User.findOne({ token: tokens });
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const isPasswordValid = (await bcrypt.compare(passwords, user.password));
+
+
+    if (!isPasswordValid) {
+      console.log("401 Invalid password");
+      return res.status(401).json({ error: 'Invalid password' });
+    }
+    await user.remove();
+    console.log("200 Account deleted");
+    return res.status(200).json({ error: 'Account deleted' });
+
+  } catch (error) {
+    return res.status(500).json({ error: 'An error occurred deleting account' });
+  }
+};
+
+
+

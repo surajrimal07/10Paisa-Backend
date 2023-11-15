@@ -10,6 +10,7 @@ import extractFeaturedImage from '../server/imageServer.js';
 export async function startNewsServer(app) {
     const processedTitles = new Set();
     const fallbackDate = new Date('2023-01-01T00:00:00.000Z');
+    let newItemsCount = 0;
 
     function generateUniqueKey(title, pubDate) {
       const hash = crypto.createHash('sha256');
@@ -99,7 +100,6 @@ export async function startNewsServer(app) {
     async function fetch_data(url,sources) {
         try {
           const response = await axios.get(url);
-          let newItemsCount = 0;
 
           if (response.status === 200) {
             const xml_data = response.data;
@@ -116,15 +116,17 @@ export async function startNewsServer(app) {
                 const pubDate = pubDateN || fallbackDate;  //check if pub date is null or not
 
                 //const img_src = item_elem.link && item_elem.link[0].trim();
-                const img_src = await extractFeaturedImage(link, sources);
+                //const img_src = await extractFeaturedImage(link, sources);
 
                 const cleanedDescription = cleanDescription(description); // Clean description
 
                 if (await isDuplicateArticle(title, pubDate)) {
                   continue;
                 }
-
+                const img_src = await extractFeaturedImage(link, sources);
+                //extract image only when news is unique, don't spam
                 const uniqueKey = generateUniqueKey(title, pubDate);
+
 
                 const new_item_data = {
                   title,
@@ -187,14 +189,14 @@ export async function startNewsServer(app) {
     async function initiateFetchCycle() {
 
     async function fetchAndRecurse(wss) {
-      console.log(`Running Fetch Cycle`);
+      console.log(`Running Cycle`);
 
           for (const { url, source } of newsSources) {
             await fetch_data(url,source);
 
           }
           const pauseDuration = 30 * 1000;
-          console.log(`Fetch cycle completed.\nFound ${newItemsCount} new items.`);
+          console.log(`cycle completed.\nFound ${newItemsCount} new items.`);
           console.log("Pausing cycle");
           //console.log(`Pausing fetch for ${pauseDuration / 1000} seconds`);
           setTimeout(() => fetchAndRecurse(wss), pauseDuration);

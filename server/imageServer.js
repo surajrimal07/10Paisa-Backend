@@ -1,6 +1,9 @@
 import axios from 'axios';
 import cheerio from 'cheerio';
+import fs from 'fs';
 import newsSources from '../middleware/newsUrl.js';
+
+let errorDetails = [];
 
 async function extractFeaturedImage(url, publisher) {
     try {
@@ -12,7 +15,6 @@ async function extractFeaturedImage(url, publisher) {
 
       let featuredImageUrl;
 
-      // Determine the publisher and call the appropriate function
       if (publisher === newsSources[5].source) {
         featuredImageUrl = await extractImageSetopati($);
       } else if (publisher === newsSources[1].source) {
@@ -54,13 +56,38 @@ async function extractFeaturedImage(url, publisher) {
       }
 
       if (featuredImageUrl) {
-        //console.log('Featured Image URL:', featuredImageUrl);
+        //console.log(featuredImageUrl);
         return featuredImageUrl;
       } else {
-        console.log('Featured image extraction failed for the specified publisher.');
+        console.log('Featured image failed '+ publisher);
+        console.log(url)
+
+        //new logic, could throw error
+        const errorInfo = {
+          error: 'image extraction failed',
+          publisher,
+          url,
+        };
+
+        try {
+          fs.writeFileSync('errorDetails.json', JSON.stringify(errorInfo, null, 2));
+        } catch (error) {
+          console.error('Error writing json:', error);
+        }
+
+        //ends here
+        // const errorInfo = {
+        //   error: 'image extraction failed',
+        //   publisher,
+        //   url,
+        // };
+        // errorDetails.push(errorInfo);
+        // fs.writeFileSync('errorDetails.json', JSON.stringify(errorDetails, null, 2));
+
         return null;
       }
     } catch (error) {
+
       console.error('Error:', error.message);
       return error;
     }
@@ -203,6 +230,7 @@ async function setoen($) {
     return null;
     }
 
+
 export default extractFeaturedImage;
 
 
@@ -213,18 +241,15 @@ export default extractFeaturedImage;
 
 
 
+//log error data here, save it in a variable
 
 
 
 
 
-
-
-
-
-// const articleUrl = 'https://www.setopati.com/politics/315857';
-// const setopati = 'setopati'
-// extractFeaturedImage(articleUrl,setopati);
+const articleUrl = 'https://www.setopati.com/kinmel/information-technology/315954';
+const setopati = newsSources[5].source
+extractFeaturedImage(articleUrl,setopati);
 
 // const article2 = 'https://www.onlinekhabar.com/2023/11/1391556';
 // const onlinekhabar = 'onlinekhabar'

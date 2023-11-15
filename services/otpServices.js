@@ -18,6 +18,8 @@ export const sendOTP = (params, callback) => {
     const data = `${params.email}.${otp}.${expires}`;
     const hash = crypto.createHmac("sha256", key).update(data).digest("hex");
     const fullhash = `${hash}.${expires}`;
+    console.log(hash);
+    console.log(fullhash);
 
     const otpMessage = `Dear user, ${otp} is the one time password for signup`;
 
@@ -36,10 +38,14 @@ export const sendOTP = (params, callback) => {
 };
 
 export const verifyOTP = (params, callback) => {
-    console.log("0")
+    //console.log("0")
     const [hashValue, expires] = params.hash.split('.');
     const now = Date.now();
-    console.log("1")
+    console.log(params.email);
+    console.log(params.otp);
+    console.log(params.hash);
+    console.log(hashValue);
+
 
     if (now > parseInt(expires)) {
         console.log("Otp Expired")
@@ -49,13 +55,15 @@ export const verifyOTP = (params, callback) => {
     const data = `${params.email}.${params.otp}.${expires}`;
     console.log(params.email,params.hash,params.otp)
     const newCalculatedHash = crypto.createHmac("sha256", key).update(data).digest("hex");
+    console.log(newCalculatedHash);
+    console.log(hashValue);
 
     if (newCalculatedHash === hashValue) {
         console.log("Otp Matched, Success")
         return callback(null, "Success");
     }
 
-    console.log(params.email,params.hash,params.otp+ " Otp Error")
+    //console.log(params.email,params.hash,params.otp+ " Otp Error")
     return callback("Invalid OTP");
 };
 
@@ -90,7 +98,7 @@ export const forgotpass = (emails, callback) => {
             return callback(error);
         } else{
             console.log(callback);
-            console.log("line 94 of otpservices, email service bata success vayo, no error, hash is "+ fullhash)
+            //console.log("line 94 of otpservices, email service bata success vayo, no error, hash is "+ fullhash)
             return callback(null, fullhash); //null
 
     }
