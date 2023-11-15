@@ -7,16 +7,15 @@ export const createPortfolio = async (req, res) => {
 
     const portfolio = await Portfolio.create({ userToken, name: portfolioName });
 
-    //const portfolio = await Portfolio.create({ token, name });
     res.status(201).json(portfolio);
 
 
   } catch (error) {
-    //console.log("Working 9");
     res.status(500).json({ error: 'Internal Server Error' });
   }
 };
 
+//nottested from here
 export const addStockToPortfolio = async (req, res) => {
   try {
     const { portfolioId, symbol, quantity } = req.body;

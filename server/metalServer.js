@@ -15,17 +15,18 @@ try {
 
         let assetprice;
 
-        if (asset === "goldhallmark") {
+        if (asset === "gold hallmark") {
             assetprice = await extractgoldhallmark($);
-        } else if (asset === "goldtejabi") {
+        } else if (asset === "gold tejabi") {
             assetprice = await extractgoldtejabi($);
         } else if (asset === "silver") {
             assetprice = await extractsilver($);
         }
 
         if (assetprice) {
-            console.log(assetprice);
-            return assetprice;
+
+            //console.log(assetprice);
+            return { ltp: assetprice };
         } else {
             console.log('Price extraction failed');
         }
@@ -85,8 +86,9 @@ export default metalPriceExtractor;
 // const asset1 = "goldtejabi";
 // metalPriceExtractor(asset1);
 
-// const asset3 = "silver";
-// metalPriceExtractor(asset3);
+const asset3 = "gold hallmark";
+const test = await metalPriceExtractor(asset3);
+console.log(test);
 
 
 

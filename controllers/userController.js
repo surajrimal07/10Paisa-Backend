@@ -158,7 +158,6 @@ export const updateUser = async (req, res) => {
   const valueToUpdate = req.body.value; // New value
 
   try {
-    //console.log(token);
 
     const user = await User.findOne({ token });
 

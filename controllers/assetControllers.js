@@ -1,5 +1,6 @@
 import Asset from '../models/assetModel.js';
-import metalPriceExtractor from '../server/metalServer.js'
+import metalPriceExtractor from '../server/metalServer.js';
+
 
 export const createAsset = async (req, res) => {
     const symbol = req.body.symbol;
@@ -33,14 +34,29 @@ export const createAsset = async (req, res) => {
       }
 };
 
-export const updateAssetData = async (req, res) => {
-    const symbol = req.body.symbol;
+export const updateAssetData = async (symbol, newData) => {
 
-    
+    try {
+        const updatedAsset = await Asset.findOneAndUpdate(
+            { symbol },
+            { $set: newData },
+            { new: true }
+        );
 
+        if (updatedAsset) {
+            console.log("Asset updated successfully", updatedAsset);
+            return updatedAsset;
+        } else {
+            console.log("Asset not found for update");
+            return null;
+        }
+
+    } catch (error) {
+        console.error("Error updating asset data:", error);
+        return null;
+
+    }
 }
-
-
 
 
 export const getAssetData = async (req, res) => {
@@ -48,6 +64,29 @@ export const getAssetData = async (req, res) => {
 
     console.log("Data requested for: "+symbol);
     try {
+
+        if (symbol === 'allwithdata') {
+            const assets = await Asset.find();
+            const assetData = [];
+
+            for (const asset of assets) {
+                const dynamicInfo = await metalPriceExtractor(asset.name);
+                const mergedData = {
+                    ...asset.toObject(),
+                    ...dynamicInfo,
+                };
+                assetData.push(mergedData);
+            }
+
+            return res.json(assetData);
+        }
+        //new exp
+
+        if (symbol === 'all') {
+            const symbols = await Asset.find().distinct('symbol');
+            return res.json(symbols);
+        }
+
       const asset = await Asset.findOne({ symbol });
 
       if (!asset) {
@@ -55,13 +94,30 @@ export const getAssetData = async (req, res) => {
         return res.status(401).json({ error: 'Asset Not found' });
       } else {
         console.log("Asset found");
+        console.log(asset.name);
+
+        const dynamicInfo = await metalPriceExtractor(asset.name);  //do it by solbol later
+
+        console.log(dynamicInfo);
+
+        const mergedData = {
+            ...asset.toObject(),
+            ...dynamicInfo,
+        };
+        const updatedAsset = await updateAssetData(asset.symbol, dynamicInfo);
+
+        if (updatedAsset) {
+            res.json(mergedData);
+        } else {
+            res.status(500).json({ error: 'Failed to update asset data' });
+        }
       }
-      res.json(asset);
     } catch (error) {
       console.log("500 An error occurred ");
-      return res.status(500).json({ error: 'An error occurred' });
+      return res.status(600).json({ error: 'An error occurred' });
     }
 };
+
 
 
 
