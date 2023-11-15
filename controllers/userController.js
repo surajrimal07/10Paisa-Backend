@@ -161,14 +161,11 @@ export const updateUser = async (req, res) => {
     //console.log(token);
 
     const user = await User.findOne({ token });
-    console.log("we are here");
-    console.log(token);
 
     if (!user) {
       console.log("User not found");
       return res.status(404).json({ error: 'User not found' });
     }
-    console.log (user);
 
     if (fieldToUpdate === 'name') {
       console.log("Username updated, new "+fieldToUpdate+ " is "+valueToUpdate)

@@ -3,8 +3,8 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import express from 'express';
 import { mainDB } from './database/db.js';
-import userRouter from './routes/userRoutes.js';
-import { startNewsServer } from './server/newsServer copy.js';
+import userRouter from './routes/appRoutes.js';
+import { startNewsServer } from './server/newsServer.js';
 
 dotenv.config();
 

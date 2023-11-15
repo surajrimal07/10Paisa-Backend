@@ -2,10 +2,17 @@ import Portfolio from '../models/portfolioModel.js';
 
 export const createPortfolio = async (req, res) => {
   try {
-    const { userId, name } = req.body;
-    const portfolio = await Portfolio.create({ userId, name });
+    const userToken = req.body.token;
+    const portfolioName = req.body.name;
+
+    const portfolio = await Portfolio.create({ userToken, name: portfolioName });
+
+    //const portfolio = await Portfolio.create({ token, name });
     res.status(201).json(portfolio);
+
+
   } catch (error) {
+    //console.log("Working 9");
     res.status(500).json({ error: 'Internal Server Error' });
   }
 };
@@ -59,8 +66,8 @@ export const deletePortfolio = async (req, res) => {
 
   export const getAllPortfoliosForUser = async (req, res) => {
     try {
-      const { userId } = req.params;
-      const portfolios = await Portfolio.find({ userId });
+      const userToken = req.body.token;
+      const portfolios = await Portfolio.find({ userToken });
       res.status(200).json(portfolios);
     } catch (error) {
       res.status(500).json({ error: 'Internal Server Error' });

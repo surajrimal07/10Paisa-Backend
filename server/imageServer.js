@@ -10,7 +10,6 @@ async function extractFeaturedImage(url, publisher) {
       const response = await axios.get(url);
       const html = response.data;
 
-      // Use cheerio to load the HTML
       const $ = cheerio.load(html);
 
       let featuredImageUrl;
@@ -56,13 +55,11 @@ async function extractFeaturedImage(url, publisher) {
       }
 
       if (featuredImageUrl) {
-        //console.log(featuredImageUrl);
         return featuredImageUrl;
       } else {
         console.log('Featured image failed '+ publisher);
         console.log(url)
 
-        //new logic, could throw error
         const errorInfo = {
           error: 'image extraction failed',
           publisher,
@@ -74,16 +71,6 @@ async function extractFeaturedImage(url, publisher) {
         } catch (error) {
           console.error('Error writing json:', error);
         }
-
-        //ends here
-        // const errorInfo = {
-        //   error: 'image extraction failed',
-        //   publisher,
-        //   url,
-        // };
-        // errorDetails.push(errorInfo);
-        // fs.writeFileSync('errorDetails.json', JSON.stringify(errorDetails, null, 2));
-
         return null;
       }
     } catch (error) {
@@ -93,21 +80,17 @@ async function extractFeaturedImage(url, publisher) {
     }
   }
 
-
-// Image extraction logic for Setopati (publisher A)
 async function extractImageSetopati($) {
     const featuredImageElement = $('.new-featured-image img');
     return featuredImageElement.attr('src');
   }
 
-  // Image extraction logic for OnlineKhabar (publisher B)
   async function extractImageOnlineKhabar($) {
     const featuredImageElement = $('.ok-post-detail-featured-img .post-thumbnail img');
     return featuredImageElement.attr('src');
   }
 
 
-// Image extraction logic for OnlineKhabar English (publisher C)
 async function extractImageOnlineKhabarEnglish($) {
     const ogImageTag = $('meta[property="og:image"]');
 
@@ -119,7 +102,6 @@ async function extractImageOnlineKhabarEnglish($) {
     }
   }
 
-// Image extraction logic for OnlineKhabar (publisher B)
 async function ratoen($) {
     const ogImageTag = $('meta[property="og:image"]');
 
@@ -169,7 +151,6 @@ async function himal($) {
 
     if (featuredImageElement.length > 0) {
       const imageUrl = featuredImageElement.attr('src');
-      //console.log('Featured Image URL:', imageUrl);
 
       return imageUrl;
     } else {
@@ -185,7 +166,6 @@ const featuredImageElement = $('img[class="attachment-full size-full wp-post-ima
 
 if (featuredImageElement.length > 0) {
     const imageUrl = featuredImageElement.attr('src');
-    //console.log('Featured Image URL:', imageUrl);
 
     return imageUrl;
 } else {
@@ -232,17 +212,6 @@ async function setoen($) {
 
 
 export default extractFeaturedImage;
-
-
-
-
-
-
-
-
-
-//log error data here, save it in a variable
-
 
 
 

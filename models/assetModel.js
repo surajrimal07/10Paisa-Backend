@@ -1,29 +1,30 @@
 import mongoose from 'mongoose';
 
-
-const stockSchema = new mongoose.Schema({
+const assetSchema = new mongoose.Schema({
   symbol: {
     type: String,
     required: true,
   },
-  companyName: {
+  name: {
     type: String,
     required: true,
   },
-  quantity: {
-    type: Number,
+  category: {
+    type: String,
     required: true,
   },
-  purchasePrice: {
-    type: Number,
+  sector: {
+    type: String,
     required: true,
   },
-  purchaseDate: {
-    type: Date,
-    required: true,
-  },
-});
+  eps:String,
+  bookvalue:String,
+  pe:String,
+  change:String,
+  ltp:String,
 
-const Stock = mongoose.model('Stock', stockSchema);
+}, { collection: 'asset' });
 
-module.exports = Stock;
+const Asset = mongoose.model('Stock', assetSchema);
+
+export default Asset;

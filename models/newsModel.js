@@ -21,11 +21,9 @@ const newsSchema = new mongoose.Schema({
   },
 }, { collection: 'news' });
 
-// Create a compound index on unique_key
 newsSchema.index({ unique_key: 1 }, { unique: true });
 
 newsSchema.pre('save', function (next) {
-  // Concatenate title and pubDate and hash it to create unique_key
   const hash = crypto.createHash('sha256');
   hash.update(this.title + this.pubDate);
   this.unique_key = hash.digest('hex');

@@ -1,7 +1,5 @@
 import mongoose from 'mongoose';
-
-import Stock from './assetModel.js';
-
+import Asset from './assetModel.js';
 
 const gainLossSchema = new mongoose.Schema({
     date: {
@@ -17,20 +15,19 @@ const gainLossSchema = new mongoose.Schema({
 
 
 const portfolioSchema = new mongoose.Schema({
-  userId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
+  userToken: {
+    type: String,
     required: true,
   },
   name: {
     type: String,
     required: true,
   },
-  stocks: [Stock],
+  stocks: [Asset.schema],
   gainLossRecords: [gainLossSchema],
-  // Add more properties as needed
-});
+}, { collection: 'portfolios' });
 
+portfolioSchema.index({ userToken: 1, name: 1 }, { unique: true });
 const Portfolio = mongoose.model('Portfolio', portfolioSchema);
 
-module.exports = Portfolio;
+export default Portfolio;
