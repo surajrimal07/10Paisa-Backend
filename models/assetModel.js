@@ -4,6 +4,7 @@ const assetSchema = new mongoose.Schema({
   symbol: {
     type: String,
     required: true,
+    unique: true,
   },
   name: {
     type: String,
@@ -17,13 +18,17 @@ const assetSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  eps:String,
-  bookvalue:String,
-  pe:String,
-  change:String,
-  ltp:String,
+  eps:Number,
+  bookvalue:Number,
+  pe:Number,
+  percentchange:Number,
+  ltp:Number,
+  totaltradedquantity: Number,
+  previousclose: Number,
 
 }, { collection: 'asset' });
+
+assetSchema.index({ symbol: 1 }, { unique: true });
 
 const Asset = mongoose.model('Stock', assetSchema);
 

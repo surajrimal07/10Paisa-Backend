@@ -1,5 +1,6 @@
 import { Router } from 'express';
-import { createAsset, getAssetData } from '../controllers/assetControllers.js';
+import { createAsset, getAllAssetNames, getMultiAssetDetails, getSingleAssetDetails } from '../controllers/assetControllers.js';
+import { CommodityData } from '../controllers/commodifyControllers.js';
 import { sendOTP, verifyOTP } from '../controllers/otpControllers.js';
 import { addStockToPortfolio, createPortfolio, deletePortfolio, getAllPortfoliosForUser, removeStockFromPortfolio } from '../controllers/portfolioControllers.js';
 import { createUser, deleteAccount, fetchToken, forgetPass, loginUser, updateUser, verifyData, verifyUser } from '../controllers/userController.js';
@@ -26,7 +27,11 @@ router.post('/delport',deletePortfolio);
 router.post('/remstock',removeStockFromPortfolio);
 router.post('/getallassets',getAllPortfoliosForUser);
 router.post('/newasset',createAsset);
-router.post('/getasset',getAssetData);
+router.post('/getassetnames',getAllAssetNames);
+router.post('/commodity', CommodityData);
+router.post('/singleassetdetails', getSingleAssetDetails);
+router.post('/multiassetdetails', getMultiAssetDetails);
+
 
 
 export default router;

@@ -375,29 +375,29 @@ export const fetchToken = async (req, res) => {
   }
 };
 
-// export const saveToken = async (req, res) => {
-//   const email = req.body.email;
-//   const token = req.body.token;
+export const saveToken = async (req, res) => {
+  const email = req.body.email;
+  const token = req.body.token;
 
-//   console.log("Email: " + email, "Token: " + token);
-//   try {
-//     const user = await User.findOne({ email });
+  console.log("Email: " + email, "Token: " + token);
+  try {
+    const user = await User.findOne({ email });
 
-//     if (!user) {
-//       console.log("401 Invalid email");
-//       return res.status(401).json({ error: 'Invalid email' });
-//     } else {
-//       user.token = token;
-//       await user.save();
+    if (!user) {
+      console.log("401 Invalid email");
+      return res.status(401).json({ error: 'Invalid email' });
+    } else {
+      user.token = token;
+      await user.save();
 
-//       console.log("200 Token saved");
-//     }
-//     res.json(user);
-//   } catch (error) {
-//     console.log("500 An error occurred saving token");
-//     return res.status(500).json({ error: 'An error occurred saving token' });
-//   }
-// };
+      console.log("200 Token saved");
+    }
+    res.json(user);
+  } catch (error) {
+    console.log("500 An error occurred saving token");
+    return res.status(500).json({ error: 'An error occurred saving token' });
+  }
+};
 
 
 export const deleteAccount = async (req, res) => {

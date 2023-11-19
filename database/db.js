@@ -9,6 +9,8 @@ export const mainDB = async () => {
       useNewUrlParser: true,
       useUnifiedTopology: true,
       useCreateIndex: true,
+      socketTimeoutMS: 30000, // Adjust as needed
+      connectTimeoutMS: 30000, // Adjust as needed
     });
     console.log('Connected to the main database');
     return mainDBConnection;

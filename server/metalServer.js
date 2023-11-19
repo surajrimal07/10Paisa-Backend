@@ -15,11 +15,11 @@ try {
 
         let assetprice;
 
-        if (asset === "gold hallmark") {
+        if (asset === "Gold hallmark") {
             assetprice = await extractgoldhallmark($);
-        } else if (asset === "gold tejabi") {
+        } else if (asset === "Gold tejabi") {
             assetprice = await extractgoldtejabi($);
-        } else if (asset === "silver") {
+        } else if (asset === "Silver") {
             assetprice = await extractsilver($);
         }
 
