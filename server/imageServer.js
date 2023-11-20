@@ -55,6 +55,8 @@ async function extractFeaturedImage(url, publisher) {
       }
 
       if (featuredImageUrl) {
+        console.log(featuredImageUrl);
+
         return featuredImageUrl;
       } else {
         console.log('Featured image failed '+ publisher);
@@ -216,54 +218,54 @@ export default extractFeaturedImage;
 
 
 
-const articleUrl = 'https://www.setopati.com/kinmel/information-technology/315954';
-const setopati = newsSources[5].source
-extractFeaturedImage(articleUrl,setopati);
+// const articleUrl = 'https://www.setopati.com/nepali-brand/316241';
+// const setopati = newsSources[5].source
+// extractFeaturedImage(articleUrl,setopati);
 
-// const article2 = 'https://www.onlinekhabar.com/2023/11/1391556';
-// const onlinekhabar = 'onlinekhabar'
+// const article2 = 'https://www.onlinekhabar.com/2023/11/1394337';
+// const onlinekhabar = newsSources[0].source
 // extractFeaturedImage(article2,onlinekhabar);
 
-// const article3 = 'https://english.onlinekhabar.com/kukur-tihar-wild-dog-conservation.html';
-// const onlinekhabareng = 'onlinekhabar english'
+// const article3 = 'https://english.onlinekhabar.com/nepal-governance-politics-stability.html';
+// const onlinekhabareng = newsSources[2].source
 // extractFeaturedImage(article3,onlinekhabareng);
 
-// //english ratopati
-// const ratoart = 'https://english.ratopati.com/story/31264/being-observed-today-';
-// const ratopub = 'ratoen'
+//english ratopati
+// const ratoart = 'https://english.ratopati.com/story/31305';
+// const ratopub = newsSources[2].source
 // extractFeaturedImage(ratoart,ratopub);
 
-// const ratonp = 'https://www.ratopati.com/story/395067/dog-baglung';
-// const ratonppub ='rato'
+// const ratonp = 'https://www.ratopati.com/story/395990/sorry-condition-of-airport-in-nepal-';
+// const ratonppub =newsSources[3].source
 // extractFeaturedImage(ratonp,ratonppub);
 
-// const rajdhaniart = 'https://rajdhanidaily.com/id/88106/';
-// const rajdhanisrc ='rajdhani'
+// const rajdhaniart = 'https://rajdhanidaily.com/id/88208/';
+// const rajdhanisrc =newsSources[6].source
 // extractFeaturedImage(rajdhaniart,rajdhanisrc);
 
-// const nagarikart = 'https://nagariknews.nagariknetwork.com/economy/1348241-1699770712.html';
-// const nagariksrc ='nagarik'
+// const nagarikart = 'https://nagariknews.nagariknetwork.com/politics/1352951-1700442974.html';
+// const nagariksrc =newsSources[7].source
 // extractFeaturedImage(nagarikart,nagariksrc);
 
-// const osnepalart = 'https://www.osnepal.com/466195';
-// const osnepalsrc ='osnepal'
+// const osnepalart = 'https://www.osnepal.com/466455';
+// const osnepalsrc =newsSources[8].source
 // extractFeaturedImage(osnepalart,osnepalsrc);
 
-// const aviyanart = 'https://abhiyandaily.com/newscategory-detail/432859';
-// const aviyansrc ='aviyan'
+// const aviyanart = 'https://abhiyandaily.com/newscategory-detail/433010';
+// const aviyansrc =newsSources[9].source
 // extractFeaturedImage(aviyanart,aviyansrc);
 
-// const arthasarokar = 'https://arthasarokar.com/2023/11/vegetables-111.html';
-// const arthasarosrc = "arthasarokar"
+// const arthasarokar = 'https://arthasarokar.com/2023/11/laghubitta-46.html';
+// const arthasarosrc = newsSources[10].source
 // extractFeaturedImage(arthasarokar,arthasarosrc);
 
-// const karobarart = 'https://www.karobardaily.com/news/238877';
-// const karobarsrc = "karobardaily"
+// const karobarart = 'https://www.karobardaily.com/news/239196';
+// const karobarsrc = newsSources[11].source
 // extractFeaturedImage(karobarart,karobarsrc);
 
-// const khabaren = 'https://english.khabarhub.com/2023/12/325925';
-// const khabarensrc = "khabaren"
-// extractFeaturedImage(khabaren,khabarensrc);
+const khabaren = 'https://english.khabarhub.com/2023/20/326826/';
+const khabarensrc = newsSources[12].source
+extractFeaturedImage(khabaren,khabarensrc);
 
 // const himalart = 'https://www.himalkhabar.com/news/138843';
 // const himalsrc = "himalkhabar"

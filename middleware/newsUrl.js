@@ -29,8 +29,8 @@ const newsSources = [
   { url: "https://english.onlinekhabar.com/feed/", source: "Online Khabar English" },
   { url: "https://www.onlinekhabar.com/feed", source: "Online Khabar Nepali" },
   { url: "https://english.ratopati.com/rss/", source: "Ratopati English" },
-  { url: "https://www.ratopati.com/feed", source: "Ratopati Nepali" },
-  { url: "https://en.setopati.com/feed", source: "Setopati English" },
+  { url: "https://www.ratopati.com/feed", source: "Ratopati Nepali" }, //3
+  { url: "https://en.setopati.com/feed", source: "Setopati English" }, //4
   { url: "https://www.setopati.com/feed", source: "Setopati Nepali" }, //5
   { url: "https://rajdhanidaily.com/feed/", source: "Rajdhani Daily" }, //6
   { url: "https://nagariknews.nagariknetwork.com/feed", source: "Nagarik News" }, //7
