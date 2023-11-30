@@ -55,7 +55,7 @@ async function extractFeaturedImage(url, publisher) {
       }
 
       if (featuredImageUrl) {
-        console.log(featuredImageUrl);
+        //console.log(featuredImageUrl);
 
         return featuredImageUrl;
       } else {

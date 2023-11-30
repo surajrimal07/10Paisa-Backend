@@ -1,61 +1,39 @@
 import axios from 'axios';
 import cheerio from 'cheerio';
 
-export async function oilExtractor(url = 'https://noc.org.np/retailprice') {
+export async function oilExtractor(url = 'https://www.ktm2day.com/petrol-diesel-lpg-gas-aviation-fuel-price-in-nepal/') {
     try {
         const response = await axios.get(url);
         const html = response.data;
-
         const $ = cheerio.load(html);
-        const table = $('table.table');
 
-        if (!table.length) {
-            console.error('Table not found in the HTML content.');
-            return null;
-        }
+        const fuelPrices = [];
 
-        const headers = [];
-        const rowData = {};
+        $('tbody tr').each((i, row) => {
+            const columns = $(row).find('td');
+            if (columns.length === 3) {
+                const fuelType = columns.eq(0).text().trim().replace(/\([^)]+\)/, '');
+                const quantity = columns.eq(1).text().trim().replace(/^per /i, '');
+                let price = columns.eq(2).text().trim();
 
-        // Extract headers
-        table.find('thead th').each((i, header) => {
-            const headerText = $(header).text().trim();
-            if (headerText !== 'Effective Time' && headerText !== 'ATF (DP)' && headerText !== 'ATF (DF)') {
-                headers.push(headerText.toLowerCase());
+                price = price.replace(/^"(.*)"$/, '$1');
+
+                if (fuelType === 'Petrol' || fuelType === 'Diesel' || fuelType === 'Kerosene') {
+                    fuelPrices.push({
+                        name: fuelType,
+                        category: 'Oil & Gas',
+                        unit: quantity,
+                        ltp: parseFloat(price) || null,
+                    });
+                }
             }
         });
 
-        // Extract first data row
-        const firstRow = table.find('tbody tr').first();
-        firstRow.find('td').each((i, cell) => {
-            const cellText = $(cell).text().trim();
-            if (headers[i]) {
-                rowData[headers[i]] = cellText;
-            }
-        });
-
-        // Remove unnecessary date and time information
-        const dateTimeInfo = `${rowData['effective date']} ${rowData['effective time']}`;
-        delete rowData['effective date'];
-        delete rowData['effective time'];
-
-        // Create an array of label-value pairs
-        const resultArray = headers.map((header) => `${header}: ${rowData[header]}`);
-
-        return resultArray.join('\t');
+        return fuelPrices;
     } catch (error) {
         console.error('Error fetching or parsing the HTML content:', error.message);
         return null;
     }
 }
 
-// Example usage
-oilExtractor().then((result) => {
-    if (result) {
-        console.log(result);
-    } else {
-        console.log('Error extracting data from the table.');
-    }
-}).catch((error) => {
-    console.error('Error:', error.message);
-});
+//oilExtractor()

@@ -1,19 +1,37 @@
 import Portfolio from '../models/portfolioModel.js';
 
+// export const createPortfolio = async (req, res) => {
+//   try {
+//     const userToken = req.body.token;
+//     const portfolioName = req.body.name;
+
+//     const portfolio = await Portfolio.create({ userToken, name: portfolioName });
+
+//     res.status(201).json(portfolio);
+
+
+//   } catch (error) {
+//     res.status(500).json({ error: 'Internal Server Error' });
+//   }
+// };
+
 export const createPortfolio = async (req, res) => {
   try {
     const userToken = req.body.token;
     const portfolioName = req.body.name;
 
-    const portfolio = await Portfolio.create({ userToken, name: portfolioName });
-
+    const maxPortfolio = await Portfolio.findOne({ userToken }, {}, { sort: { id: -1 } });
+    const newPortfolioId = maxPortfolio ? maxPortfolio.id + 1 : 1;
+    const portfolio = await Portfolio.create({ userToken, name: portfolioName, id: newPortfolioId });
     res.status(201).json(portfolio);
 
-
   } catch (error) {
+    console.error(error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 };
+
+
 
 //nottested from here
 export const addStockToPortfolio = async (req, res) => {

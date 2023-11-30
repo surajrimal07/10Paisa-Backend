@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createAsset, getAllAssetNames, getMultiAssetDetails, getSingleAssetDetails } from '../controllers/assetControllers.js';
+import { createAsset, fetchMetalPrices, getAllAssetNames, getMultiAssetDetails, getSingleAssetDetails, getTopGainers, getTopTurnover, getTopVolume, metalHistController } from '../controllers/assetControllers.js';
 import { CommodityData } from '../controllers/commodifyControllers.js';
 import { sendOTP, verifyOTP } from '../controllers/otpControllers.js';
 import { addStockToPortfolio, createPortfolio, deletePortfolio, getAllPortfoliosForUser, removeStockFromPortfolio } from '../controllers/portfolioControllers.js';
@@ -31,7 +31,11 @@ router.post('/getassetnames',getAllAssetNames);
 router.post('/commodity', CommodityData);
 router.post('/singleassetdetails', getSingleAssetDetails);
 router.post('/multiassetdetails', getMultiAssetDetails);
-
+router.post('/trending', getTopGainers);
+router.post('/metalhist', metalHistController);
+router.post('/metalprices', fetchMetalPrices);
+router.post('/turnover', getTopTurnover);
+router.post('/topvolume', getTopVolume);
 
 
 export default router;

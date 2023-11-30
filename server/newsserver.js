@@ -165,6 +165,7 @@ export async function startNewsServer(app) {
       }
 
       app.get('/news', async (req, res) => {
+        console.log('News data requested');
         try {
           const items = await newsModel.find().exec();
           const item_list = items.map((item) => ({

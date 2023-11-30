@@ -3,6 +3,7 @@ import { forgetPassword } from '../controllers/otpControllers.js';
 import User from '../models/userModel.js';
 
 
+
 export const createUser = async (req, res) => {
   const token = req.body.token;
   const name = req.body.name;

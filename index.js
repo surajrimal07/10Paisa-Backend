@@ -17,7 +17,14 @@ app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
 });
 
-app.use(cors());
+//corse
+const corsPolicy = {
+  origin: true,
+  Credentials: true,
+  optionSuccessStatus: 200,
+};
+app.use(cors(corsPolicy));
+//
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());

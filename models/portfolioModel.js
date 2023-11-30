@@ -15,6 +15,10 @@ const gainLossSchema = new mongoose.Schema({
 
 
 const portfolioSchema = new mongoose.Schema({
+  id: {
+    type: Number,
+    required: true},
+
   userToken: {
     type: String,
     required: true,

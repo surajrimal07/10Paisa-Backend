@@ -240,6 +240,6 @@ port = int(os.environ.get("PORT", 9000))
 def run(server_class=HTTPServer, handler_class=S, addr="0.0.0.0", port=port):
     server_address = (addr, port)
     httpd = server_class(server_address, handler_class)
-    print(f"Starting Nepse Server on port {port}")
+    print(f"Running Nepse Server on port {port}")
     httpd.serve_forever()
 run()
