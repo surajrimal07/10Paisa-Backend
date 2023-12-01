@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { createAsset, fetchMetalPrices, getAllAssetNames, getMultiAssetDetails, getSingleAssetDetails, getTopGainers, getTopTurnover, getTopVolume, metalHistController } from '../controllers/assetControllers.js';
 import { CommodityData } from '../controllers/commodifyControllers.js';
 import { sendOTP, verifyOTP } from '../controllers/otpControllers.js';
-import { addStockToPortfolio, createPortfolio, deletePortfolio, getAllPortfoliosForUser, removeStockFromPortfolio } from '../controllers/portfolioControllers.js';
+import { addStockToPortfolio, createPortfolio, deletePortfolio, getAllPortfoliosForUser, removeStockFromPortfolio, renamePortfolio } from '../controllers/portfolioControllers.js';
 import { createUser, deleteAccount, fetchToken, forgetPass, loginUser, updateUser, verifyData, verifyUser } from '../controllers/userController.js';
 import { startNewsServer } from '../server/newsServer.js';
 
@@ -24,8 +24,11 @@ router.post('/pre-verify',verifyData);
 router.post('/newport', createPortfolio);
 router.post('/addstock', addStockToPortfolio);
 router.post('/delport',deletePortfolio);
+router.post('/renameportfolio',renamePortfolio);
+router.post('/getallportforuser',getAllPortfoliosForUser);
+
 router.post('/remstock',removeStockFromPortfolio);
-router.post('/getallassets',getAllPortfoliosForUser);
+
 router.post('/newasset',createAsset);
 router.post('/getassetnames',getAllAssetNames);
 router.post('/commodity', CommodityData);

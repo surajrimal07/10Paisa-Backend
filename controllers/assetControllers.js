@@ -125,7 +125,6 @@ export const getSingleAssetDetails = async (req, res) => {
 
 //response all with data
 export const getMultiAssetDetails = async (req, res) => {
-    //const symbol = req.body.symbol;
     console.log("All Asset Data Requested");
 
     try {

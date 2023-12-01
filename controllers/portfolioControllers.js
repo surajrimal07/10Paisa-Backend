@@ -1,26 +1,20 @@
+import Asset from '../models/assetModel.js';
 import Portfolio from '../models/portfolioModel.js';
-
-// export const createPortfolio = async (req, res) => {
-//   try {
-//     const userToken = req.body.token;
-//     const portfolioName = req.body.name;
-
-//     const portfolio = await Portfolio.create({ userToken, name: portfolioName });
-
-//     res.status(201).json(portfolio);
-
-
-//   } catch (error) {
-//     res.status(500).json({ error: 'Internal Server Error' });
-//   }
-// };
 
 export const createPortfolio = async (req, res) => {
   try {
+    console.log('Create Portfolio Requested');
     const userToken = req.body.token;
     const portfolioName = req.body.name;
 
+    const existingPortfolio = await Portfolio.findOne({ userToken, name: portfolioName });
+
+    if (existingPortfolio) {
+      return res.status(400).json({ error: 'Duplicate Portfolio' });
+    }
+
     const maxPortfolio = await Portfolio.findOne({ userToken }, {}, { sort: { id: -1 } });
+
     const newPortfolioId = maxPortfolio ? maxPortfolio.id + 1 : 1;
     const portfolio = await Portfolio.create({ userToken, name: portfolioName, id: newPortfolioId });
     res.status(201).json(portfolio);
@@ -31,61 +25,304 @@ export const createPortfolio = async (req, res) => {
   }
 };
 
-
-
-//nottested from here
+//add stock to porfolio, don't ever change this
 export const addStockToPortfolio = async (req, res) => {
+  console.log('Add to Portfolio Requested');
   try {
-    const { portfolioId, symbol, quantity } = req.body;
-    const portfolio = await Portfolio.findById(portfolioId);
+    const { token, id, symbol, quantity } = req.body;
+
+    const existingPortfolio = await Portfolio.findOne({
+      userToken: token,
+      id: id,
+    });
+
+    if (!existingPortfolio) {
+      const costprice = req.body.price * quantity;
+      const currentprice = await getLTPForStock(symbol) * quantity;
+      const netgainloss = currentprice - costprice;
+      console.log("46");
+      console.log(costprice);
+      console.log(currentprice);
+
+      const newPortfolio = new Portfolio({
+        userToken: token,
+        id: id,
+        name: "Default Portfolio",
+        stocks: [
+          {
+            symbol,
+            quantity,
+            wacc: (req.body.price).toFixed(2),
+            // costprice,
+            // currentprice,
+            // netgainloss,
+            costprice: costprice.toFixed(2),
+            currentprice: currentprice.toFixed(2),
+            netgainloss: netgainloss.toFixed(2),
+          },
+        ],
+        portfoliocost: costprice.toFixed(2),
+        portfoliovalue: currentprice.toFixed(2),
+        gainLossRecords: createNewGainLossRecord(currentprice, costprice)
+      });
+
+      await newPortfolio.save();
+
+      return res.status(200).json(newPortfolio);
+    }
+
+    let wacc = req.body.price;
+
+    const existingStockIndex = existingPortfolio.stocks.findIndex(
+      (stock) => stock.symbol === symbol
+    );
+
+    if (existingStockIndex !== -1) {
+      const existingStock = existingPortfolio.stocks[existingStockIndex];
+      const totalShares = existingStock.quantity + quantity;
+
+      existingStock.quantity += quantity;
+      existingStock.currentprice = await getLTPForStock(symbol) * existingStock.quantity;
+
+      existingStock.netgainloss = (existingStock.currentprice - existingStock.costprice).toFixed(2);
+
+      //
+      existingStock.wacc = ((existingStock.costprice + (wacc * quantity)) / totalShares).toFixed(2);
+      existingStock.costprice = (existingStock.wacc * existingStock.quantity).toFixed(2);
+      //
+      updateGainLossRecords(existingPortfolio);
+      existingPortfolio.portfoliovalue = await calculatePortfolioValue(existingPortfolio.stocks);
+      //
+
+    } else {
+      const costprice = wacc * quantity;
+      wacc = (req.body.price*quantity)/quantity ;
+      const currentprice = await getLTPForStock(symbol) * quantity;
+      const netgainloss = currentprice - costprice;
+
+      existingPortfolio.stocks.push({
+        symbol,
+        quantity,
+        wacc,
+        // costprice,
+        // currentprice,
+        // netgainloss,
+        costprice: costprice.toFixed(2),
+        currentprice: currentprice.toFixed(2),
+        netgainloss: netgainloss.toFixed(2),
+      });
+
+      existingPortfolio.portfoliocost = ((existingPortfolio.portfoliocost || 0) + costprice);
+
+      existingPortfolio.portfoliovalue = await calculatePortfolioValue(existingPortfolio.stocks).toFixed(2);
+      existingPortfolio.totalunits = existingPortfolio.quantity + quantity;
+      updateGainLossRecords(existingPortfolio);
+    }
+    updateGainLossRecords(existingPortfolio);
+
+    existingPortfolio.portfoliocost = existingPortfolio.stocks.reduce(
+      (total, stock) => total + parseFloat(stock.costprice),
+      0
+    ).toFixed(2);
+
+    existingPortfolio.portfoliovalue = await calculatePortfolioValue(
+      existingPortfolio.stocks
+    );
+
+    existingPortfolio.totalunits = existingPortfolio.stocks.reduce(
+      (total, stock) => total + stock.quantity,
+      0
+    );
+
+    await existingPortfolio.save();
+
+    res.status(200).json(existingPortfolio);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+
+// Function to update gainLossRecords
+const updateGainLossRecords = (portfolio) => {
+  const currentDate = new Date().toLocaleDateString();
+
+  if (portfolio.gainLossRecords.length === 0) {
+    portfolio.gainLossRecords.push(createNewGainLossRecord(portfolio.portfoliovalue, portfolio.portfoliocost));
+  } else {
+    const latestRecordDate = portfolio.gainLossRecords[portfolio.gainLossRecords.length - 1].date.toLocaleDateString();
+
+    if (latestRecordDate !== currentDate) {
+      portfolio.gainLossRecords.push(createNewGainLossRecord(portfolio.portfoliovalue, portfolio.portfoliocost));
+    } else {
+      const latestGainLossRecord = portfolio.gainLossRecords[portfolio.gainLossRecords.length - 1];
+      latestGainLossRecord.value = portfolio.portfoliovalue.toFixed(2);
+      latestGainLossRecord.portgainloss = (portfolio.portfoliovalue - portfolio.portfoliocost).toFixed(2);
+    }
+  }
+};
+
+const createNewGainLossRecord = (portfolioValue, portfolioCost) => {
+  console.log("185");
+  console.log(portfolioValue);
+  console.log(portfolioCost);
+
+  return {
+    date: new Date(),
+    value: portfolioValue,
+    portgainloss: portfolioValue - portfolioCost,
+  };
+};
+//get portfolio value //helper function
+const calculatePortfolioValue = async (stocks) => {
+  const ltpValues = await Promise.all(
+    stocks.map(async (stock) => {
+      const ltp = await getLTPForStock(stock.symbol);
+      return ltp * stock.quantity;
+    })
+  );
+
+  const portfoliovalue = ltpValues.reduce((total, value) => total + value, 0);
+  return portfoliovalue;
+}
+
+// Function to get LTP (current market value) for a stock //helper function
+const getLTPForStock = async (symbol) => {
+  try {
+    const asset = await Asset.findOne({ symbol });
+
+    if (!asset) {
+      console.error(`Asset with symbol ${symbol} not found.`);
+      return 0;
+    }
+
+    return asset.ltp || 0;
+  } catch (error) {
+    console.error('Error fetching LTP:', error.message);
+    return 0;
+  }
+};
+
+// end of add stock to portfolio
+
+// tested and working
+export const deletePortfolio = async (req, res) => {
+  try {
+    const userToken = req.body.token;
+    const portid = req.body.id;
+
+    const portfolio = await Portfolio.findOneAndDelete({
+      userToken: userToken,
+      id: portid,
+    });
+
     if (!portfolio) {
       return res.status(404).json({ error: 'Portfolio not found' });
     }
-    portfolio.stocks.push({ symbol, quantity });
-    await portfolio.save();
-    res.status(200).json(portfolio);
+
+    res.status(200).json({ message: 'Portfolio deleted successfully' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+
+//rename portfolio //tested working
+export const renamePortfolio = async (req, res) => {
+  try {
+    const userToken = req.body.token;
+    const portId = req.body.id;
+    const newName = req.body.newName;
+
+    const portfolio = await Portfolio.findOneAndUpdate(
+      { userToken: userToken, id: portId },
+      { name: newName },
+      { new: true }
+    );
+
+    if (!portfolio) {
+      return res.status(404).json({ error: 'Portfolio not found' });
+    }
+
+    res.status(200).json({ message: 'Portfolio renamed successfully', portfolio });
   } catch (error) {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 };
 
-export const deletePortfolio = async (req, res) => {
-    try {
-      const { portfolioId } = req.params;
-      const portfolio = await Portfolio.findByIdAndDelete(portfolioId);
-      if (!portfolio) {
-        return res.status(404).json({ error: 'Portfolio not found' });
-      }
-      res.status(200).json({ message: 'Portfolio deleted successfully' });
-    } catch (error) {
-      res.status(500).json({ error: 'Internal Server Error' });
-    }
-  };
-
+  //remove stock from portfolio // gainLossRecords is broken, felt tired to fix
   export const removeStockFromPortfolio = async (req, res) => {
+    console.log('Delete Stock from Portfolio Requested');
     try {
-      const { portfolioId, stockId } = req.params;
-      const portfolio = await Portfolio.findById(portfolioId);
-      if (!portfolio) {
+      const { token, id, symbol, quantity } = req.body;
+
+      const existingPortfolio = await Portfolio.findOne({
+        userToken: token,
+        id: id,
+      });
+
+      if (!existingPortfolio) {
         return res.status(404).json({ error: 'Portfolio not found' });
       }
-      const stockIndex = portfolio.stocks.findIndex((stock) => stock._id == stockId);
-      if (stockIndex === -1) {
-        return res.status(404).json({ error: 'Stock not found in portfolio' });
+
+      const existingStockIndex = existingPortfolio.stocks.findIndex(
+        (stock) => stock.symbol === symbol
+      );
+
+      if (existingStockIndex !== -1) {
+        const existingStock = existingPortfolio.stocks[existingStockIndex];
+
+        if (existingStock.quantity <= quantity) {
+          // Remove the entire stock if the quantity to delete is greater or equal
+          existingPortfolio.stocks.splice(existingStockIndex, 1);
+        } else {
+          // Update the existing stock quantity and values
+          existingStock.quantity -= quantity;
+          existingStock.currentprice = await getLTPForStock(symbol) * existingStock.quantity;
+          existingStock.netgainloss = existingStock.currentprice - existingStock.costprice;
+          updateGainLossRecords(existingPortfolio);
+        }
+
+        // Update gainLossRecords
+        updateGainLossRecords(existingPortfolio);
+
+        // Update portfolio values
+        existingPortfolio.portfoliocost = existingPortfolio.stocks.reduce(
+          (total, stock) => total + parseFloat(stock.costprice),
+          0
+        ).toFixed(2);
+        existingPortfolio.portfoliovalue = await calculatePortfolioValue(existingPortfolio.stocks);
+        existingPortfolio.totalunits = existingPortfolio.stocks.reduce(
+          (total, stock) => total + stock.quantity,
+          0
+        );
+
+        // Save the updated portfolio
+        await existingPortfolio.save();
+
+        return res.status(200).json(existingPortfolio);
+      } else {
+        return res.status(404).json({ error: 'Stock not found in the portfolio' });
       }
-      portfolio.stocks.splice(stockIndex, 1);
-      await portfolio.save();
-      res.status(200).json(portfolio);
     } catch (error) {
+      console.error(error);
       res.status(500).json({ error: 'Internal Server Error' });
     }
   };
+//
 
+  //fetch portfolio //tested working
   export const getAllPortfoliosForUser = async (req, res) => {
     try {
       const userToken = req.body.token;
+
       const portfolios = await Portfolio.find({ userToken });
-      res.status(200).json(portfolios);
+
+      if (!portfolios || portfolios.length === 0) {
+        return res.status(404).json({ error: 'Portfolios not found for the user' });
+      }
+
+      res.status(200).json({ portfolios });
     } catch (error) {
       res.status(500).json({ error: 'Internal Server Error' });
     }
