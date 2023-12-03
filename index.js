@@ -11,12 +11,6 @@ dotenv.config();
 const app = express();
 const port = process.env.PORT || 8000;
 
-mainDB();
-
-app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
-});
-
 //corse
 const corsPolicy = {
   origin: true,
@@ -24,7 +18,20 @@ const corsPolicy = {
   optionSuccessStatus: 200,
 };
 app.use(cors(corsPolicy));
-//
+
+// const corsOrigin ={
+//   origin:'http://localhost:3000',
+//   credentials:true,
+//   optionSuccessStatus:200
+// }
+// app.use(cors(corsOrigin));
+
+
+mainDB();
+
+app.listen(port, () => {
+  console.log(`Server is running on port ${port}`);
+});
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());

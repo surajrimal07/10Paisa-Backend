@@ -1,9 +1,10 @@
 import axios from 'axios';
 import fs from 'fs/promises';
+import nepseUrls from '../middleware/nepseapiUrl.js';
 
 export async function fetchDataAndMapToAssetModel() {
   try {
-    const response = await axios.get('http://localhost:9000/company/list');
+    const response = await axios.get(nepseUrls.Company_URL);
 
     const assetData = response.data.map(company => ({
       symbol: company.symbol,
@@ -22,18 +23,10 @@ export async function fetchDataAndMapToAssetModel() {
     throw error;
   }
 }
-//seperate the api list later on
-const Gainer_URL = 'http://localhost:9000/top-ten/top-gainer?all=true';
-const Looser_URL = 'http://localhost:9000/top-ten/top-loser?all=true';
-const Turnover_URL = 'http://localhost:9000/top-ten/turnover?all=true';
-const Volume_URL = 'http://localhost:9000/top-ten/trade?all=true';
-
-const API_URL = 'http://localhost:9000/securityDailyTradeStat';
-
 
 export async function fetchSecurityData(indexId) {
   try {
-    const response = await axios.get(`${API_URL}/${indexId}`);
+    const response = await axios.get(`${nepseUrls.API_URL}/${indexId}`);
     const mappedData = response.data
       .filter(security => security.symbol && security.securityName && security.symbol && security.indexId)
       .map(security => ({
@@ -53,9 +46,8 @@ export async function fetchSecurityData(indexId) {
 
 export async function fetchSingleSecurityData( requestedSymbol) {
   try {
-    const response = await axios.get(`${API_URL}/58`);
+    const response = await axios.get(`${nepseUrls.API_URL}/58`);
     const filteredData = response.data.filter(security => security.symbol === requestedSymbol);
-    //console.log(filteredData);
 
     if (filteredData.length === 0) {
       console.error(`Security with symbol ${requestedSymbol} not found`);
@@ -79,10 +71,9 @@ export async function fetchSingleSecurityData( requestedSymbol) {
 }
 
 export async function fetchTopGainers() {
-
   try {
-    const gainers = await axios.get(Gainer_URL);
-    const loosers = await axios.get(Looser_URL);
+    const gainers = await axios.get(nepseUrls.Gainer_URL);
+    const loosers = await axios.get(nepseUrls.Looser_URL);
     const gain = gainers.data;
     const lose = loosers.data;
 
@@ -105,7 +96,6 @@ export async function fetchTopGainers() {
     const mergedData = [...mappedGainers, ...mappedLosers];
     mergedData.sort((a, b) => b.percentageChange - a.percentageChange);
 
-    //console.log(mergedData);
     return mergedData;
   } catch (error) {
     console.error(`Error fetching data:`, error.message);
@@ -113,12 +103,9 @@ export async function fetchTopGainers() {
   }
 }
 
-
-//turnover volume experimental
-
 export async function fetchturnvolume() {
   try {
-    const turn = await axios.get(Turnover_URL);
+    const turn = await axios.get(nepseUrls.Turnover_URL);
     const turnover = turn.data;
     const top10Turnover = turnover.slice(0, 10);
 
@@ -148,7 +135,7 @@ export async function fetchturnvolume() {
 //fetch volume
 export async function fetchvolume() {
   try {
-    const vol = await axios.get(Volume_URL);
+    const vol = await axios.get(nepseUrls.Volume_URL);
     const volume = vol.data;
     const top10Volume = volume.slice(0, 10);
 

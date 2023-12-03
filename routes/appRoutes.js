@@ -26,9 +26,7 @@ router.post('/addstock', addStockToPortfolio);
 router.post('/delport',deletePortfolio);
 router.post('/renameportfolio',renamePortfolio);
 router.post('/getallportforuser',getAllPortfoliosForUser);
-
 router.post('/remstock',removeStockFromPortfolio);
-
 router.post('/newasset',createAsset);
 router.post('/getassetnames',getAllAssetNames);
 router.post('/commodity', CommodityData);

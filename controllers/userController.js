@@ -2,15 +2,13 @@ import bcrypt from 'bcrypt';
 import { forgetPassword } from '../controllers/otpControllers.js';
 import User from '../models/userModel.js';
 
-
-
 export const createUser = async (req, res) => {
   const token = req.body.token;
   const name = req.body.name;
   const email = req.body.email;
   const password = req.body.password;
-  const phone = req.body.phone; //!== undefined ? req.body.phone : undefined; //new code
-  const style = req.body.style !== undefined ? req.body.style : undefined; //new code
+  const phone = req.body.phone;
+  const style = req.body.style !== undefined ? req.body.style : undefined;
 
   console.log("Create user command passed")
   console.log("Name: "+name,"token "+ token,  "Email: "+email, "Password: "+password, "phone: "+phone, "Style: "+style);
@@ -30,8 +28,8 @@ export const createUser = async (req, res) => {
             name,
             email,
             password: hashedPassword,
-            phone,  //new code
-            style,  //new code
+            phone,
+            style,
           });
           try {
             const savedUser = await newUser.save();

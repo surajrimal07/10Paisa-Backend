@@ -1,30 +1,3 @@
-// const newsUrl = [
-//     "https://telegraphnepal.com/feed/",
-//     "https://english.onlinekhabar.com/feed/",
-//     "https://www.onlinekhabar.com/feed",
-//     "https://english.ratopati.com/rss/",
-//     "https://www.ratopati.com/feed",
-//     "https://en.setopati.com/feed",
-//     "https://www.setopati.com/feed",
-//     "https://rajdhanidaily.com/feed/",
-//     "https://nagariknews.nagariknetwork.com/feed",
-//     "https://www.osnepal.com/feed",
-//     "https://abhiyandaily.com/abhiyanrss",
-//     "https://arthasarokar.com/feed",
-//     "https://www.karobardaily.com/feed",
-//     "https://english.khabarhub.com/feed",
-//     "https://www.himalkhabar.com/feed",
-//     "https://bizmandu.com/feed",
-//     "https://www.arthapath.com/feed",
-//     "https://www.capitalnepal.com/feed",
-//     "https://ukeraa.com/rss/",
-//     "https://clickmandu.com/feed"
-//   ];
-
-
-//   export default newsUrl;
-//rem setopati eng
-
 const newsSources = [
   { url: "https://english.onlinekhabar.com/feed/", source: "Online Khabar English" },
   { url: "https://www.onlinekhabar.com/feed", source: "Online Khabar Nepali" },

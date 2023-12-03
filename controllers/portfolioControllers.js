@@ -7,23 +7,25 @@ export const createPortfolio = async (req, res) => {
     const userToken = req.body.token;
     const portfolioName = req.body.name;
 
+    console.log(userToken, portfolioName);
+
     const existingPortfolio = await Portfolio.findOne({ userToken, name: portfolioName });
 
     if (existingPortfolio) {
       return res.status(400).json({ error: 'Duplicate Portfolio' });
     }
-
     const maxPortfolio = await Portfolio.findOne({ userToken }, {}, { sort: { id: -1 } });
 
     const newPortfolioId = maxPortfolio ? maxPortfolio.id + 1 : 1;
     const portfolio = await Portfolio.create({ userToken, name: portfolioName, id: newPortfolioId });
-    res.status(201).json(portfolio);
+    res.status(200).json(portfolio);
 
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 };
+
 
 //add stock to porfolio, don't ever change this
 export const addStockToPortfolio = async (req, res) => {
@@ -104,9 +106,6 @@ export const addStockToPortfolio = async (req, res) => {
         symbol,
         quantity,
         wacc,
-        // costprice,
-        // currentprice,
-        // netgainloss,
         costprice: costprice.toFixed(2),
         currentprice: currentprice.toFixed(2),
         netgainloss: netgainloss.toFixed(2),
@@ -114,7 +113,7 @@ export const addStockToPortfolio = async (req, res) => {
 
       existingPortfolio.portfoliocost = ((existingPortfolio.portfoliocost || 0) + costprice);
 
-      existingPortfolio.portfoliovalue = await calculatePortfolioValue(existingPortfolio.stocks).toFixed(2);
+      existingPortfolio.portfoliovalue = (await calculatePortfolioValue(existingPortfolio.stocks)).toFixed(2);
       existingPortfolio.totalunits = existingPortfolio.quantity + quantity;
       updateGainLossRecords(existingPortfolio);
     }
@@ -256,6 +255,8 @@ export const renamePortfolio = async (req, res) => {
     try {
       const { token, id, symbol, quantity } = req.body;
 
+      console.log(token, id, symbol, quantity);
+
       const existingPortfolio = await Portfolio.findOne({
         userToken: token,
         id: id,
@@ -299,7 +300,7 @@ export const renamePortfolio = async (req, res) => {
 
         // Save the updated portfolio
         await existingPortfolio.save();
-
+        console.log("303");
         return res.status(200).json(existingPortfolio);
       } else {
         return res.status(404).json({ error: 'Stock not found in the portfolio' });
@@ -315,6 +316,9 @@ export const renamePortfolio = async (req, res) => {
   export const getAllPortfoliosForUser = async (req, res) => {
     try {
       const userToken = req.body.token;
+
+      console.log("recieved token is");
+      console.log(userToken);
 
       const portfolios = await Portfolio.find({ userToken });
 
