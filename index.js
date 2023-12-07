@@ -12,19 +12,19 @@ const app = express();
 const port = process.env.PORT || 8000;
 
 //corse
-const corsPolicy = {
-  origin: true,
-  Credentials: true,
-  optionSuccessStatus: 200,
-};
-app.use(cors(corsPolicy));
+// const corsPolicy = {
+//   origin: true,
+//   Credentials: true,
+//   optionSuccessStatus: 200,
+// };
+// app.use(cors(corsPolicy));
 
-// const corsOrigin ={
-//   origin:'http://localhost:3000',
-//   credentials:true,
-//   optionSuccessStatus:200
-// }
-// app.use(cors(corsOrigin));
+const corsOrigin ={
+  origin:'http://localhost:3000',
+  credentials:true,
+  optionSuccessStatus:200
+}
+app.use(cors(corsOrigin));
 
 
 mainDB();

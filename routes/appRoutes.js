@@ -1,9 +1,9 @@
 import { Router } from 'express';
-import { createAsset, fetchMetalPrices, getAllAssetNames, getMultiAssetDetails, getSingleAssetDetails, getTopGainers, getTopTurnover, getTopVolume, metalHistController } from '../controllers/assetControllers.js';
+import { createAsset, fetchMetalPrices, getAllAssetNames, getMultiAssetDetails, getSingleAssetDetails, getTopGainers, getTopTurnover, getTopVolume, metalHistController, AssetMergedData } from '../controllers/assetControllers.js';
 import { CommodityData } from '../controllers/commodifyControllers.js';
 import { sendOTP, verifyOTP } from '../controllers/otpControllers.js';
 import { addStockToPortfolio, createPortfolio, deletePortfolio, getAllPortfoliosForUser, removeStockFromPortfolio, renamePortfolio } from '../controllers/portfolioControllers.js';
-import { createUser, deleteAccount, fetchToken, forgetPass, loginUser, updateUser, verifyData, verifyUser } from '../controllers/userController.js';
+import { createUser, defaultportfolio, deleteAccount, fetchToken, forgetPass, loginUser, makeadmin, removedefaultportfolio, updateUser, verifyData, verifyUser } from '../controllers/userController.js';
 import { startNewsServer } from '../server/newsServer.js';
 
 const router = Router();
@@ -37,6 +37,11 @@ router.post('/metalhist', metalHistController);
 router.post('/metalprices', fetchMetalPrices);
 router.post('/turnover', getTopTurnover);
 router.post('/topvolume', getTopVolume);
+
+router.post('/adddefaultport', defaultportfolio);
+router.post('/removedefaultport', removedefaultportfolio);
+router.post('/makeadmin', makeadmin);
+router.post('/sharesansardata', AssetMergedData);
 
 
 export default router;

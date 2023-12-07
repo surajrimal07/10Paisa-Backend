@@ -1,9 +1,96 @@
+import * as fs from 'fs/promises';
+import { DateTime } from 'luxon';
 import storage from 'node-persist';
 import Asset from '../models/assetModel.js';
 import HistoricPrice from '../models/historicModel.js';
-import { fetchSecurityData, fetchSingleSecurityData, fetchTopGainers, fetchturnvolume, fetchvolume } from '../server/assetServer.js';
+import { FetchOldData, FetchSingularDataOfAsset, fetchSecurityData, fetchSingleSecurityData, fetchTopGainers, fetchturnvolume, fetchvolume } from '../server/assetServer.js';
 import { metalChartExtractor, metalPriceExtractor } from '../server/metalServer.js';
 
+await storage.init();
+
+//common functions
+const fetchFromDatabase = async (collection) => {
+  try {
+    const dataFromDatabase = await collection.find();
+    return dataFromDatabase;
+  } catch (error) {
+    console.error(`Error fetching data from the database for collection ${collection}:`, error.message);
+    throw new Error(`Error fetching data from the database for collection ${collection}`);
+  }
+};
+
+const fetchFromCache = async (cacheKey) => {
+  try {
+    const cachedData = await storage.getItem(cacheKey);
+    if (cachedData) { //&& cachedData.length > 0
+      console.log('Returning cached data');
+      return cachedData;
+    }
+    return null;
+  } catch (error) {
+    console.error('Error fetching data from cache:', error.message);
+    throw new Error('Error fetching data from cache');
+  }
+};
+
+//save to json
+async function saveDataToJson(data, fileName) {
+  try {
+      const jsonData = JSON.stringify(data, null, 2);
+      await fs.writeFile(fileName, jsonData);
+      console.log(`Data saved to ${fileName}`);
+  } catch (error) {
+      console.error(`Error saving data to ${fileName}:`, error);
+  }
+}
+
+//refresh mechanism
+const timeUntilNextHour = () => {
+  const now = new Date();
+  const nextHour = new Date(now);
+  nextHour.setHours(now.getHours() + 1);
+  nextHour.setMinutes(0);
+  nextHour.setSeconds(0);
+  nextHour.setMilliseconds(0);
+
+  return nextHour - now;
+};
+
+const expirationTimeInMilliseconds = timeUntilNextHour();
+
+setTimeout(async () => {
+  try {
+    const now = new Date();
+    const currentDay = now.getDay();
+    const currentHour = now.getHours();
+
+    // Check if we are between 11 am and 3 pm
+    const isBetween11and3 = currentHour >= 11 && currentHour < 15;
+
+    // Check if it's not Saturday and we are between 11 am and 3 pm
+    if (currentDay !== 6 && isBetween11and3) {
+      console.log(`Wiping caches for all keys`);
+      await Promise.all([
+        storage.removeItem(CACHE_KEY_ALL_ASSET_NAMES),
+        storage.removeItem(CACHE_KEY_SINGLE_ASSET),
+        storage.removeItem(CACHE_KEY),
+        storage.removeItem(CACHE_KEY_TOP_GAINERS),
+        storage.removeItem(CACHE_KEY_TOP_TURNOVER),
+        storage.removeItem(CACHE_KEY_TOP_VOLUME),
+        storage.removeItem(CACHE_KEY_METAL_PRICES),
+        storage.removeItem(CACHE_KEY_SHARE_ASSETS),
+
+      ]);
+      AssetMergedData();
+    } else {
+      console.log('Skipping cache wipe.');
+    }
+  } catch (error) {
+    console.error(`Error wiping caches:`, error.message);
+  }
+}, expirationTimeInMilliseconds);
+
+//
 export const createAsset = async (req, res) => {
     console.log("Create Data Requested");
     const symbol = req.body.symbol;
@@ -62,93 +149,88 @@ export const updateAssetData = async (symbol, newData) => {
     }
 }
 
-//const metalNames = ["Gold hallmark", "Gold tejabi", "Silver"];
 
-//names only
-// export const getAllAssetNames = async (req, res) => {
-//     console.log("Asset Names Only Requested");
-//     try {
-//         const symbols = await Asset.find({ ltp: { $exists: true, $nin: [null, 0] } }).distinct('symbol');
-//         return res.json(symbols);
-//     } catch (error) {
-//         console.error('Error:', error.message);
-//         return res.status(500).json({ error: 'An error occurred.' });
-//     }
-// }
 const CACHE_KEY_ALL_ASSET_NAMES = 'allAssetNames';
 
 export const getAllAssetNames = async (req, res) => {
-    console.log("Asset Names Only Requested");
+  console.log("Asset Names Only Requested");
 
-    try {
-        const cachedData = await storage.getItem(CACHE_KEY_ALL_ASSET_NAMES);
-        if (cachedData) {
-            console.log('Returning cached asset names data');
-            return res.json(cachedData);
-        }
+  try {
+    const cachedData = await fetchFromCache(CACHE_KEY_ALL_ASSET_NAMES);
 
-        const symbols = await Asset.find({ ltp: { $exists: true, $nin: [null, 0] } }).distinct('symbol');
-
-        await storage.setItem(CACHE_KEY_ALL_ASSET_NAMES, symbols);
-
-        return res.json(symbols);
-    } catch (error) {
-        console.error('Error:', error.message);
-        return res.status(500).json({ error: 'An error occurred.' });
+    if (cachedData !== null) {
+      console.log('Returning cached asset names data');
+      return res.status(200).json(cachedData);
     }
+
+    const symbols = await Asset.find({ ltp: { $exists: true, $nin: [null, 0] } }).distinct('symbol');
+
+    await storage.setItem(CACHE_KEY_ALL_ASSET_NAMES, symbols);
+
+    return res.json(symbols);
+  } catch (error) {
+    console.error('Error:', error.message);
+    try {
+      const fallbackCacheData = await fetchFromCache(allAssetNames_fallback);
+
+      if (fallbackCacheData !== null) {
+        console.log('Returning data from fallback cache');
+        return res.json(fallbackCacheData);
+      }
+    } catch (fallbackError) {
+      console.error('Fallback cache failed:', fallbackError.message);
+    }
+    return res.status(500).json({ error: 'An error occurred.' });
+  }
 };
 
 
 
+//
+const getCacheKeyForSymbol = symbol => `${symbol}_cache`;
 
-//response single asset details
-// export const getSingleAssetDetails = async (req, res) => {
-//     console.log("Single Asset Data Requested");
-//     const symbol = req.body.symbol;
+// Function to update cache for a specific symbol
+const updateCacheForSymbol = async (symbol, data) => {
+  const cacheKey = getCacheKeyForSymbol(symbol);
+  const cachedData = await fetchFromCache(cacheKey) || {};
+  cachedData[symbol] = data;
+  await storage.setItem(cacheKey, cachedData);
+};
 
-//     try {
+// Function to fetch and update cache for all asset symbols
+const updateCacheForAllAssets = async () => {
+  const assets = await Asset.find();
+  const symbols = assets.map(asset => asset.symbol);
 
-//         const dynamicInfo = await fetchSingleSecurityData(symbol);
+  for (const symbol of symbols) {
+    const dynamicInfo = await fetchSingleSecurityData(symbol);
+    const asset = await Asset.findOne({ symbol });
 
-//         const asset = await Asset.findOne({ symbol });
+    if (asset) {
+      await Asset.updateOne(
+        { _id: asset._id },
+        {
+          $set: {
+            ltp: dynamicInfo?.ltp || "",
+            totaltradedquantity: dynamicInfo?.totaltradedquantity || "",
+            percentchange: dynamicInfo?.percentchange || "",
+            previousclose: dynamicInfo?.previousclose || "",
+          },
+        },
+        { upsert: false }
+      );
 
-//         if (!asset) {
-//             console.error(`Asset with symbol ${symbol} not found.`);
-//             return res.status(404).json({ error: `Asset with symbol ${symbol} not found.` });
-//         }
-//         try {
-//             const dynamicInfoForAsset = dynamicInfo.find(info => info.symbol === symbol);
+      const updatedAsset = {
+        ...asset.toObject(),
+        ...dynamicInfo,
+      };
 
-//             await Asset.updateOne(
-//                 { _id: asset._id },
-//                 {
-//                     $set: {
-//                         ltp: dynamicInfoForAsset?.ltp || "",
-//                         totaltradedquantity: dynamicInfoForAsset?.totaltradedquantity || "",
-//                         percentchange: dynamicInfoForAsset?.percentchange || "",
-//                         previousclose: dynamicInfoForAsset?.previousclose || "",
-//                     },
-//                 },
-//                 { upsert: false }
-//             );
+      await updateCacheForSymbol(symbol, updatedAsset);
+    }
+  }
+};
 
-//             const updatedAsset = {
-//                 ...asset.toObject(),
-//                 ...dynamicInfoForAsset,
-//             };
-
-//             return res.status(200).json(updatedAsset);
-//         } catch (error) {
-//             console.error('Error processing asset:', error.message);
-//             return res.status(500).json({ error: 'An error occurred while processing the asset.' });
-//         }
-//     } catch (error) {
-//         console.error('Error:', error.message);
-//         return res.status(500).json({ error: 'An error occurred.' });
-//     }
-// }
-const CACHE_KEY_SINGLE_ASSET = 'singleAssetDetails';
-
+const CACHE_KEY_SINGLE_ASSET = 'singleasst';
 export const getSingleAssetDetails = async (req, res) => {
     console.log("Single Asset Data Requested");
     const symbol = req.body.symbol;
@@ -205,63 +287,14 @@ export const getSingleAssetDetails = async (req, res) => {
     }
 };
 
-
-
-
-
-
-
 //
-//response all with data
-// export const getMultiAssetDetails = async (req, res) => {
-//     console.log("All Asset Data Requested");
 
-//     try {
-//         const assets = await Asset.find();
-//         const symbols = assets.map(asset => asset.symbol);
-//         const dynamicInfo = await fetchSecurityData(58, symbols);
-
-//         const assetData = await Promise.all(assets.map(async (asset) => {
-//             try {
-
-
-
-
-//                 const assetSymbol = asset.symbol;
-//                 const dynamicInfoForAsset = dynamicInfo.find(info => info.symbol === assetSymbol);
-
-//                 await Asset.updateOne(
-//                     { _id: asset._id },
-//                     {
-//                         $set: {
-//                             ltp: dynamicInfoForAsset?.ltp || "",
-//                             totaltradedquantity: dynamicInfoForAsset?.totaltradedquantity || "",
-//                             percentchange: dynamicInfoForAsset?.percentchange || "",
-//                             previousclose: dynamicInfoForAsset?.previousclose || "",
-//                         },
-//                     },
-//                     { upsert: false }
-//                 );
-
-//                 return {
-//                     ...asset.toObject(),
-//                     ...dynamicInfoForAsset,
-//                 };
-//             } catch (error) {
-//                 console.error('Error processing asset:', error.message);
-//             }
-//         }));
-
-//         const filteredAssetData = assetData.filter(asset => asset.ltp !== null);
-//         return res.json(filteredAssetData);
-//     } catch (error) {
-//         console.error('Error fetching symbols:', error.message);
-//         return res.status(500).json({ error: 'An error occurred while fetching symbols' });
-//     }
-// }
-
-//test code to cache data
-await storage.init();
+//end of single asset caching
+// current setup
+//send cache data always
+//if no cache then call nepse api
+//if nepse api is unavailable then send data from database
+//if database is not available then send data from fallback cache
 
 const CACHE_KEY = 'assetDetails';
 
@@ -269,10 +302,14 @@ export const getMultiAssetDetails = async (req, res) => {
   console.log("All Asset Data Requested");
 
   try {
-      const cachedData = await storage.getItem(CACHE_KEY);
-      if (cachedData) {
-          console.log('Returning cached data');
-          return res.json(cachedData);
+      const cachedData = await fetchFromCache(CACHE_KEY);
+
+      if (cachedData !== null) {
+        return res.status(200).json({
+          data: cachedData,
+          isFallback: false,
+          isCached: true,
+        });
       }
 
       const assets = await Asset.find();
@@ -310,179 +347,205 @@ export const getMultiAssetDetails = async (req, res) => {
       const filteredAssetData = assetData.filter(asset => asset.ltp !== null);
 
       await storage.setItem(CACHE_KEY, filteredAssetData);
+      await storage.setItem(assetDetails_fallback, filteredAssetData);
 
-      return res.json(filteredAssetData);
+      return res.status(200).json({
+        data: filteredAssetData,
+        isFallback: false,
+        isCached: false,
+      });
   } catch (error) {
-      console.error('Error fetching symbols:', error.message);
-      return res.status(500).json({ error: 'An error occurred while fetching symbols' });
+      console.error('Live data unavailable, Using fallback', error.message);
+
+      console.error('Trying to send data from database');
+
+    try {
+      const assetsFromDatabase = await fetchFromDatabase(Asset);
+      console.error('Data sent from database:');
+      const filteredAssets = assetsFromDatabase.filter(asset => asset.ltp !== null);
+      return res.status(200).json(filteredAssets);
+
+    } catch (dbError) {
+      console.error('Error fetching data from the database:', dbError.message);
+
+      const All_Asset_fallback_key = 'assetDetails_fallback';
+      try{
+        console.log('Using fallback key');
+        const cachedData = await fetchFromCache(All_Asset_fallback_key);
+        if (cachedData !== null) {
+          return res.status(200).json({
+            data: cachedData,
+            isFallback: true,
+            isCached: true,
+          });
+      }}
+      catch {
+        console.log('everything failed: Fallback failed');
+        return res.status(500).json({ error: 'An error occurred while fetching data' });
+      }
+
+      return res.status(500).json({ error: 'An error occurred while fetching data' });
+    }
   }
 };
 
-//
-
-
-//top gainers
-// export const getTopGainers = async (req, res) => {
-//     console.log("Trending Data Requested");
-//     try {
-//         const dynamicInfo = await fetchTopGainers();
-
-//         return res.json(dynamicInfo);
-//     } catch (error) {
-//         console.error('Error fetching data:', error.message);
-//         return res.status(500).json({ error: 'Error fetching data' });
-//     }
-// };
 const CACHE_KEY_TOP_GAINERS = 'topGainers';
+
 export const getTopGainers = async (req, res) => {
   console.log("Trending Data Requested");
 
   try {
-      const cachedData = await storage.getItem(CACHE_KEY_TOP_GAINERS);
-      if (cachedData) {
-          console.log('Returning cached top gainers data');
-          return res.json(cachedData);
-      }
-      const dynamicInfo = await fetchTopGainers();
+    const cachedData = await fetchFromCache(CACHE_KEY_TOP_GAINERS);
 
-      await storage.setItem(CACHE_KEY_TOP_GAINERS, dynamicInfo);
+    if (cachedData !== null) {
+      console.log('Returning cached top gainers data');
+      return res.status(200).json(cachedData);
+    }
 
-      return res.json(dynamicInfo);
+    const dynamicInfo = await fetchTopGainers();
+
+    await storage.setItem(CACHE_KEY_TOP_GAINERS, dynamicInfo);
+
+    return res.json(dynamicInfo);
   } catch (error) {
-      console.error('Error fetching data:', error.message);
-      return res.status(500).json({ error: 'Error fetching data' });
+    console.error('Error fetching data:', error.message);
+
+    try {
+      const fallbackCacheData = await fetchFromCache(topGainers_fallback);
+
+      if (fallbackCacheData !== null) {
+        console.log('Returning data from fallback cache');
+        return res.json(fallbackCacheData);
+      }
+    } catch (fallbackError) {
+      console.error('Fallback cache failed:', fallbackError.message);
+    }
+    return res.status(500).json({ error: 'Error fetching data' });
   }
 };
 
-//top turnover
-// export const getTopTurnover = async (req, res) => {
-//   console.log("Turnover Data Requested");
-//   try {
-//       const dynamicInfo = await fetchturnvolume();
-
-//       return res.json(dynamicInfo);
-//   } catch (error) {
-//       console.error('Error fetching data:', error.message);
-//       return res.status(500).json({ error: 'Error fetching data' });
-//   }
-// };
 
 const CACHE_KEY_TOP_TURNOVER = 'topTurnover';
 
 export const getTopTurnover = async (req, res) => {
-    console.log("Turnover Data Requested");
+  console.log("Turnover Data Requested");
+
+  try {
+    const cachedData = await fetchFromCache(CACHE_KEY_TOP_TURNOVER);
+
+    if (cachedData !== null) {
+      console.log('Returning cached top turnover data');
+      return res.status(200).json(cachedData);
+    }
+
+    const dynamicInfo = await fetchturnvolume();
+
+    await storage.setItem(CACHE_KEY_TOP_TURNOVER, dynamicInfo);
+
+    return res.json(dynamicInfo);
+  } catch (error) {
+    console.error('Error fetching data:', error.message);
 
     try {
-        const cachedData = await storage.getItem(CACHE_KEY_TOP_TURNOVER);
-        if (cachedData) {
-            console.log('Returning cached top turnover data');
-            return res.json(cachedData);
-        }
+      const fallbackCacheData = await fetchFromCache(topTurnover_fallback);
 
-        const dynamicInfo = await fetchturnvolume();
-        await storage.setItem(CACHE_KEY_TOP_TURNOVER, dynamicInfo);
-
-        return res.json(dynamicInfo);
-    } catch (error) {
-        console.error('Error fetching data:', error.message);
-        return res.status(500).json({ error: 'Error fetching data' });
+      if (fallbackCacheData !== null) {
+        console.log('Returning data from fallback cache');
+        return res.json(fallbackCacheData);
+      }
+    } catch (fallbackError) {
+      console.error('Fallback cache failed:', fallbackError.message);
     }
+    return res.status(500).json({ error: 'Error fetching data' });
+  }
 };
 
-//top volume
-// export const getTopVolume = async (req, res) => {
-//   console.log("Top Volume Data Requested");
-//   try {
-//       const dynamicInfo = await fetchvolume();
-
-//       return res.json(dynamicInfo);
-//   } catch (error) {
-//       console.error('Error fetching data:', error.message);
-//       return res.status(500).json({ error: 'Error fetching data' });
-//   }
-// };
 
 const CACHE_KEY_TOP_VOLUME = 'topVolume';
 
 export const getTopVolume = async (req, res) => {
-    console.log("Top Volume Data Requested");
+  console.log("Top Volume Data Requested");
+
+  try {
+    const cachedData = await fetchFromCache(CACHE_KEY_TOP_VOLUME);
+
+    if (cachedData !== null) {
+      console.log('Returning cached top volume data');
+      return res.status(200).json(cachedData);
+    }
+
+    const dynamicInfo = await fetchvolume();
+
+    await storage.setItem(CACHE_KEY_TOP_VOLUME, dynamicInfo);
+
+    return res.json(dynamicInfo);
+  } catch (error) {
+    console.error('Error fetching data:', error.message);
 
     try {
-        const cachedData = await storage.getItem(CACHE_KEY_TOP_VOLUME);
-        if (cachedData) {
-            console.log('Returning cached top volume data');
-            return res.json(cachedData);
-        }
-        const dynamicInfo = await fetchvolume();
-        await storage.setItem(CACHE_KEY_TOP_VOLUME, dynamicInfo);
+      const fallbackCacheData = await fetchFromCache(topVolume_fallback);
 
-        return res.json(dynamicInfo);
-    } catch (error) {
-        console.error('Error fetching data:', error.message);
-        return res.status(500).json({ error: 'Error fetching data' });
+      if (fallbackCacheData !== null) {
+        console.log('Returning data from fallback cache');
+        return res.json(fallbackCacheData);
+      }
+    } catch (fallbackError) {
+      console.error('Fallback cache failed:', fallbackError.message);
     }
+
+    return res.status(500).json({ error: 'Error fetching data' });
+  }
 };
 
 
-//get metal
 
+//get metal
 const assetToCategoryMap = {
     'Gold hallmark': 'Fine Gold',
     'Gold tejabi': 'Tejabi Gold',
     'Silver': 'Silver',
   };
 
-// export const fetchMetalPrices = async (req, res) => {
-//     try {
-//       const assets = Object.keys(assetToCategoryMap);
-//       const metalPrices = [];
-
-//       for (const asset of assets) {
-//         const metalData = await metalPriceExtractor(asset);
-
-//         if (metalData) {
-//           metalPrices.push(metalData);
-//         } else {
-//           console.log(`Price for ${asset} not found`);
-//         }
-//       }
-
-//       res.json({ metalPrices });
-//     } catch (error) {
-//       console.error('Error fetching or logging metal prices:', error.message);
-//       res.status(500).json({ error: 'Internal Server Error' });
-//     }
-//   }
 
 const CACHE_KEY_METAL_PRICES = 'metalPrices';
 
 export const fetchMetalPrices = async (req, res) => {
-    try {
-        const cachedData = await storage.getItem(CACHE_KEY_METAL_PRICES);
-        if (cachedData) {
-            console.log('Returning cached metal prices data');
-            return res.json(cachedData);
-        }
+  try {
+    const cachedData = await fetchFromCache(CACHE_KEY_METAL_PRICES);
 
-        const assets = Object.keys(assetToCategoryMap);
-        const metalPrices = [];
-
-        for (const asset of assets) {
-            const metalData = await metalPriceExtractor(asset);
-
-            if (metalData) {
-                metalPrices.push(metalData);
-            } else {
-                console.log(`Price for ${asset} not found`);
-            }
-        }
-        await storage.setItem(CACHE_KEY_METAL_PRICES, { metalPrices });
-
-        return res.json({ metalPrices });
-    } catch (error) {
-        console.error('Error fetching or logging metal prices:', error.message);
-        res.status(500).json({ error: 'Internal Server Error' });
+    if (cachedData !== null) {
+      console.log('Returning cached metal prices data');
+      return res.status(200).json(cachedData);
     }
+    const assets = Object.keys(assetToCategoryMap);
+    const metalPrices = [];
+
+    for (const asset of assets) {
+      const metalData = await metalPriceExtractor(asset);
+
+      if (metalData) {
+        metalPrices.push(metalData);
+      } else {
+        console.log(`Price for ${asset} not found`);
+      }
+    }
+    await storage.setItem(CACHE_KEY_METAL_PRICES, { metalPrices });
+
+    return res.json({ metalPrices });
+  } catch (error) {
+    console.error('Error fetching or logging metal prices:', error.message);
+    try {
+      const fallbackCacheData = await fetchFromCache(metalPrices_fallback);
+
+      if (fallbackCacheData !== null) {
+        console.log('Returning data from fallback cache');
+        return res.json(fallbackCacheData);
+      }
+    } catch (fallbackError) {
+      console.error('Fallback cache failed:', fallbackError.message);
+    }
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
 };
 
 //metal history
@@ -499,7 +562,6 @@ export async function metalHistController(req, res) {
           dates: dates,
           prices: prices[req.body.assetName],
         };
-
 
         return res.status(200).json(responseData);
       } else {
@@ -545,40 +607,141 @@ export async function metalHistController(req, res) {
     }
   }
 
-  // update at new hour every time
-  const timeUntilNextHour = () => {
-    const now = new Date();
-    const nextHour = new Date(now);
-    nextHour.setHours(now.getHours() + 1);
-    nextHour.setMinutes(0);
-    nextHour.setSeconds(0);
-    nextHour.setMilliseconds(0);
+// // single stopmic data from sharesansar
+  const Asset_cached_key = 'shrese_asset';
+  const dataversion_cache = 'dataVersionCounter_c';
+  const counter = 'counter_cached';
+  const Asset_fallback_key= 'shares_asset_fallback';
 
-    return nextHour - now;
-  };
+export const AssetMergedData = async (req, res) => {
+  console.log('Sharesansar Asset Data Requested');
 
-  const expirationTimeInMilliseconds = timeUntilNextHour();
+  const [cachedData, cachedDataVersion] = await Promise.all([
+    fetchFromCache(Asset_cached_key),
+    fetchFromCache(dataversion_cache),
+  ]);
 
-  setTimeout(async () => {
-    try {
-      const currentDay = new Date().getDay();
-      if (currentDay !== 6) {
-        console.log(`Wiping caches for all keys`);
-        await Promise.all([
-          storage.removeItem(CACHE_KEY_ALL_ASSET_NAMES),
-          storage.removeItem(CACHE_KEY_SINGLE_ASSET),
-          storage.removeItem(CACHE_KEY),
-          storage.removeItem(CACHE_KEY_TOP_GAINERS),
-          storage.removeItem(CACHE_KEY_TOP_TURNOVER),
-          storage.removeItem(CACHE_KEY_TOP_VOLUME),
-          storage.removeItem(CACHE_KEY_METAL_PRICES),
-        ]);
-      } else {
-        console.log('Skipping cache wipe on Saturday.');
-      }
-    } catch (error) {
-      console.error(`Error wiping caches:`, error.message);
+  try {
+    if (cachedData !== null) {
+      console.log('Returning cached data');
+      return res.status(200).json({
+        data: cachedData,
+        isFallback: false,
+        isCached: true,
+        dataversion: cachedDataVersion,
+      });
     }
-  }, expirationTimeInMilliseconds);
 
-export default { getAllAssetNames,createAsset,getSingleAssetDetails, getMultiAssetDetails, metalHistController, fetchMetalPrices};
+    const [todayData, liveData] = await Promise.all([FetchSingularDataOfAsset(), FetchOldData()]);
+
+    const liveDataMap = new Map(liveData.map((item) => [item.symbol, item]));
+
+    const mergedData = todayData.map((item) => ({
+      ...item,
+      ...(liveDataMap.get(item.symbol) || {}),
+    }));
+
+    const cache_counter = await storage.getItem(counter);
+
+    const dataVersion = cache_counter !== null ? cache_counter : 0;
+    let dataVersionCounter = dataVersion + 1;
+    console.log('Incremented data version:', dataVersionCounter);
+
+    const currentDate = new Date().toISOString().split('T')[0];
+    const fileName = `${currentDate}_Stock.json`;
+
+    // Save to JSON file
+    saveDataToJson(
+      {
+        data: mergedData,
+        isFallback: false,
+        isCached: false,
+        dataversion: { versionCode: dataVersionCounter, timestamp: DateTime.now().toISO() },
+      },
+      fileName
+    );
+
+    // Update existing documents based on symbol
+    await Promise.all(
+      mergedData.map(async (item) => {
+        await Asset.updateOne({ symbol: item.symbol }, { $set: item }, { upsert: true });
+      })
+    );
+
+    // Update cache and counter
+    await Promise.all([
+      storage.setItem(dataversion_cache, { versionCode: dataVersionCounter, timestamp: DateTime.now().toISO() }),
+      storage.setItem(counter, dataVersionCounter),
+      storage.setItem(Asset_cached_key, mergedData)
+    ]);
+
+    // Insert new documents into the database
+    // await Asset.insertMany(
+    //   mergedData.map((item) => ({
+    //     ...item,
+    //     isFallback: false,
+    //     isCached: false,
+    //     dataversion: { versionCode: dataVersionCounter, timestamp: DateTime.now().toISO() },
+    //   }))
+    // );
+
+    await Promise.all(
+      mergedData.map(async (item) => {
+        try {
+          await Asset.updateOne(
+            { symbol: item.symbol },
+            {
+              $set: {
+                ...item,
+                isFallback: false,
+                isCached: false,
+                dataversion: { versionCode: dataVersionCounter, timestamp: DateTime.now().toISO() },
+              },
+            },
+            { upsert: true }
+          );
+        } catch (error) {
+          console.error('DB Update Error:', error);
+        }
+      })
+    );
+
+    return res.status(200).json({
+      data: mergedData,
+      isFallback: false,
+      isCached: false,
+      dataversion: { versionCode: dataVersionCounter, timestamp: DateTime.now().toISO() },
+    });
+  } catch (error) {
+    try {
+      console.log('Using fallback key');
+      const cachedData = await fetchFromCache(Asset_fallback_key);
+      if (cachedData !== null) {
+        return res.status(200).json({
+          data: cachedData,
+          isFallback: true,
+          isCached: true,
+          dataversion: cachedDataVersion,
+        });
+      } else {
+        // Attempt to retrieve data from MongoDB
+        const dataFromMongoDB = await Asset.find({});
+        if (dataFromMongoDB) {
+          return res.status(200).json({
+            data: dataFromMongoDB,
+            isFallback: true,
+            isCached: true,
+            dataversion: cachedDataVersion,
+          });
+        }
+      }
+    } catch {
+      console.log('everything failed: Fallback failed');
+      return res.status(500).json({ error: 'An error occurred while fetching data' });
+    }
+    console.error(error);
+    return res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+
+export default { getAllAssetNames,createAsset,getSingleAssetDetails, getMultiAssetDetails, metalHistController, fetchMetalPrices, AssetMergedData};

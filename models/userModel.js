@@ -1,25 +1,3 @@
-// import mongoose from 'mongoose';
-// const Schema = mongoose.Schema;
-
-// const newSchema = new Schema({
-//     token: {
-//         type: String,
-//         required: true,
-//         unique: true,
-//       },
-//     picture:String,
-//     name:String,
-//     email:String,
-//     password:String,
-//     phone:String,  //might throw error in number //new code
-//     style:String  //new code
-// });
-
-// const User = mongoose.model('User',newSchema);
-
-
-// export default User;
-
 import mongoose from 'mongoose';
 const Schema = mongoose.Schema;
 
@@ -45,8 +23,16 @@ const newSchema = new Schema({
     phone:{
       type: String,
       required: true,
-    },  //might throw error in number //new code
-    style:String  //new code
+    },
+    style:String,
+    defaultport: {
+      type: Number,
+      default: 1,
+    },
+    isAdmin: {
+      type: Boolean,
+      default: false,
+  },
 });
 
 const User = mongoose.model('User',newSchema);

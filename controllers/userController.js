@@ -2,6 +2,8 @@ import bcrypt from 'bcrypt';
 import { forgetPassword } from '../controllers/otpControllers.js';
 import User from '../models/userModel.js';
 
+//use jsonwebtoken
+
 export const createUser = async (req, res) => {
   const token = req.body.token;
   const name = req.body.name;
@@ -9,6 +11,7 @@ export const createUser = async (req, res) => {
   const password = req.body.password;
   const phone = req.body.phone;
   const style = req.body.style !== undefined ? req.body.style : undefined;
+  const isAdmin = false;
 
   console.log("Create user command passed")
   console.log("Name: "+name,"token "+ token,  "Email: "+email, "Password: "+password, "phone: "+phone, "Style: "+style);
@@ -26,10 +29,11 @@ export const createUser = async (req, res) => {
           const newUser = new User({
             token,
             name,
-            email,
+            email: email.toLowerCase(),
             password: hashedPassword,
             phone,
             style,
+            isAdmin,
           });
           try {
             const savedUser = await newUser.save();
@@ -40,8 +44,8 @@ export const createUser = async (req, res) => {
               email: savedUser.email,
               pass: savedUser.password,
               phone: savedUser.phone,
-              style: savedUser.style
-
+              style: savedUser.style,
+              isAdmin: savedUser.isAdmin,
             };
             console.log(userData);
             res.status(200).json(userData);
@@ -68,7 +72,7 @@ export const loginUser = async (req, res) => {
     const password = req.body.password;
     console.log("Email: "+email, "Password: "+password);
     try {
-      const user = await User.findOne({ email });
+      const user = await User.findOne({ email: email.toLowerCase() });
 
       if (!user || !(await bcrypt.compare(password, user.password))) {
         console.log("401 Invalid email or password.");
@@ -110,8 +114,8 @@ export const forgetPass = async (req, res) => {
 };
 
 export const verifyData = async (req, res) => {
-  const fieldToUpdate = req.body.field; // Field to be updated
-  const valueToCheck = req.body.value; // New value
+  const fieldToUpdate = req.body.field;
+  const valueToCheck = req.body.value;
 
   if (fieldToUpdate === 'email') {
   try {
@@ -237,95 +241,6 @@ export const updateUser = async (req, res) => {
   }
 };
 
-
-// export const updateUser = async (req, res) => {
-//   const token = req.body.token;
-//   const email = req.body.email;
-//   const newPassword  = req.body.password;
-//   const phone = req.body.phone;
-//   const invStyle = req.body.style;
-//   const fieldToUpdate = req.body.field; // Field to be updated
-//   const valueToUpdate = req.body.value; // New value
-
-//   try {
-
-//     const user = await User.findOne({ token });
-
-//     if (!user) {
-//       return res.status(404).json({ error: 'User not found' });
-//     }
-//     if (fieldToUpdate === 'name') {
-//       console.log("Username updated, new "+fieldToUpdate+ " is "+valueToUpdate)
-//       user.name = valueToUpdate;
-//     }
-//     if (fieldToUpdate === 'password') {
-//       const newPassword = await bcrypt.hash(valueToUpdate, 10);
-//       console.log("User password updated, new "+fieldToUpdate+ " is "+valueToUpdate)
-//       user.password = newPassword;
-//     }
-
-//     if (fieldToUpdate === 'email') {
-//       try {
-//         const existingUser = await User.findOne({ email: valueToUpdate });
-//         if (!existingUser) {
-//           console.log("User email updated, new " + fieldToUpdate + " is " + valueToUpdate);
-
-//           user.email = valueToUpdate;
-
-//           await user.save();
-
-//           return res.status(200).json({ message: "Email updated successfully" });
-//         } else {
-//           console.log("Email already exists");
-//           return res.status(400).json({ message: "Email already exists" });
-//         }
-//       } catch (error) {
-//         console.error("Error updating user email:", error);
-//         return res.status(500).json({ message: "Error updating email" });
-//       }
-//     }
-
-//     if (fieldToUpdate === 'phone') {
-//       try {
-//         const existingUser = await User.findOne({ phone: valueToUpdate });
-//         if (!existingUser) {
-//           console.log("User phone updated, new " + fieldToUpdate + " is " + valueToUpdate);
-
-//           user.phone = valueToUpdate;
-
-//           await user.save();
-
-//           return res.status(200).json({ message: "Phone updated successfully" });
-//         } else {
-//           console.log("Phone already exists");
-//           return res.status(400).json({ message: "Phone already exists" });
-//         }
-//       } catch (error) {
-//         console.error("Error updating user Phone:", error);
-//         return res.status(500).json({ message: "Error updating Phone" });
-//       }
-//     }
-
-//     else if (fieldToUpdate === 'style') {
-//       user.style = valueToUpdate;
-//       console.log("User Style updated, new "+fieldToUpdate+ " is " +valueToUpdate)
-//     }
-
-//     try {
-//       await user.save();
-//       console.log('User ' + fieldToUpdate + ' updated successfully');
-//       return res.status(200).json({ message: 'User ' + fieldToUpdate + ' updated successfully' });
-//     } catch (error) {
-//       console.error('User ' + fieldToUpdate + ' update failed: ' + error);
-//       return res.status(500).json({ error: 'Failed to update user ' + fieldToUpdate });
-//     }
-
-//   } catch (error) {
-//     console.error('Error updating user data:', error);
-//     return res.status(500).json({ error: 'An error occurred while updating user data' });
-//   }
-// };
-
 export const verifyUser = async (req, res) => {
   const token = req.body.token;
 
@@ -339,13 +254,15 @@ export const verifyUser = async (req, res) => {
       return res.status(401).json({ error: 'Invalid token.' });
     } else {
       console.log("200 User verification was successful");
-      // Send user details back to the Flutter app (excluding password)
       res.json({
         username: user.name,
         email: user.email,
         phone: user.phone,
         profilePicture: user.profilePicture,
-        style: user.style
+        style: user.style,
+        defaultport: user.defaultport,
+        isAdmin: user.isAdmin
+
       });
     }
   } catch (error) {
@@ -398,7 +315,6 @@ export const saveToken = async (req, res) => {
   }
 };
 
-
 export const deleteAccount = async (req, res) => {
   const tokens = req.body.token;
   const passwords = req.body.password;
@@ -425,5 +341,84 @@ export const deleteAccount = async (req, res) => {
   }
 };
 
+//works
+export const defaultportfolio = async (req, res) => {
+  console.log("Change default portfolio requested")
+  const token = req.body.token;
+  const portfolioId = req.body.id;
 
+  try {
+    const user = await User.findOne({ token: token });
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    if (user.defaultport === portfolioId) {
+      console.log('Portfolio is already set as default');
+      return res.status(301).json({ error: 'Portfolio is already set as default' });
+    }
+
+    user.defaultport = portfolioId;
+    await user.save();
+
+    console.log("200 Portfolio ID updated");
+    return res.status(200).json({ success: 'Portfolio ID updated' });
+
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: 'An error occurred updating default portfolio' });
+  }
+};
+
+export const removedefaultportfolio = async (req, res) => {
+  const token = req.body.token;
+
+  try {
+    const user = await User.findOne({ token });
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    user.defaultport = 1;
+    await user.save();
+
+    console.log("200 Portfolio ID deleted");
+    return res.status(200).json({ success: 'Portfolio ID deleted' });
+
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: 'An error occurred deleting portfolio ID' });
+  }
+
+};
+
+export const makeadmin = async (req, res) => {
+  const token = req.body.token;
+
+  try {
+    const user = await User.findOne({ token });
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    if (user.isAdmin !== undefined) {
+      user.isAdmin = true;
+    } else {
+      user.isAdmin = true;
+    }
+
+    user.isAdmin = true;
+    await user.save();
+
+    console.log("Made user admin");
+    return res.status(200).json({ success: 'Made user Admin' });
+
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: 'An error occurred making admin' });
+  }
+};
 

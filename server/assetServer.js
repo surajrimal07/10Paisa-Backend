@@ -1,6 +1,8 @@
 import axios from 'axios';
 import fs from 'fs/promises';
+import { JSDOM } from 'jsdom';
 import nepseUrls from '../middleware/nepseapiUrl.js';
+
 
 export async function fetchDataAndMapToAssetModel() {
   try {
@@ -161,4 +163,227 @@ export async function fetchvolume() {
   }
 }
 
-export default {fetchSecurityData,fetchDataAndMapToAssetModel,fetchSingleSecurityData,fetchTopGainers, fetchturnvolume, fetchvolume};
+//preparing to switch to sharesansar as data provider
+export async function FetchSingularDataOfAsset() {
+  const liveTradingUrl = 'https://www.sharesansar.com/live-trading';
+  const todaySharePriceUrl = 'https://www.sharesansar.com/today-share-price';
+
+  try {
+      const responseLiveTrading = await axios.get(liveTradingUrl);
+
+      if (!responseLiveTrading.data) {
+          throw new Error(`Failed to fetch live trading data. Status: ${responseLiveTrading.status}`);
+      }
+
+      const domLiveTrading = new JSDOM(responseLiveTrading.data);
+      const documentLiveTrading = domLiveTrading.window.document;
+
+      const stockDataWithoutName = [];
+
+      const rowsLiveTrading = documentLiveTrading.querySelectorAll('#headFixed tbody tr');
+
+      rowsLiveTrading.forEach((row) => {
+          const columns = row.querySelectorAll('td');
+
+          const stockInfo = {
+              //SNO: parseInt(columns[0].textContent.trim()),
+              symbol: columns[1].querySelector('a').textContent.trim(),
+              ltp: parseFloat(columns[2].textContent.trim()),
+              pointchange: parseFloat(columns[3].textContent.trim()),
+              percentchange: parseFloat(columns[4].textContent.trim()),
+              open: parseFloat(columns[5].textContent.trim()),
+              high: parseFloat(columns[6].textContent.trim()),
+              low: parseFloat(columns[7].textContent.trim()),
+              volume: parseFloat(columns[8].textContent.trim()),
+              previousclose: parseFloat(columns[9].textContent.trim()),
+          };
+
+          stockDataWithoutName.push(stockInfo);
+      });
+
+      const responseTodaySharePrice = await axios.get(todaySharePriceUrl);
+
+      if (!responseTodaySharePrice.data) {
+          throw new Error(`Failed to fetch today's share price data. Status: ${responseTodaySharePrice.status}`);
+      }
+
+      const domTodaySharePrice = new JSDOM(responseTodaySharePrice.data);
+      const documentTodaySharePrice = domTodaySharePrice.window.document;
+
+      const scriptElements = documentTodaySharePrice.querySelectorAll('script');
+      let cmpjsonArray = [];
+
+      scriptElements.forEach((scriptElement) => {
+          if (scriptElement.textContent.includes('var cmpjson')) {
+              const scriptContent = scriptElement.textContent;
+              const jsonMatch = scriptContent.match(/var cmpjson = (\[.*\]);/);
+
+              if (jsonMatch && jsonMatch[1]) {
+                  const jsonContent = jsonMatch[1];
+                  cmpjsonArray = JSON.parse(jsonContent);
+              }
+          }
+      });
+
+      const symbolToNameMap = cmpjsonArray.reduce((map, item) => {
+          map[item.symbol] = item.companyname;
+          return map;
+      }, {});
+
+      const stockDataWithName = stockDataWithoutName.map((stockInfo) => ({
+          ...stockInfo,
+          name: symbolToNameMap[stockInfo.Symbol] || '',
+          category: '',
+          sector: '',
+      }));
+
+      stockDataWithName.forEach((stock) => {
+          if (stock.name.toLowerCase().includes('debenture')) {
+              stock.category = 'debenture';
+          } else if (stock.LTP < 20) {
+              stock.category = 'mutual fund';
+          } else {
+              stock.category = 'stock';
+          }
+      });
+
+      return stockDataWithName;
+
+  } catch (error) {
+      console.error(error);
+      throw error;
+  }
+}
+
+export async function GetMutualFund () {
+  try {
+
+      const stockData = await fetchAndExtractStockData();
+      const mutualFundStocks = stockData.filter(stock =>stock.LTP < 20);
+
+      //console.log('Mutual Fund Stocks:', mutualFundStocks);
+
+      return mutualFundStocks;
+  } catch (error) {
+      console.error(error);
+      throw error;
+  }
+}
+
+export async function GetDebentures() {
+  try {
+      const stockData = await fetchAndExtractStockData();
+      const debentureStocks = stockData.filter(stock => stock.name.toLowerCase().includes('debenture'));
+
+      //console.log('Debenture Stocks:', debentureStocks);
+
+      return debentureStocks;
+  } catch (error) {
+      console.error(error);
+      throw error;
+  }
+}
+
+//not live but good and complete
+export async function FetchOldData() {
+  const hardcodedUrl = 'https://www.sharesansar.com/today-share-price';
+
+  try {
+      const response = await axios.get(hardcodedUrl);
+
+      if (!response.data) {
+          throw new Error(`Failed to fetch data. Status: ${response.status}`);
+      }
+
+      const dom = new JSDOM(response.data);
+      const document = dom.window.document;
+
+      const scriptElements = document.querySelectorAll('script');
+      let cmpjsonArray = [];
+
+      scriptElements.forEach((scriptElement) => {
+          if (scriptElement.textContent.includes('var cmpjson')) {
+              const scriptContent = scriptElement.textContent;
+              const jsonMatch = scriptContent.match(/var cmpjson = (\[.*\]);/);
+
+              if (jsonMatch && jsonMatch[1]) {
+                  const jsonContent = jsonMatch[1];
+                  cmpjsonArray = JSON.parse(jsonContent);
+              }
+          }
+      });
+
+      const symbolToNameMap = cmpjsonArray.reduce((map, item) => {
+          map[item.symbol] = item.companyname;
+          return map;
+      }, {});
+
+      const stockDataWithoutName = [];
+
+      const rows = document.querySelectorAll('#headFixed tbody tr');
+
+      rows.forEach((row) => {
+          const columns = row.querySelectorAll('td');
+
+          const stockInfo = {
+              //SNo: parseInt(columns[0].textContent.trim()),
+              symbol: columns[1].querySelector('a').textContent.trim(),
+              //Conf: parseInt(columns[2].textContent.trim()),
+              open: parseInt(columns[3].textContent.trim()),
+              high: parseInt(columns[4].textContent.trim()),
+              low: parseInt(columns[5].textContent.trim()),
+              ltp: parseInt(columns[6].textContent.trim()),
+              vwap: parseInt(columns[7].textContent.trim()),
+              volume: parseInt(columns[8].textContent.trim()),
+              previousclose: parseInt(columns[9].textContent.trim()),
+              Turnover: parseInt(columns[10].textContent.trim()),
+              //Trans: parseInt(columns[11].textContent.trim()),
+              //Diff: parseInt(columns[12].textContent.trim()),
+              //Range: parseInt(columns[13].textContent.trim()),
+              percentchange: parseInt(columns[14].textContent.trim()),
+              //RangePercent: parseInt(columns[15].textContent.trim()),
+              //VWAPPercent: parseInt(columns[16].textContent.trim()),
+              day120: parseInt(columns[17].textContent.trim()),
+              day180: parseInt(columns[18].textContent.trim()),
+              week52high: parseInt(columns[19].textContent.trim()),
+              week52low: parseInt(columns[20].textContent.trim()),
+              name: symbolToNameMap[columns[1].querySelector('a').textContent.trim()] || '',
+          };
+          if (stockInfo.name.toLowerCase().includes('bank')) {
+            stockInfo.sector = 'Bank';
+          } else if (stockInfo.name.toLowerCase().includes('finance')) {
+            stockInfo.sector = 'Finance';
+          } else if (stockInfo.name.toLowerCase().includes('hydro')) {
+            stockInfo.sector = 'Hydropower';
+          } else if (
+            stockInfo.name.toLowerCase().includes('bikas') ||
+            stockInfo.name.toLowerCase().includes('development')
+          ) {
+            stockInfo.sector = 'Development Banks';
+          } else if (
+            stockInfo.name.toLowerCase().includes('microfinance') ||
+            stockInfo.name.toLowerCase().includes('laghubitta')
+          ) {
+            stockInfo.sector = 'Microfinance';
+          } else if (stockInfo.name.toLowerCase().includes('life insurance')) {
+            stockInfo.sector = 'Life Insurance';
+          } else if (stockInfo.name.toLowerCase().includes('insurance')) {
+            stockInfo.sector = 'Insurance';
+          } else if (stockInfo.name.toLowerCase().includes('investment')) {
+            stockInfo.sector = 'Investment';
+          } else {
+            stockInfo.sector = 'unknown';
+          }
+
+          stockDataWithoutName.push(stockInfo);
+      });
+
+      return stockDataWithoutName;
+
+  } catch (error) {
+      console.error(error);
+      throw error;
+  }
+}
+
+export default {fetchSecurityData,fetchDataAndMapToAssetModel,fetchSingleSecurityData,fetchTopGainers, fetchturnvolume, fetchvolume, FetchSingularDataOfAsset,GetDebentures,FetchOldData};

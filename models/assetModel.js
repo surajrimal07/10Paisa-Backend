@@ -25,6 +25,23 @@ const assetSchema = new mongoose.Schema({
   ltp:Number,
   totaltradedquantity: Number,
   previousclose: Number,
+  pointchange:Number,
+  open:Number,
+  high:Number,
+  low:Number,
+  volume:Number,
+  vwap:Number,
+  turnover:Number,
+  day120:Number,
+  day180:Number,
+  week52high:Number,
+  week52low:Number,
+  isFallback: Boolean,
+  isCached: Boolean,
+  dataversion: {
+    versionCode: Number,
+    timestamp: String,
+  },
 
 }, { collection: 'asset' });
 
