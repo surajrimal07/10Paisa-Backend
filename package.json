@@ -5,8 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "nodemon index.js",
-    "all": "concurrently \"nodemon start\" \"cd NepseServer && python -u main.py\""
+    "all": "concurrently \"nodemon start\" \"cd NepseServer && python -u main.py\"",
+    "start": "nodemon index.js"
   },
   "type": "module",
   "keywords": [],

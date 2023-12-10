@@ -168,7 +168,7 @@ export const updateUser = async (req, res) => {
   //console.log(dpImage);
 
   if (!token ) {
-    return res.json({ message: "User token missing" })
+    return res.json({ success : false, message: "User token missing" })
   }
 
   try {
