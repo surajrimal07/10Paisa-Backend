@@ -151,6 +151,11 @@ export const verifyData = async (req, res) => {
     }}
 };
 
+
+//making logic to update user images dp image
+
+
+
 export const updateUser = async (req, res) => {
   const token = req.body.token;
   const email = req.body.email;
@@ -159,6 +164,12 @@ export const updateUser = async (req, res) => {
   const invStyle = req.body.style;
   const fieldToUpdate = req.body.field; // Field to be updated
   const valueToUpdate = req.body.value; // New value
+  const dpImage = req.files; //to upload image
+  //console.log(dpImage);
+
+  if (!token ) {
+    return res.json({ message: "User token missing" })
+  }
 
   try {
 

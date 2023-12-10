@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createAsset, fetchMetalPrices, getAllAssetNames, getMultiAssetDetails, getSingleAssetDetails, getTopGainers, getTopTurnover, getTopVolume, metalHistController, AssetMergedData } from '../controllers/assetControllers.js';
+import { AssetMergedData, AssetMergedDataBySector, SingeAssetMergedData, createAsset, fetchMetalPrices, getAllAssetNames, getMultiAssetDetails, getSingleAssetDetails, getTopGainers, getTopTurnover, getTopVolume, metalHistController } from '../controllers/assetControllers.js';
 import { CommodityData } from '../controllers/commodifyControllers.js';
 import { sendOTP, verifyOTP } from '../controllers/otpControllers.js';
 import { addStockToPortfolio, createPortfolio, deletePortfolio, getAllPortfoliosForUser, removeStockFromPortfolio, renamePortfolio } from '../controllers/portfolioControllers.js';
@@ -42,6 +42,8 @@ router.post('/adddefaultport', defaultportfolio);
 router.post('/removedefaultport', removedefaultportfolio);
 router.post('/makeadmin', makeadmin);
 router.post('/sharesansardata', AssetMergedData);
+router.post('/singlesharesansardata', SingeAssetMergedData);
+router.post('/sectorsharesansardata', AssetMergedDataBySector);
 
 
 export default router;

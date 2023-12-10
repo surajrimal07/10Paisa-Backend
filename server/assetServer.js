@@ -255,13 +255,65 @@ export async function FetchSingularDataOfAsset() {
   }
 }
 
+
+export async function AddCategoryAndSector(stockData) {
+  try {
+    stockData.forEach(stockInfo => {
+      const lowerCaseName = stockInfo.name.toLowerCase();
+
+      if (stockInfo.ltp < 20 && lowerCaseName.includes('mutual fund')) {
+        stockInfo.category = 'Mutual Fund';
+        stockInfo.sector = 'Mutual Fund';
+      } else if (lowerCaseName.includes('debenture')) {
+        stockInfo.category = 'Debenture';
+        stockInfo.sector = 'Debenture';
+      } else {
+
+        if (!stockInfo.sector && !lowerCaseName.includes('debenture') && !lowerCaseName.includes('mutual')) {
+          if (lowerCaseName.includes('bank') && !lowerCaseName.includes('debenture') && !lowerCaseName.includes('promotor share')) {
+            stockInfo.sector = 'Bank';
+          } else if (lowerCaseName.includes('finance')) {
+            stockInfo.sector = 'Finance';
+          } else if (lowerCaseName.includes('hydro') && lowerCaseName.includes('power')) {
+            stockInfo.sector = 'Hydropower';
+          } else if (
+            lowerCaseName.includes('bikas') ||
+            lowerCaseName.includes('development')
+          ) {
+            stockInfo.sector = 'Development Banks';
+          } else if (
+            lowerCaseName.includes('microfinance') ||
+            lowerCaseName.includes('laghubitta')
+          ) {
+            stockInfo.sector = 'Microfinance';
+          } else if (lowerCaseName.includes('life insurance')) {
+            stockInfo.sector = 'Life Insurance';
+          } else if (lowerCaseName.includes('insurance')) {
+            stockInfo.sector = 'Insurance';
+          } else if (lowerCaseName.includes('investment')) {
+            stockInfo.sector = 'Investment';
+          } else {
+            stockInfo.sector = 'unknown';
+          }
+        }
+
+        stockInfo.category = 'Assets';
+      }
+    });
+
+    return stockData;
+  } catch (error) {
+    console.error(error);
+    throw error;
+  }
+}
+
+
 export async function GetMutualFund () {
   try {
 
       const stockData = await fetchAndExtractStockData();
       const mutualFundStocks = stockData.filter(stock =>stock.LTP < 20);
-
-      //console.log('Mutual Fund Stocks:', mutualFundStocks);
 
       return mutualFundStocks;
   } catch (error) {
@@ -274,8 +326,6 @@ export async function GetDebentures() {
   try {
       const stockData = await fetchAndExtractStockData();
       const debentureStocks = stockData.filter(stock => stock.name.toLowerCase().includes('debenture'));
-
-      //console.log('Debenture Stocks:', debentureStocks);
 
       return debentureStocks;
   } catch (error) {
@@ -349,36 +399,12 @@ export async function FetchOldData() {
               week52low: parseInt(columns[20].textContent.trim()),
               name: symbolToNameMap[columns[1].querySelector('a').textContent.trim()] || '',
           };
-          if (stockInfo.name.toLowerCase().includes('bank')) {
-            stockInfo.sector = 'Bank';
-          } else if (stockInfo.name.toLowerCase().includes('finance')) {
-            stockInfo.sector = 'Finance';
-          } else if (stockInfo.name.toLowerCase().includes('hydro')) {
-            stockInfo.sector = 'Hydropower';
-          } else if (
-            stockInfo.name.toLowerCase().includes('bikas') ||
-            stockInfo.name.toLowerCase().includes('development')
-          ) {
-            stockInfo.sector = 'Development Banks';
-          } else if (
-            stockInfo.name.toLowerCase().includes('microfinance') ||
-            stockInfo.name.toLowerCase().includes('laghubitta')
-          ) {
-            stockInfo.sector = 'Microfinance';
-          } else if (stockInfo.name.toLowerCase().includes('life insurance')) {
-            stockInfo.sector = 'Life Insurance';
-          } else if (stockInfo.name.toLowerCase().includes('insurance')) {
-            stockInfo.sector = 'Insurance';
-          } else if (stockInfo.name.toLowerCase().includes('investment')) {
-            stockInfo.sector = 'Investment';
-          } else {
-            stockInfo.sector = 'unknown';
-          }
 
           stockDataWithoutName.push(stockInfo);
       });
 
-      return stockDataWithoutName;
+      const enrichedData = await AddCategoryAndSector(stockDataWithoutName);
+      return enrichedData;
 
   } catch (error) {
       console.error(error);

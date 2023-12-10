@@ -25,6 +25,7 @@ const assetSchema = new mongoose.Schema({
   ltp:Number,
   totaltradedquantity: Number,
   previousclose: Number,
+
   pointchange:Number,
   open:Number,
   high:Number,
@@ -36,6 +37,7 @@ const assetSchema = new mongoose.Schema({
   day180:Number,
   week52high:Number,
   week52low:Number,
+
   isFallback: Boolean,
   isCached: Boolean,
   dataversion: {

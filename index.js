@@ -1,4 +1,5 @@
 import bodyParser from 'body-parser';
+import { v2 as cloudinary } from 'cloudinary';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import express from 'express';
@@ -6,18 +7,12 @@ import { mainDB } from './database/db.js';
 import userRouter from './routes/appRoutes.js';
 import { startNewsServer } from './server/newsServer.js';
 
+import multipart from 'connect-multiparty'; //fix this error
+
 dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 8000;
-
-//corse
-// const corsPolicy = {
-//   origin: true,
-//   Credentials: true,
-//   optionSuccessStatus: 200,
-// };
-// app.use(cors(corsPolicy));
 
 const corsOrigin ={
   origin:'http://localhost:3000',
@@ -25,6 +20,16 @@ const corsOrigin ={
   optionSuccessStatus:200
 }
 app.use(cors(corsOrigin));
+
+//multiparty middleware
+app.use(multipart())
+
+//cloudnary config
+cloudinary.config({
+  cloud_name: process.env.CLOUD_NAME,
+  api_key: process.env.CLOUD_KEY,
+  api_secret: process.env.CLOUD_PASSWORD
+});
 
 
 mainDB();

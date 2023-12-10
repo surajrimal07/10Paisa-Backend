@@ -90,6 +90,12 @@ setTimeout(async () => {
   }
 }, expirationTimeInMilliseconds);
 
+const dataversion_cache = 'dataVersionCounter_c';
+const counter = 'counter_cached';
+const cachedDataVersion = await fetchFromCache(dataversion_cache);
+const cache_counter = await storage.getItem(counter);
+const dataVersion = cache_counter !== null ? cache_counter : 0;
+
 //
 export const createAsset = async (req, res) => {
     console.log("Create Data Requested");
@@ -149,7 +155,7 @@ export const updateAssetData = async (symbol, newData) => {
     }
 }
 
-
+//
 const CACHE_KEY_ALL_ASSET_NAMES = 'allAssetNames';
 
 export const getAllAssetNames = async (req, res) => {
@@ -230,6 +236,7 @@ const updateCacheForAllAssets = async () => {
   }
 };
 
+//
 const CACHE_KEY_SINGLE_ASSET = 'singleasst';
 export const getSingleAssetDetails = async (req, res) => {
     console.log("Single Asset Data Requested");
@@ -309,6 +316,7 @@ export const getMultiAssetDetails = async (req, res) => {
           data: cachedData,
           isFallback: false,
           isCached: true,
+          dataversion: cachedDataVersion
         });
       }
 
@@ -353,6 +361,7 @@ export const getMultiAssetDetails = async (req, res) => {
         data: filteredAssetData,
         isFallback: false,
         isCached: false,
+        dataversion: cachedDataVersion
       });
   } catch (error) {
       console.error('Live data unavailable, Using fallback', error.message);
@@ -377,6 +386,7 @@ export const getMultiAssetDetails = async (req, res) => {
             data: cachedData,
             isFallback: true,
             isCached: true,
+            dataversion: cachedDataVersion
           });
       }}
       catch {
@@ -389,6 +399,7 @@ export const getMultiAssetDetails = async (req, res) => {
   }
 };
 
+//
 const CACHE_KEY_TOP_GAINERS = 'topGainers';
 
 export const getTopGainers = async (req, res) => {
@@ -399,14 +410,25 @@ export const getTopGainers = async (req, res) => {
 
     if (cachedData !== null) {
       console.log('Returning cached top gainers data');
-      return res.status(200).json(cachedData);
+      return res.status(200).json({
+        data: cachedData,
+        isFallback: false,
+        isCached: true,
+        dataversion: cachedDataVersion,
+      });
     }
 
     const dynamicInfo = await fetchTopGainers();
 
     await storage.setItem(CACHE_KEY_TOP_GAINERS, dynamicInfo);
 
-    return res.json(dynamicInfo);
+    return res.status(200).json({
+      data: dynamicInfo,
+      isFallback: false,
+      isCached: false,
+      dataversion: cachedDataVersion,
+    });
+
   } catch (error) {
     console.error('Error fetching data:', error.message);
 
@@ -415,7 +437,12 @@ export const getTopGainers = async (req, res) => {
 
       if (fallbackCacheData !== null) {
         console.log('Returning data from fallback cache');
-        return res.json(fallbackCacheData);
+        return res.status(200).json({
+          data: fallbackCacheData,
+          isFallback: true,
+          isCached: true,
+          dataversion: cachedDataVersion,
+        });
       }
     } catch (fallbackError) {
       console.error('Fallback cache failed:', fallbackError.message);
@@ -425,6 +452,7 @@ export const getTopGainers = async (req, res) => {
 };
 
 
+//
 const CACHE_KEY_TOP_TURNOVER = 'topTurnover';
 
 export const getTopTurnover = async (req, res) => {
@@ -435,14 +463,24 @@ export const getTopTurnover = async (req, res) => {
 
     if (cachedData !== null) {
       console.log('Returning cached top turnover data');
-      return res.status(200).json(cachedData);
+      return res.status(200).json({
+        data: cachedData,
+        isFallback: false,
+        isCached: true,
+        dataversion: cachedDataVersion,
+      });
     }
 
     const dynamicInfo = await fetchturnvolume();
 
     await storage.setItem(CACHE_KEY_TOP_TURNOVER, dynamicInfo);
+    return res.status(200).json({
+      data: dynamicInfo,
+      isFallback: false,
+      isCached: false,
+      dataversion: cachedDataVersion,
+    });
 
-    return res.json(dynamicInfo);
   } catch (error) {
     console.error('Error fetching data:', error.message);
 
@@ -451,7 +489,13 @@ export const getTopTurnover = async (req, res) => {
 
       if (fallbackCacheData !== null) {
         console.log('Returning data from fallback cache');
-        return res.json(fallbackCacheData);
+        await storage.setItem(CACHE_KEY_TOP_TURNOVER, dynamicInfo);
+        return res.status(200).json({
+          data: fallbackCacheData,
+          isFallback: true,
+          isCached: true,
+          dataversion: cachedDataVersion,
+        });
       }
     } catch (fallbackError) {
       console.error('Fallback cache failed:', fallbackError.message);
@@ -460,7 +504,7 @@ export const getTopTurnover = async (req, res) => {
   }
 };
 
-
+//
 const CACHE_KEY_TOP_VOLUME = 'topVolume';
 
 export const getTopVolume = async (req, res) => {
@@ -471,14 +515,24 @@ export const getTopVolume = async (req, res) => {
 
     if (cachedData !== null) {
       console.log('Returning cached top volume data');
-      return res.status(200).json(cachedData);
+      return res.status(200).json({
+        data: cachedData,
+        isFallback: false,
+        isCached: true,
+        dataversion: cachedDataVersion,
+      });
     }
 
     const dynamicInfo = await fetchvolume();
 
     await storage.setItem(CACHE_KEY_TOP_VOLUME, dynamicInfo);
 
-    return res.json(dynamicInfo);
+    return res.status(200).json({
+      data: dynamicInfo,
+      isFallback: false,
+      isCached: false,
+      dataversion: cachedDataVersion,
+    });
   } catch (error) {
     console.error('Error fetching data:', error.message);
 
@@ -487,7 +541,12 @@ export const getTopVolume = async (req, res) => {
 
       if (fallbackCacheData !== null) {
         console.log('Returning data from fallback cache');
-        return res.json(fallbackCacheData);
+        return res.status(200).json({
+          data: fallbackCacheData,
+          isFallback: true,
+          isCached: true,
+          dataversion: cachedDataVersion,
+        });
       }
     } catch (fallbackError) {
       console.error('Fallback cache failed:', fallbackError.message);
@@ -496,7 +555,6 @@ export const getTopVolume = async (req, res) => {
     return res.status(500).json({ error: 'Error fetching data' });
   }
 };
-
 
 
 //get metal
@@ -515,7 +573,12 @@ export const fetchMetalPrices = async (req, res) => {
 
     if (cachedData !== null) {
       console.log('Returning cached metal prices data');
-      return res.status(200).json(cachedData);
+      return res.status(200).json({
+        data: cachedData,
+        isFallback: false,
+        isCached: true,
+        dataversion: cachedDataVersion,
+      });
     }
     const assets = Object.keys(assetToCategoryMap);
     const metalPrices = [];
@@ -531,7 +594,13 @@ export const fetchMetalPrices = async (req, res) => {
     }
     await storage.setItem(CACHE_KEY_METAL_PRICES, { metalPrices });
 
-    return res.json({ metalPrices });
+    return res.status(200).json({
+      data: metalPrices,
+      isFallback: false,
+      isCached: false,
+      dataversion: cachedDataVersion,
+    });
+
   } catch (error) {
     console.error('Error fetching or logging metal prices:', error.message);
     try {
@@ -539,7 +608,13 @@ export const fetchMetalPrices = async (req, res) => {
 
       if (fallbackCacheData !== null) {
         console.log('Returning data from fallback cache');
-        return res.json(fallbackCacheData);
+
+        return res.status(200).json({
+          data: fallbackCacheData,
+          isFallback: true,
+          isCached: true,
+          dataversion: cachedDataVersion,
+        });
       }
     } catch (fallbackError) {
       console.error('Fallback cache failed:', fallbackError.message);
@@ -607,19 +682,16 @@ export async function metalHistController(req, res) {
     }
   }
 
+
+
+
 // // single stopmic data from sharesansar
-  const Asset_cached_key = 'shrese_asset';
-  const dataversion_cache = 'dataVersionCounter_c';
-  const counter = 'counter_cached';
+  const Asset_cached_key = 'atomic_asset_data';
   const Asset_fallback_key= 'shares_asset_fallback';
 
 export const AssetMergedData = async (req, res) => {
   console.log('Sharesansar Asset Data Requested');
-
-  const [cachedData, cachedDataVersion] = await Promise.all([
-    fetchFromCache(Asset_cached_key),
-    fetchFromCache(dataversion_cache),
-  ]);
+  const cachedData = await fetchFromCache(Asset_cached_key)
 
   try {
     if (cachedData !== null) {
@@ -641,16 +713,12 @@ export const AssetMergedData = async (req, res) => {
       ...(liveDataMap.get(item.symbol) || {}),
     }));
 
-    const cache_counter = await storage.getItem(counter);
-
-    const dataVersion = cache_counter !== null ? cache_counter : 0;
     let dataVersionCounter = dataVersion + 1;
     console.log('Incremented data version:', dataVersionCounter);
 
     const currentDate = new Date().toISOString().split('T')[0];
     const fileName = `${currentDate}_Stock.json`;
 
-    // Save to JSON file
     saveDataToJson(
       {
         data: mergedData,
@@ -672,7 +740,8 @@ export const AssetMergedData = async (req, res) => {
     await Promise.all([
       storage.setItem(dataversion_cache, { versionCode: dataVersionCounter, timestamp: DateTime.now().toISO() }),
       storage.setItem(counter, dataVersionCounter),
-      storage.setItem(Asset_cached_key, mergedData)
+      storage.setItem(Asset_cached_key, mergedData),
+      storage.setItem(Asset_fallback_key, mergedData) //also adding in fallback data
     ]);
 
     // Insert new documents into the database
@@ -714,9 +783,11 @@ export const AssetMergedData = async (req, res) => {
     });
   } catch (error) {
     try {
+      console.log(error);
       console.log('Using fallback key');
       const cachedData = await fetchFromCache(Asset_fallback_key);
       if (cachedData !== null) {
+        console.log('fallback data sent');
         return res.status(200).json({
           data: cachedData,
           isFallback: true,
@@ -727,6 +798,9 @@ export const AssetMergedData = async (req, res) => {
         // Attempt to retrieve data from MongoDB
         const dataFromMongoDB = await Asset.find({});
         if (dataFromMongoDB) {
+
+          storage.setItem(Asset_fallback_key, dataFromMongoDB) //adding data back to fallback
+
           return res.status(200).json({
             data: dataFromMongoDB,
             isFallback: true,
@@ -744,4 +818,188 @@ export const AssetMergedData = async (req, res) => {
   }
 };
 
-export default { getAllAssetNames,createAsset,getSingleAssetDetails, getMultiAssetDetails, metalHistController, fetchMetalPrices, AssetMergedData};
+
+
+//
+//single asset from sharesanasar
+export const SingeAssetMergedData = async (req, res) => {
+  console.log('Sharesansar Single Asset Data Requested');
+
+  console.log('Request query:', req.query);
+
+  const symbol = req.body.symbol;
+
+  if (!symbol) {
+    console.error('No symbol provided in the request');
+    return res.status(400).json({ error: 'No symbol provided in the request' });
+  }
+  const cachedData = await fetchFromCache(Asset_cached_key);
+
+  try {
+    if (cachedData !== null) {
+      console.log('Returning cached data for symbol:', symbol);
+
+      const filteredData = cachedData.filter(item => item.symbol === symbol);
+
+      return res.status(200).json({
+        data: filteredData,
+        isFallback: false,
+        isCached: true,
+        dataversion: cachedDataVersion,
+      });
+    }
+
+    const [todayData, liveData] = await Promise.all([FetchSingularDataOfAsset(), FetchOldData()]);
+
+  // Merge data
+  const liveDataMap = new Map(liveData.map((item) => [item.symbol, item]));
+  const mergedData = todayData.map((item) => ({
+    ...item,
+    ...(liveDataMap.get(item.symbol) || {}),
+  }));
+
+  // Filter data for the requested symbol
+  const filteredMergedData = mergedData.filter(item => item.symbol === symbol);
+
+    return res.status(200).json({
+      data: filteredMergedData,
+      isFallback: false,
+      isCached: false,
+      dataversion: { versionCode: dataVersion, timestamp: DateTime.now().toISO() },
+    });
+  } catch (error) {
+    try {
+      console.log(error);
+      console.log('Using fallback key for symbol:', symbol);
+
+      const cachedData = await fetchFromCache(Asset_fallback_key);
+
+      if (cachedData !== null) {
+        console.log('Fallback data sent for symbol:', symbol);
+
+        // Filter data for the requested symbol
+        const filteredData = cachedData.filter(item => item.symbol === symbol);
+
+        return res.status(200).json({
+          data: filteredData,
+          isFallback: true,
+          isCached: true,
+          dataversion: cachedDataVersion,
+        });
+      } else {
+        // Attempt to retrieve data from MongoDB for the requested symbol
+        const dataFromMongoDB = await Asset.find({ symbol });
+
+        if (dataFromMongoDB) {
+          storage.setItem(Asset_fallback_key, dataFromMongoDB); // Adding data back to fallback
+
+          // Filter data for the requested symbol
+          const filteredData = dataFromMongoDB.filter(item => item.symbol === symbol);
+
+          return res.status(200).json({
+            data: filteredData,
+            isFallback: true,
+            isCached: true,
+            dataversion: cachedDataVersion,
+          });
+        }
+      }
+    } catch {
+      console.log(`Everything failed for symbol: ${symbol}. Fallback failed`);
+      return res.status(500).json({ error: 'An error occurred while fetching data' });
+    }
+    console.error(error);
+    return res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+
+
+//filtering based on sector
+
+export const AssetMergedDataBySector = async (req, res) => {
+  console.log('Sharesansar Asset Data Requested by Sector');
+
+  console.log('Request sector:', req.body.sector);
+
+  const sector = req.body.sector;
+  const assettype = req.body.category;
+
+  if (!sector && !assettype) {
+    return res.status(400).json({ error: 'No sector or asset type provided in the request' });
+  }
+
+  try {
+    const cachedData = await fetchFromCache(Asset_cached_key);
+
+    if (cachedData !== null) {
+      console.log('Returning cached data by sector');
+
+      let filteredCachedData;
+
+      if (sector) {
+        filteredCachedData = cachedData.filter(item => item.sector === sector);
+      } else if (assettype === 'Assets') {
+
+        filteredCachedData = cachedData.filter(item => item.category === 'Assets');
+      } else if (assettype === 'Mutual Fund') {
+        console.log("t3");
+        filteredCachedData = cachedData.filter(item => item.category === 'Mutual Fund');
+      } else if (assettype === 'Debenture') {
+        console.log("t3");
+        filteredCachedData = cachedData.filter(item => item.category === 'Debenture');
+      } else {
+        return res.status(400).json({ error: 'Invalid asset type provided in the request' });
+      }
+
+      if (filteredCachedData.length === 0) {
+        return res.status(404).json({ error: 'No data found based on the provided criteria' });
+      }
+
+      return res.status(200).json({
+        data: filteredCachedData,
+        isFallback: false,
+        isCached: true,
+        dataversion: cachedDataVersion,
+      });
+    }
+
+    const [todayData, liveData] = await Promise.all([FetchSingularDataOfAsset(), FetchOldData()]);
+
+  const liveDataMap = new Map(liveData.map((item) => [item.symbol, item]));
+  const mergedData = todayData.map((item) => ({
+    ...item,
+    ...(liveDataMap.get(item.symbol) || {}),
+  }));
+
+  let filteredData;
+
+  if (sector) {
+    filteredData = mergedData.filter(item => item.sector === sector);
+  } else if (assettype === 'Assets') {
+    filteredData = mergedData.filter(item => item.category === 'Assets');
+  } else if (assettype === 'Mutual Fund') {
+    filteredData = mergedData.filter(item => item.category === 'Mutual Fund');
+  } else if (assettype === 'Debenture') {
+    console.log("t3");
+    filteredData = cachedData.filter(item => item.category === 'Debenture');
+  }else {
+    return res.status(400).json({ error: 'Invalid asset type provided in the request' });
+  }
+
+  if (filteredData.length === 0) {
+    return res.status(404).json({ error: 'No data found based on the provided criteria' });
+  }
+  return res.status(200).json({
+    data: filteredData,
+    isFallback: false,
+    isCached: false,
+    dataversion: { versionCode: dataVersion, timestamp: DateTime.now().toISO() },
+  });
+
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+
+export default { getAllAssetNames,createAsset,getSingleAssetDetails, getMultiAssetDetails, metalHistController, fetchMetalPrices, AssetMergedData, SingeAssetMergedData, AssetMergedDataBySector};
