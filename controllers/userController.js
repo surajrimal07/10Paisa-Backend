@@ -1,4 +1,5 @@
 import bcrypt from 'bcrypt';
+import { v2 as cloudinary } from 'cloudinary';
 import { forgetPassword } from '../controllers/otpControllers.js';
 import User from '../models/userModel.js';
 
@@ -12,6 +13,13 @@ export const createUser = async (req, res) => {
   const phone = req.body.phone;
   const style = req.body.style !== undefined ? req.body.style : undefined;
   const isAdmin = false;
+  const userAmount = req.body.amount !== undefined ? req.body.amount : undefined;
+
+  let dpImage;
+
+  if (req.files && req.files.length > 0) {
+    dpImage = req.files[0];
+  }
 
   console.log("Create user command passed")
   console.log("Name: "+name,"token "+ token,  "Email: "+email, "Password: "+password, "phone: "+phone, "Style: "+style);
@@ -34,6 +42,9 @@ export const createUser = async (req, res) => {
             phone,
             style,
             isAdmin,
+            dpImage: dpImage ? dpImage.path : undefined,
+            userAmount: userAmount !== undefined ? userAmount : undefined,
+
           });
           try {
             const savedUser = await newUser.save();
@@ -46,6 +57,8 @@ export const createUser = async (req, res) => {
               phone: savedUser.phone,
               style: savedUser.style,
               isAdmin: savedUser.isAdmin,
+              dpImage: savedUser.dpImage,
+              userAmount: savedUser.userAmount
             };
             console.log(userData);
             res.status(200).json(userData);
@@ -86,7 +99,6 @@ export const loginUser = async (req, res) => {
       return res.status(500).json({ error: 'An error occurred during login.' });
     }
 };
-
 
 export const forgetPass = async (req, res) => {
   const email = req.body.email;
@@ -151,28 +163,26 @@ export const verifyData = async (req, res) => {
     }}
 };
 
-
-//making logic to update user images dp image
-
-
-
+//uploading dp image works
 export const updateUser = async (req, res) => {
   const token = req.body.token;
   const email = req.body.email;
   const newPassword  = req.body.password;
   const phone = req.body.phone;
   const invStyle = req.body.style;
-  const fieldToUpdate = req.body.field; // Field to be updated
-  const valueToUpdate = req.body.value; // New value
-  const dpImage = req.files; //to upload image
-  //console.log(dpImage);
+  const fieldToUpdate = req.body.field;
+  const valueToUpdate = req.body.value;
+  const {dpImage} = req.files;
+  const userAmount = req.body.useramount;
 
   if (!token ) {
     return res.json({ success : false, message: "User token missing" })
   }
+  if (!fieldToUpdate) {
+    return res.json({ success : false, message: "Field and Value missing" })
+  }
 
   try {
-
     const user = await User.findOne({ token });
 
     if (!user) {
@@ -180,10 +190,41 @@ export const updateUser = async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
+    if (fieldToUpdate === 'dp') {
+      let uploadedImage;
+
+      if (dpImage && dpImage.path) {
+        try {
+          uploadedImage = await cloudinary.uploader.upload(
+            dpImage.path,
+            {
+              folder: "UserDP",
+              crop: "scale",
+              overwrite: true,
+            },
+          );
+          console.log("User DP updated, new dp is " + uploadedImage.secure_url);
+          user.dpImage = uploadedImage.secure_url;
+        } catch (e) {
+          console.log(e);
+          return res.status(500).json({ success: false, message: "Error uploading image" });
+        }
+      } else {
+        console.log("No image provided for update");
+        return res.status(400).json({ success: false, message: "No image provided for update" });
+      }
+    }
+
     if (fieldToUpdate === 'name') {
       console.log("Username updated, new "+fieldToUpdate+ " is "+valueToUpdate)
       user.name = valueToUpdate;
     }
+
+    if (fieldToUpdate == 'useramount') {
+    console.log("User updated, new "+fieldToUpdate+ " is "+valueToUpdate)
+    user.userAmount = valueToUpdate;
+    }
+
     if (fieldToUpdate === 'password') {
       const newPassword = await bcrypt.hash(valueToUpdate, 10);
       console.log("User password updated, new "+fieldToUpdate+ " is "+valueToUpdate)
@@ -200,14 +241,14 @@ export const updateUser = async (req, res) => {
 
           await user.save();
 
-          return res.status(200).json({ message: "Email updated successfully" });
+          return res.status(200).json({ success :  true, message: "Email updated successfully" });
         } else {
           console.log("Email already exists");
-          return res.status(400).json({ message: "Email already exists" });
+          return res.status(400).json({ success :  false, message: "Email already exists" });
         }
       } catch (error) {
         console.error("Error updating user email:", error);
-        return res.status(500).json({ message: "Error updating email" });
+        return res.status(500).json({success :  false, message: "Error updating email" });
       }
     }
 
@@ -272,7 +313,8 @@ export const verifyUser = async (req, res) => {
         profilePicture: user.profilePicture,
         style: user.style,
         defaultport: user.defaultport,
-        isAdmin: user.isAdmin
+        isAdmin: user.isAdmin,
+        dpImage: user.dpImage,
 
       });
     }

@@ -33,6 +33,14 @@ const newSchema = new Schema({
       type: Boolean,
       default: false,
   },
+    dpImage : {
+    type: String,
+    default: "https://res.cloudinary.com/dio3qwd9q/image/upload/v1702262191/UserDP/ktsqwgc2zpeiynaekfct.png"
+    },
+    userAmount : {
+      type: Number,
+      default: 100000,
+    }
 });
 
 const User = mongoose.model('User',newSchema);
