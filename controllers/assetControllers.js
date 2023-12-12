@@ -1,6 +1,6 @@
-import * as fs from 'fs/promises';
 import { DateTime } from 'luxon';
 import storage from 'node-persist';
+import saveDataToJson from '../controllers/jsonControllers.js';
 import Asset from '../models/assetModel.js';
 import HistoricPrice from '../models/historicModel.js';
 import { FetchOldData, FetchSingularDataOfAsset, fetchSecurityData, fetchSingleSecurityData, fetchTopGainers, fetchturnvolume, fetchvolume } from '../server/assetServer.js';
@@ -33,62 +33,6 @@ const fetchFromCache = async (cacheKey) => {
   }
 };
 
-//save to json
-async function saveDataToJson(data, fileName) {
-  try {
-      const jsonData = JSON.stringify(data, null, 2);
-      await fs.writeFile(fileName, jsonData);
-      console.log(`Data saved to ${fileName}`);
-  } catch (error) {
-      console.error(`Error saving data to ${fileName}:`, error);
-  }
-}
-
-//refresh mechanism
-const timeUntilNextHour = () => {
-  const now = new Date();
-  const nextHour = new Date(now);
-  nextHour.setHours(now.getHours() + 1);
-  nextHour.setMinutes(0);
-  nextHour.setSeconds(0);
-  nextHour.setMilliseconds(0);
-
-  return nextHour - now;
-};
-
-const expirationTimeInMilliseconds = timeUntilNextHour();
-
-setTimeout(async () => {
-  try {
-    const now = new Date();
-    const currentDay = now.getDay();
-    const currentHour = now.getHours();
-
-    // Check if we are between 11 am and 3 pm
-    const isBetween11and3 = currentHour >= 11 && currentHour < 15;
-
-    // Check if it's not Saturday and we are between 11 am and 3 pm
-    if (currentDay !== 6 && isBetween11and3) {
-      console.log(`Wiping caches for all keys`);
-      await Promise.all([
-        storage.removeItem(CACHE_KEY_ALL_ASSET_NAMES),
-        storage.removeItem(CACHE_KEY_SINGLE_ASSET),
-        storage.removeItem(CACHE_KEY),
-        storage.removeItem(CACHE_KEY_TOP_GAINERS),
-        storage.removeItem(CACHE_KEY_TOP_TURNOVER),
-        storage.removeItem(CACHE_KEY_TOP_VOLUME),
-        storage.removeItem(CACHE_KEY_METAL_PRICES),
-        storage.removeItem(CACHE_KEY_SHARE_ASSETS),
-
-      ]);
-      AssetMergedData();
-    } else {
-      console.log('Skipping cache wipe.');
-    }
-  } catch (error) {
-    console.error(`Error wiping caches:`, error.message);
-  }
-}, expirationTimeInMilliseconds);
 
 const dataversion_cache = 'dataVersionCounter_c';
 const counter = 'counter_cached';
@@ -683,8 +627,6 @@ export async function metalHistController(req, res) {
   }
 
 
-
-
 // // single stopmic data from sharesansar
   const Asset_cached_key = 'atomic_asset_data';
   const Asset_fallback_key= 'shares_asset_fallback';
@@ -717,6 +659,7 @@ export const AssetMergedData = async (req, res) => {
     console.log('Incremented data version:', dataVersionCounter);
 
     const currentDate = new Date().toISOString().split('T')[0];
+    const assetDataFolderPath = './AssetData';
     const fileName = `${currentDate}_Stock.json`;
 
     saveDataToJson(
@@ -743,16 +686,6 @@ export const AssetMergedData = async (req, res) => {
       storage.setItem(Asset_cached_key, mergedData),
       storage.setItem(Asset_fallback_key, mergedData) //also adding in fallback data
     ]);
-
-    // Insert new documents into the database
-    // await Asset.insertMany(
-    //   mergedData.map((item) => ({
-    //     ...item,
-    //     isFallback: false,
-    //     isCached: false,
-    //     dataversion: { versionCode: dataVersionCounter, timestamp: DateTime.now().toISO() },
-    //   }))
-    // );
 
     await Promise.all(
       mergedData.map(async (item) => {
@@ -915,7 +848,6 @@ export const SingeAssetMergedData = async (req, res) => {
 
 
 //filtering based on sector
-
 export const AssetMergedDataBySector = async (req, res) => {
   console.log('Sharesansar Asset Data Requested by Sector');
 
@@ -980,7 +912,6 @@ export const AssetMergedDataBySector = async (req, res) => {
   } else if (assettype === 'Mutual Fund') {
     filteredData = mergedData.filter(item => item.category === 'Mutual Fund');
   } else if (assettype === 'Debenture') {
-    console.log("t3");
     filteredData = cachedData.filter(item => item.category === 'Debenture');
   }else {
     return res.status(400).json({ error: 'Invalid asset type provided in the request' });

@@ -3,11 +3,14 @@ import { v2 as cloudinary } from 'cloudinary';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import express from 'express';
+import storage from 'node-persist';
 import { mainDB } from './database/db.js';
 import userRouter from './routes/appRoutes.js';
 import { startNewsServer } from './server/newsServer.js';
 
-import multipart from 'connect-multiparty'; //fix this error
+import initializeRefreshMechanism from './controllers/refreshController.js';
+
+import multipart from 'connect-multiparty';
 
 dotenv.config();
 
@@ -33,6 +36,9 @@ cloudinary.config({
 
 
 mainDB();
+await storage.init();
+initializeRefreshMechanism();
+
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
