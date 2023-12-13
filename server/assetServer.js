@@ -26,51 +26,51 @@ export async function fetchDataAndMapToAssetModel() {
   }
 }
 
-export async function fetchSecurityData(indexId) {
-  try {
-    const response = await axios.get(`${nepseUrls.API_URL}/${indexId}`);
-    const mappedData = response.data
-      .filter(security => security.symbol && security.securityName && security.symbol && security.indexId)
-      .map(security => ({
-        symbol: security.symbol,
-        name: security.securityName,
-        ltp: security.lastTradedPrice.toString(),
-        totaltradedquantity: security.totalTradeQuantity.toString(),
-        percentchange: security.percentageChange.toString(),
-        previousclose: security.previousClose.toString(),
-      }));
-    return mappedData;
-  } catch (error) {
-    console.error(`Error fetching security data for indexId ${indexId}:`, error.message);
-    throw error;
-  }
-}
+// export async function fetchSecurityData(indexId) {
+//   try {
+//     const response = await axios.get(`${nepseUrls.API_URL}/${indexId}`);
+//     const mappedData = response.data
+//       .filter(security => security.symbol && security.securityName && security.symbol && security.indexId)
+//       .map(security => ({
+//         symbol: security.symbol,
+//         name: security.securityName,
+//         ltp: security.lastTradedPrice.toString(),
+//         totaltradedquantity: security.totalTradeQuantity.toString(),
+//         percentchange: security.percentageChange.toString(),
+//         previousclose: security.previousClose.toString(),
+//       }));
+//     return mappedData;
+//   } catch (error) {
+//     console.error(`Error fetching security data for indexId ${indexId}:`, error.message);
+//     throw error;
+//   }
+// }
 
-export async function fetchSingleSecurityData( requestedSymbol) {
-  try {
-    const response = await axios.get(`${nepseUrls.API_URL}/58`);
-    const filteredData = response.data.filter(security => security.symbol === requestedSymbol);
+// export async function fetchSingleSecurityData( requestedSymbol) {
+//   try {
+//     const response = await axios.get(`${nepseUrls.API_URL}/58`);
+//     const filteredData = response.data.filter(security => security.symbol === requestedSymbol);
 
-    if (filteredData.length === 0) {
-      console.error(`Security with symbol ${requestedSymbol} not found`);
-      return [];
-    }
+//     if (filteredData.length === 0) {
+//       console.error(`Security with symbol ${requestedSymbol} not found`);
+//       return [];
+//     }
 
-    const mappedData = filteredData.map(security => ({
-      symbol: security.symbol,
-      name: security.securityName,
-      ltp: security.lastTradedPrice.toString(),
-      totaltradedquantity: security.totalTradeQuantity.toString(),
-      percentchange: security.percentageChange.toString(),
-      previousclose: security.previousClose.toString(),
-    }));
+//     const mappedData = filteredData.map(security => ({
+//       symbol: security.symbol,
+//       name: security.securityName,
+//       ltp: security.lastTradedPrice.toString(),
+//       totaltradedquantity: security.totalTradeQuantity.toString(),
+//       percentchange: security.percentageChange.toString(),
+//       previousclose: security.previousClose.toString(),
+//     }));
 
-    return mappedData;
-  } catch (error) {
-    console.error(`Error fetching security data :`, error.message);
-    throw error;
-  }
-}
+//     return mappedData;
+//   } catch (error) {
+//     console.error(`Error fetching security data :`, error.message);
+//     throw error;
+//   }
+// }
 
 export async function fetchTopGainers() {
   try {
@@ -163,6 +163,12 @@ export async function fetchvolume() {
   }
 }
 
+
+
+
+
+
+
 //preparing to switch to sharesansar as data provider
 export async function FetchSingularDataOfAsset() {
   const liveTradingUrl = 'https://www.sharesansar.com/live-trading';
@@ -186,7 +192,6 @@ export async function FetchSingularDataOfAsset() {
           const columns = row.querySelectorAll('td');
 
           const stockInfo = {
-              //SNO: parseInt(columns[0].textContent.trim()),
               symbol: columns[1].querySelector('a').textContent.trim(),
               ltp: parseFloat(columns[2].textContent.trim()),
               pointchange: parseFloat(columns[3].textContent.trim()),
@@ -376,9 +381,7 @@ export async function FetchOldData() {
           const columns = row.querySelectorAll('td');
 
           const stockInfo = {
-              //SNo: parseInt(columns[0].textContent.trim()),
               symbol: columns[1].querySelector('a').textContent.trim(),
-              //Conf: parseInt(columns[2].textContent.trim()),
               open: parseInt(columns[3].textContent.trim()),
               high: parseInt(columns[4].textContent.trim()),
               low: parseInt(columns[5].textContent.trim()),
@@ -387,12 +390,7 @@ export async function FetchOldData() {
               volume: parseInt(columns[8].textContent.trim()),
               previousclose: parseInt(columns[9].textContent.trim()),
               Turnover: parseInt(columns[10].textContent.trim()),
-              //Trans: parseInt(columns[11].textContent.trim()),
-              //Diff: parseInt(columns[12].textContent.trim()),
-              //Range: parseInt(columns[13].textContent.trim()),
               percentchange: parseInt(columns[14].textContent.trim()),
-              //RangePercent: parseInt(columns[15].textContent.trim()),
-              //VWAPPercent: parseInt(columns[16].textContent.trim()),
               day120: parseInt(columns[17].textContent.trim()),
               day180: parseInt(columns[18].textContent.trim()),
               week52high: parseInt(columns[19].textContent.trim()),
@@ -412,4 +410,4 @@ export async function FetchOldData() {
   }
 }
 
-export default {fetchSecurityData,fetchDataAndMapToAssetModel,fetchSingleSecurityData,fetchTopGainers, fetchturnvolume, fetchvolume, FetchSingularDataOfAsset,GetDebentures,FetchOldData};
+export default {fetchDataAndMapToAssetModel,fetchTopGainers, fetchturnvolume, fetchvolume, FetchSingularDataOfAsset,GetDebentures,FetchOldData};

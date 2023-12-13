@@ -17,6 +17,18 @@ dotenv.config();
 const app = express();
 const port = process.env.PORT || 8000;
 
+//middlewares
+
+// Use express.json() middleware to parse JSON bodies
+app.use(express.json());
+
+// Use body-parser middleware to parse url-encoded bodies
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
+
+//multiparty middleware
+app.use(multipart())
+
 const corsOrigin ={
   origin:'http://localhost:3000',
   credentials:true,
@@ -24,8 +36,6 @@ const corsOrigin ={
 }
 app.use(cors(corsOrigin));
 
-//multiparty middleware
-app.use(multipart())
 
 //cloudnary config
 cloudinary.config({
@@ -38,7 +48,6 @@ cloudinary.config({
 mainDB();
 await storage.init();
 initializeRefreshMechanism();
-
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);

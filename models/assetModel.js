@@ -37,7 +37,10 @@ const assetSchema = new mongoose.Schema({
   day180:Number,
   week52high:Number,
   week52low:Number,
-
+  unit: {
+    type: String,
+    default: 'N/A',
+  },
   isFallback: Boolean,
   isCached: Boolean,
   dataversion: {

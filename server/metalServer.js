@@ -22,9 +22,7 @@ export async function metalPriceExtractor(asset) {
 
       if (assetPrice) {
         const mappedAsset = mapAsset(asset);
-        //const formattedLtp = parseFloat(assetPrice.replace(/,/g, ''));
         const formattedLtp = parseFloat(assetPrice.replace(/,/g, '')).toString();
-        //console.log({ name: mappedAsset, category: 'Metals', ltp: formattedLtp, unit: 'Tola' });
         return { name: mappedAsset, category: 'Metals', sector: 'Precious Metals', ltp: formattedLtp, unit: 'Tola' };
     } else {
         console.log(`Price for ${asset} not found`);

@@ -3,7 +3,7 @@ import storage from 'node-persist';
 import saveDataToJson from '../controllers/jsonControllers.js';
 import Asset from '../models/assetModel.js';
 import HistoricPrice from '../models/historicModel.js';
-import { FetchOldData, FetchSingularDataOfAsset, fetchSecurityData, fetchSingleSecurityData, fetchTopGainers, fetchturnvolume, fetchvolume } from '../server/assetServer.js';
+import { FetchOldData, FetchSingularDataOfAsset, fetchTopGainers, fetchturnvolume, fetchvolume } from '../server/assetServer.js';
 import { metalChartExtractor, metalPriceExtractor } from '../server/metalServer.js';
 
 await storage.init();
@@ -65,7 +65,6 @@ export const createAsset = async (req, res) => {
           category: savedAsset.category,
 
         };
-        console.log(assetData);
         res.status(200).json(assetData);
         console.log("Asset saved successfully");
       } catch (err) {
@@ -99,249 +98,249 @@ export const updateAssetData = async (symbol, newData) => {
     }
 }
 
-//
-const CACHE_KEY_ALL_ASSET_NAMES = 'allAssetNames';
+// //
+// const CACHE_KEY_ALL_ASSET_NAMES = 'allAssetNames';
 
-export const getAllAssetNames = async (req, res) => {
-  console.log("Asset Names Only Requested");
+// export const getAllAssetNames = async (req, res) => {
+//   console.log("Asset Names Only Requested");
 
-  try {
-    const cachedData = await fetchFromCache(CACHE_KEY_ALL_ASSET_NAMES);
+//   try {
+//     const cachedData = await fetchFromCache(CACHE_KEY_ALL_ASSET_NAMES);
 
-    if (cachedData !== null) {
-      console.log('Returning cached asset names data');
-      return res.status(200).json(cachedData);
-    }
+//     if (cachedData !== null) {
+//       console.log('Returning cached asset names data');
+//       return res.status(200).json(cachedData);
+//     }
 
-    const symbols = await Asset.find({ ltp: { $exists: true, $nin: [null, 0] } }).distinct('symbol');
+//     const symbols = await Asset.find({ ltp: { $exists: true, $nin: [null, 0] } }).distinct('symbol');
 
-    await storage.setItem(CACHE_KEY_ALL_ASSET_NAMES, symbols);
+//     await storage.setItem(CACHE_KEY_ALL_ASSET_NAMES, symbols);
 
-    return res.json(symbols);
-  } catch (error) {
-    console.error('Error:', error.message);
-    try {
-      const fallbackCacheData = await fetchFromCache(allAssetNames_fallback);
+//     return res.json(symbols);
+//   } catch (error) {
+//     console.error('Error:', error.message);
+//     try {
+//       const fallbackCacheData = await fetchFromCache(allAssetNames_fallback);
 
-      if (fallbackCacheData !== null) {
-        console.log('Returning data from fallback cache');
-        return res.json(fallbackCacheData);
-      }
-    } catch (fallbackError) {
-      console.error('Fallback cache failed:', fallbackError.message);
-    }
-    return res.status(500).json({ error: 'An error occurred.' });
-  }
-};
+//       if (fallbackCacheData !== null) {
+//         console.log('Returning data from fallback cache');
+//         return res.json(fallbackCacheData);
+//       }
+//     } catch (fallbackError) {
+//       console.error('Fallback cache failed:', fallbackError.message);
+//     }
+//     return res.status(500).json({ error: 'An error occurred.' });
+//   }
+// };
 
 
 
-//
-const getCacheKeyForSymbol = symbol => `${symbol}_cache`;
+// //
+// const getCacheKeyForSymbol = symbol => `${symbol}_cache`;
 
-// Function to update cache for a specific symbol
-const updateCacheForSymbol = async (symbol, data) => {
-  const cacheKey = getCacheKeyForSymbol(symbol);
-  const cachedData = await fetchFromCache(cacheKey) || {};
-  cachedData[symbol] = data;
-  await storage.setItem(cacheKey, cachedData);
-};
+// // Function to update cache for a specific symbol
+// const updateCacheForSymbol = async (symbol, data) => {
+//   const cacheKey = getCacheKeyForSymbol(symbol);
+//   const cachedData = await fetchFromCache(cacheKey) || {};
+//   cachedData[symbol] = data;
+//   await storage.setItem(cacheKey, cachedData);
+// };
 
-// Function to fetch and update cache for all asset symbols
-const updateCacheForAllAssets = async () => {
-  const assets = await Asset.find();
-  const symbols = assets.map(asset => asset.symbol);
+// // Function to fetch and update cache for all asset symbols
+// const updateCacheForAllAssets = async () => {
+//   const assets = await Asset.find();
+//   const symbols = assets.map(asset => asset.symbol);
 
-  for (const symbol of symbols) {
-    const dynamicInfo = await fetchSingleSecurityData(symbol);
-    const asset = await Asset.findOne({ symbol });
+//   for (const symbol of symbols) {
+//     const dynamicInfo = await fetchSingleSecurityData(symbol);
+//     const asset = await Asset.findOne({ symbol });
 
-    if (asset) {
-      await Asset.updateOne(
-        { _id: asset._id },
-        {
-          $set: {
-            ltp: dynamicInfo?.ltp || "",
-            totaltradedquantity: dynamicInfo?.totaltradedquantity || "",
-            percentchange: dynamicInfo?.percentchange || "",
-            previousclose: dynamicInfo?.previousclose || "",
-          },
-        },
-        { upsert: false }
-      );
+//     if (asset) {
+//       await Asset.updateOne(
+//         { _id: asset._id },
+//         {
+//           $set: {
+//             ltp: dynamicInfo?.ltp || "",
+//             totaltradedquantity: dynamicInfo?.totaltradedquantity || "",
+//             percentchange: dynamicInfo?.percentchange || "",
+//             previousclose: dynamicInfo?.previousclose || "",
+//           },
+//         },
+//         { upsert: false }
+//       );
 
-      const updatedAsset = {
-        ...asset.toObject(),
-        ...dynamicInfo,
-      };
+//       const updatedAsset = {
+//         ...asset.toObject(),
+//         ...dynamicInfo,
+//       };
 
-      await updateCacheForSymbol(symbol, updatedAsset);
-    }
-  }
-};
+//       await updateCacheForSymbol(symbol, updatedAsset);
+//     }
+//   }
+// };
 
-//
-const CACHE_KEY_SINGLE_ASSET = 'singleasst';
-export const getSingleAssetDetails = async (req, res) => {
-    console.log("Single Asset Data Requested");
-    const symbol = req.body.symbol;
+// //
+// const CACHE_KEY_SINGLE_ASSET = 'singleasst';
+// export const getSingleAssetDetails = async (req, res) => {
+//     console.log("Single Asset Data Requested");
+//     const symbol = req.body.symbol;
 
-    try {
-        const cachedData = await storage.getItem(CACHE_KEY_SINGLE_ASSET);
-        if (cachedData && cachedData[symbol]) {
-            console.log(`Returning cached single asset data for symbol ${symbol}`);
-            return res.status(200).json(cachedData[symbol]);
-        }
+//     try {
+//         const cachedData = await storage.getItem(CACHE_KEY_SINGLE_ASSET);
+//         if (cachedData && cachedData[symbol]) {
+//             console.log(`Returning cached single asset data for symbol ${symbol}`);
+//             return res.status(200).json(cachedData[symbol]);
+//         }
 
-        const dynamicInfo = await fetchSingleSecurityData(symbol);
+//         const dynamicInfo = await fetchSingleSecurityData(symbol);
 
-        const asset = await Asset.findOne({ symbol });
+//         const asset = await Asset.findOne({ symbol });
 
-        if (!asset) {
-            console.error(`Asset with symbol ${symbol} not found.`);
-            return res.status(404).json({ error: `Asset with symbol ${symbol} not found.` });
-        }
+//         if (!asset) {
+//             console.error(`Asset with symbol ${symbol} not found.`);
+//             return res.status(404).json({ error: `Asset with symbol ${symbol} not found.` });
+//         }
 
-        try {
-            const dynamicInfoForAsset = dynamicInfo.find(info => info.symbol === symbol);
+//         try {
+//             const dynamicInfoForAsset = dynamicInfo.find(info => info.symbol === symbol);
 
-            await Asset.updateOne(
-                { _id: asset._id },
-                {
-                    $set: {
-                        ltp: dynamicInfoForAsset?.ltp || "",
-                        totaltradedquantity: dynamicInfoForAsset?.totaltradedquantity || "",
-                        percentchange: dynamicInfoForAsset?.percentchange || "",
-                        previousclose: dynamicInfoForAsset?.previousclose || "",
-                    },
-                },
-                { upsert: false }
-            );
+//             await Asset.updateOne(
+//                 { _id: asset._id },
+//                 {
+//                     $set: {
+//                         ltp: dynamicInfoForAsset?.ltp || "",
+//                         totaltradedquantity: dynamicInfoForAsset?.totaltradedquantity || "",
+//                         percentchange: dynamicInfoForAsset?.percentchange || "",
+//                         previousclose: dynamicInfoForAsset?.previousclose || "",
+//                     },
+//                 },
+//                 { upsert: false }
+//             );
 
-            const updatedAsset = {
-                ...asset.toObject(),
-                ...dynamicInfoForAsset,
-            };
+//             const updatedAsset = {
+//                 ...asset.toObject(),
+//                 ...dynamicInfoForAsset,
+//             };
 
-            const cachedSingleAssetDetails = await storage.getItem(CACHE_KEY_SINGLE_ASSET) || {};
-            cachedSingleAssetDetails[symbol] = updatedAsset;
-            await storage.setItem(CACHE_KEY_SINGLE_ASSET, cachedSingleAssetDetails);
+//             const cachedSingleAssetDetails = await storage.getItem(CACHE_KEY_SINGLE_ASSET) || {};
+//             cachedSingleAssetDetails[symbol] = updatedAsset;
+//             await storage.setItem(CACHE_KEY_SINGLE_ASSET, cachedSingleAssetDetails);
 
-            return res.status(200).json(updatedAsset);
-        } catch (error) {
-            console.error('Error processing asset:', error.message);
-            return res.status(500).json({ error: 'An error occurred while processing the asset.' });
-        }
-    } catch (error) {
-        console.error('Error:', error.message);
-        return res.status(500).json({ error: 'An error occurred.' });
-    }
-};
+//             return res.status(200).json(updatedAsset);
+//         } catch (error) {
+//             console.error('Error processing asset:', error.message);
+//             return res.status(500).json({ error: 'An error occurred while processing the asset.' });
+//         }
+//     } catch (error) {
+//         console.error('Error:', error.message);
+//         return res.status(500).json({ error: 'An error occurred.' });
+//     }
+// };
 
-//
+// //
 
-//end of single asset caching
-// current setup
-//send cache data always
-//if no cache then call nepse api
-//if nepse api is unavailable then send data from database
-//if database is not available then send data from fallback cache
+// //end of single asset caching
+// // current setup
+// //send cache data always
+// //if no cache then call nepse api
+// //if nepse api is unavailable then send data from database
+// //if database is not available then send data from fallback cache
 
-const CACHE_KEY = 'assetDetails';
+// const CACHE_KEY = 'assetDetails';
 
-export const getMultiAssetDetails = async (req, res) => {
-  console.log("All Asset Data Requested");
+// export const getMultiAssetDetails = async (req, res) => {
+//   console.log("All Asset Data Requested");
 
-  try {
-      const cachedData = await fetchFromCache(CACHE_KEY);
+//   try {
+//       const cachedData = await fetchFromCache(CACHE_KEY);
 
-      if (cachedData !== null) {
-        return res.status(200).json({
-          data: cachedData,
-          isFallback: false,
-          isCached: true,
-          dataversion: cachedDataVersion
-        });
-      }
+//       if (cachedData !== null) {
+//         return res.status(200).json({
+//           data: cachedData,
+//           isFallback: false,
+//           isCached: true,
+//           dataversion: cachedDataVersion
+//         });
+//       }
 
-      const assets = await Asset.find();
-      const symbols = assets.map(asset => asset.symbol);
+//       const assets = await Asset.find();
+//       const symbols = assets.map(asset => asset.symbol);
 
-      const dynamicInfo = await fetchSecurityData(58, symbols);
+//       const dynamicInfo = await fetchSecurityData(58, symbols);
 
-      const assetData = await Promise.all(assets.map(async (asset) => {
-          try {
-              const assetSymbol = asset.symbol;
-              const dynamicInfoForAsset = dynamicInfo.find(info => info.symbol === assetSymbol);
+//       const assetData = await Promise.all(assets.map(async (asset) => {
+//           try {
+//               const assetSymbol = asset.symbol;
+//               const dynamicInfoForAsset = dynamicInfo.find(info => info.symbol === assetSymbol);
 
-              await Asset.updateOne(
-                  { _id: asset._id },
-                  {
-                      $set: {
-                          ltp: dynamicInfoForAsset?.ltp || "",
-                          totaltradedquantity: dynamicInfoForAsset?.totaltradedquantity || "",
-                          percentchange: dynamicInfoForAsset?.percentchange || "",
-                          previousclose: dynamicInfoForAsset?.previousclose || "",
-                      },
-                  },
-                  { upsert: false }
-              );
+//               await Asset.updateOne(
+//                   { _id: asset._id },
+//                   {
+//                       $set: {
+//                           ltp: dynamicInfoForAsset?.ltp || "",
+//                           totaltradedquantity: dynamicInfoForAsset?.totaltradedquantity || "",
+//                           percentchange: dynamicInfoForAsset?.percentchange || "",
+//                           previousclose: dynamicInfoForAsset?.previousclose || "",
+//                       },
+//                   },
+//                   { upsert: false }
+//               );
 
-              return {
-                  ...asset.toObject(),
-                  ...dynamicInfoForAsset,
-              };
-          } catch (error) {
-              console.error('Error processing asset:', error.message);
-          }
-      }));
+//               return {
+//                   ...asset.toObject(),
+//                   ...dynamicInfoForAsset,
+//               };
+//           } catch (error) {
+//               console.error('Error processing asset:', error.message);
+//           }
+//       }));
 
-      const filteredAssetData = assetData.filter(asset => asset.ltp !== null);
+//       const filteredAssetData = assetData.filter(asset => asset.ltp !== null);
 
-      await storage.setItem(CACHE_KEY, filteredAssetData);
-      await storage.setItem(assetDetails_fallback, filteredAssetData);
+//       await storage.setItem(CACHE_KEY, filteredAssetData);
+//       await storage.setItem(assetDetails_fallback, filteredAssetData);
 
-      return res.status(200).json({
-        data: filteredAssetData,
-        isFallback: false,
-        isCached: false,
-        dataversion: cachedDataVersion
-      });
-  } catch (error) {
-      console.error('Live data unavailable, Using fallback', error.message);
+//       return res.status(200).json({
+//         data: filteredAssetData,
+//         isFallback: false,
+//         isCached: false,
+//         dataversion: cachedDataVersion
+//       });
+//   } catch (error) {
+//       console.error('Live data unavailable, Using fallback', error.message);
 
-      console.error('Trying to send data from database');
+//       console.error('Trying to send data from database');
 
-    try {
-      const assetsFromDatabase = await fetchFromDatabase(Asset);
-      console.error('Data sent from database:');
-      const filteredAssets = assetsFromDatabase.filter(asset => asset.ltp !== null);
-      return res.status(200).json(filteredAssets);
+//     try {
+//       const assetsFromDatabase = await fetchFromDatabase(Asset);
+//       console.error('Data sent from database:');
+//       const filteredAssets = assetsFromDatabase.filter(asset => asset.ltp !== null);
+//       return res.status(200).json(filteredAssets);
 
-    } catch (dbError) {
-      console.error('Error fetching data from the database:', dbError.message);
+//     } catch (dbError) {
+//       console.error('Error fetching data from the database:', dbError.message);
 
-      const All_Asset_fallback_key = 'assetDetails_fallback';
-      try{
-        console.log('Using fallback key');
-        const cachedData = await fetchFromCache(All_Asset_fallback_key);
-        if (cachedData !== null) {
-          return res.status(200).json({
-            data: cachedData,
-            isFallback: true,
-            isCached: true,
-            dataversion: cachedDataVersion
-          });
-      }}
-      catch {
-        console.log('everything failed: Fallback failed');
-        return res.status(500).json({ error: 'An error occurred while fetching data' });
-      }
+//       const All_Asset_fallback_key = 'assetDetails_fallback';
+//       try{
+//         console.log('Using fallback key');
+//         const cachedData = await fetchFromCache(All_Asset_fallback_key);
+//         if (cachedData !== null) {
+//           return res.status(200).json({
+//             data: cachedData,
+//             isFallback: true,
+//             isCached: true,
+//             dataversion: cachedDataVersion
+//           });
+//       }}
+//       catch {
+//         console.log('everything failed: Fallback failed');
+//         return res.status(500).json({ error: 'An error occurred while fetching data' });
+//       }
 
-      return res.status(500).json({ error: 'An error occurred while fetching data' });
-    }
-  }
-};
+//       return res.status(500).json({ error: 'An error occurred while fetching data' });
+//     }
+//   }
+// };
 
 //
 const CACHE_KEY_TOP_GAINERS = 'topGainers';
@@ -501,6 +500,8 @@ export const getTopVolume = async (req, res) => {
 };
 
 
+
+
 //get metal
 const assetToCategoryMap = {
     'Gold hallmark': 'Fine Gold',
@@ -509,63 +510,73 @@ const assetToCategoryMap = {
   };
 
 
-const CACHE_KEY_METAL_PRICES = 'metalPrices';
+  const CACHE_KEY_METAL_PRICES = 'metalPriced';
 
-export const fetchMetalPrices = async (req, res) => {
-  try {
-    const cachedData = await fetchFromCache(CACHE_KEY_METAL_PRICES);
-
-    if (cachedData !== null) {
-      console.log('Returning cached metal prices data');
-      return res.status(200).json({
-        data: cachedData,
-        isFallback: false,
-        isCached: true,
-        dataversion: cachedDataVersion,
-      });
-    }
-    const assets = Object.keys(assetToCategoryMap);
-    const metalPrices = [];
-
-    for (const asset of assets) {
-      const metalData = await metalPriceExtractor(asset);
-
-      if (metalData) {
-        metalPrices.push(metalData);
-      } else {
-        console.log(`Price for ${asset} not found`);
-      }
-    }
-    await storage.setItem(CACHE_KEY_METAL_PRICES, { metalPrices });
-
-    return res.status(200).json({
-      data: metalPrices,
-      isFallback: false,
-      isCached: false,
-      dataversion: cachedDataVersion,
-    });
-
-  } catch (error) {
-    console.error('Error fetching or logging metal prices:', error.message);
+  export const fetchMetalPrices = async (req, res) => {
     try {
-      const fallbackCacheData = await fetchFromCache(metalPrices_fallback);
+      const cachedData = await fetchFromCache(CACHE_KEY_METAL_PRICES);
 
-      if (fallbackCacheData !== null) {
-        console.log('Returning data from fallback cache');
-
+      if (cachedData !== null) {
+        console.log('Returning cached metal prices data');
         return res.status(200).json({
-          data: fallbackCacheData,
-          isFallback: true,
+          data: cachedData,
+          isFallback: false,
           isCached: true,
           dataversion: cachedDataVersion,
         });
       }
-    } catch (fallbackError) {
-      console.error('Fallback cache failed:', fallbackError.message);
+
+      const assets = Object.keys(assetToCategoryMap);
+      const metalPrices = [];
+
+      for (const asset of assets) {
+        const metalData = await metalPriceExtractor(asset);
+
+        if (metalData) {
+          const metalAsset = new Asset({
+            symbol: metalData.name,
+            name: metalData.name,
+            category: metalData.category,
+            sector: metalData.sector,
+            ltp: parseFloat(metalData.ltp),
+          });
+
+          metalPrices.push(metalAsset);
+        } else {
+          console.log(`Price for ${asset} not found`);
+        }
+      }
+
+      await storage.setItem(CACHE_KEY_METAL_PRICES, { metalPrices });
+
+      return res.status(200).json({
+        data: metalPrices,
+        isFallback: false,
+        isCached: false,
+        dataversion: cachedDataVersion,
+      });
+    } catch (error) {
+      console.error('Error fetching or logging metal prices:', error.message);
+
+      try {
+        const fallbackCacheData = await fetchFromCache(metalPrices_fallback);
+
+        if (fallbackCacheData !== null) {
+          console.log('Returning data from fallback cache');
+
+          return res.status(200).json({
+            data: fallbackCacheData,
+            isFallback: true,
+            isCached: true,
+            dataversion: cachedDataVersion,
+          });
+        }
+      } catch (fallbackError) {
+        console.error('Fallback cache failed:', fallbackError.message);
+      }
+      res.status(500).json({ error: 'Internal Server Error' });
     }
-    res.status(500).json({ error: 'Internal Server Error' });
-  }
-};
+  };
 
 //metal history
 export async function metalHistController(req, res) {
@@ -625,7 +636,6 @@ export async function metalHistController(req, res) {
       return { dates: [] };
     }
   }
-
 
 // // single stopmic data from sharesansar
   const Asset_cached_key = 'atomic_asset_data';
@@ -751,16 +761,12 @@ export const AssetMergedData = async (req, res) => {
   }
 };
 
-
-
 //
 //single asset from sharesanasar
 export const SingeAssetMergedData = async (req, res) => {
   console.log('Sharesansar Single Asset Data Requested');
 
-  console.log('Request query:', req.query);
-
-  const symbol = req.body.symbol;
+  const symbol = req.body.symbol.toUpperCase();
 
   if (!symbol) {
     console.error('No symbol provided in the request');
@@ -874,10 +880,8 @@ export const AssetMergedDataBySector = async (req, res) => {
 
         filteredCachedData = cachedData.filter(item => item.category === 'Assets');
       } else if (assettype === 'Mutual Fund') {
-        console.log("t3");
         filteredCachedData = cachedData.filter(item => item.category === 'Mutual Fund');
       } else if (assettype === 'Debenture') {
-        console.log("t3");
         filteredCachedData = cachedData.filter(item => item.category === 'Debenture');
       } else {
         return res.status(400).json({ error: 'Invalid asset type provided in the request' });
@@ -933,4 +937,4 @@ export const AssetMergedDataBySector = async (req, res) => {
   }
 };
 
-export default { getAllAssetNames,createAsset,getSingleAssetDetails, getMultiAssetDetails, metalHistController, fetchMetalPrices, AssetMergedData, SingeAssetMergedData, AssetMergedDataBySector};
+export default {createAsset, metalHistController, fetchMetalPrices, AssetMergedData, SingeAssetMergedData, AssetMergedDataBySector};
