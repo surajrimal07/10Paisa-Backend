@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { AssetMergedData, AssetMergedDataBySector, CommodityData, SingeAssetMergedData, createAsset, fetchMetalPrices, getTopGainers, getTopTurnover, getTopVolume, metalHistController } from '../controllers/assetControllers.js';
+import { AssetMergedData, AssetMergedDataBySector, CommodityData, SingeAssetMergedData, TopGainersData, TopLoosersData, TopTransData, TopTurnoverData, TopVolumeData, createAsset, fetchMetalPrices, getTopGainers, getTopTurnover, getTopVolume, metalHistController } from '../controllers/assetControllers.js';
 import { sendOTP, verifyOTP } from '../controllers/otpControllers.js';
 import { addStockToPortfolio, createPortfolio, deletePortfolio, getAllPortfoliosForUser, removeStockFromPortfolio, renamePortfolio } from '../controllers/portfolioControllers.js';
 import { createUser, defaultportfolio, deleteAccount, fetchToken, forgetPass, loginUser, makeadmin, removedefaultportfolio, updateUser, verifyData, verifyUser } from '../controllers/userController.js';
@@ -35,7 +35,7 @@ router.post('/trending', getTopGainers);
 router.post('/metalhist', metalHistController);
 router.post('/metal', fetchMetalPrices);
 router.post('/turnover', getTopTurnover);
-router.post('/topvolume', getTopVolume);
+router.post('/volume', getTopVolume);
 
 router.post('/adddefaultport', defaultportfolio);
 router.post('/removedefaultport', removedefaultportfolio);
@@ -43,6 +43,12 @@ router.post('/makeadmin', makeadmin);
 router.post('/sharesansardata', AssetMergedData);
 router.post('/singlesharesansardata', SingeAssetMergedData);
 router.post('/sectorsharesansardata', AssetMergedDataBySector);
+router.post('/topgainers', TopGainersData);
+router.post('/toploosers', TopLoosersData);
+router.post('/topturnover', TopTurnoverData);
+router.post('/topvolume', TopVolumeData);
+router.post('/toptrans', TopTransData);
+
 
 
 export default router;

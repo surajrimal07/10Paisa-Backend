@@ -6,7 +6,7 @@ import saveDataToJson from '../controllers/jsonControllers.js';
 import Asset from '../models/assetModel.js';
 import Commodity from '../models/commodityModel.js';
 import HistoricPrice from '../models/historicModel.js';
-import { FetchOldData, FetchSingularDataOfAsset, fetchTopGainers, fetchturnvolume, fetchvolume } from '../server/assetServer.js';
+import { FetchOldData, FetchSingularDataOfAsset, fetchTopGainers, fetchturnvolume, fetchvolume, topLosersShare, topTradedShares, topTransactions, topTurnoversShare, topgainersShare } from '../server/assetServer.js';
 import { commodityprices } from '../server/commodityServer.js';
 import { metalChartExtractor, metalPriceExtractor } from '../server/metalServer.js';
 import { oilExtractor } from '../server/oilServer.js';
@@ -487,7 +487,7 @@ export const getTopVolume = async (req, res) => {
     console.error('Error fetching data:', error.message);
 
     try {
-      const fallbackCacheData = await fetchFromCache(topVolume_fallback);
+      const fallbackCacheData = await fetchFromCache(topVolume_fallback); //error here, create variable for fallback
 
       if (fallbackCacheData !== null) {
         console.log('Returning data from fallback cache');
@@ -1097,7 +1097,278 @@ export const CommodityData = async (req, res) => {
 };
 
 //top gainers //share sansar
+const CACHE_KEY_TOP_GAINER = 'topGainersCached';
+const CACHE_KEY_TOP_GAINER_FALLBACK = 'topGainers_fallback';
+
+export const TopGainersData = async (req, res) => {
+  console.log('Top gainers data requested');
+
+  try {
+    const cachedData = await fetchFromCache(CACHE_KEY_TOP_GAINER);
+
+    if (cachedData !== null) {
+      console.log('Returning cached top gainers data');
+      return res.status(200).json({
+        data: cachedData,
+        isFallback: false,
+        isCached: true,
+        dataversion: cachedDataVersion,
+      });
+    }
+
+    const topGainersData = await topgainersShare();
+
+    if (!topGainersData) {
+      return res.status(500).json({ error: 'Failed to fetch top gainers data.' });
+    }
+
+    await storage.setItem(CACHE_KEY_TOP_GAINER, topGainersData);
+    await storage.setItem(CACHE_KEY_TOP_GAINER_FALLBACK, topGainersData);
 
 
+    return res.status(200).json({
+      data: topGainersData,
+      isFallback: false,
+      isCached: false,
+      dataversion: cachedDataVersion,
+    });
+  } catch (error) {
 
-export default {createAsset, metalHistController, fetchMetalPrices, AssetMergedData, SingeAssetMergedData, AssetMergedDataBySector, CommodityData};
+    const cachedData = await fetchFromCache(CACHE_KEY_TOP_GAINER_FALLBACK);
+
+    if (cachedData !== null) {
+      console.log('Returning top gainers fallback data');
+      return res.status(200).json({
+        data: cachedData,
+        isFallback: true,
+        isCached: true,
+        dataversion: cachedDataVersion,
+      });
+    }
+
+    console.error(error);
+    return res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+
+//toploosers
+const CACHE_KEY_TOP_LOOSERS = 'topLoosersCached';
+const CACHE_KEY_TOP_LOOSERS_FALLBACK = 'topLoosers_fallback';
+
+export const TopLoosersData = async (req, res) => {
+  console.log('Top loosers data requested');
+
+  try {
+    const cachedData = await fetchFromCache(CACHE_KEY_TOP_LOOSERS);
+
+    if (cachedData !== null) {
+      console.log('Returning cached top loosers data');
+      return res.status(200).json({
+        data: cachedData,
+        isFallback: false,
+        isCached: true,
+        dataversion: cachedDataVersion,
+      });
+    }
+
+    const topGainersData = await topLosersShare();
+
+    if (!topGainersData) {
+      return res.status(500).json({ error: 'Failed to fetch top loosers data.' });
+    }
+
+    await storage.setItem(CACHE_KEY_TOP_LOOSERS, topGainersData);
+    await storage.setItem(CACHE_KEY_TOP_LOOSERS_FALLBACK, topGainersData);
+
+
+    return res.status(200).json({
+      data: topGainersData,
+      isFallback: false,
+      isCached: false,
+      dataversion: cachedDataVersion,
+    });
+  } catch (error) {
+
+    const cachedData = await fetchFromCache(CACHE_KEY_TOP_LOOSERS_FALLBACK);
+
+    if (cachedData !== null) {
+      console.log('Returning top loosers fallback data');
+      return res.status(200).json({
+        data: cachedData,
+        isFallback: true,
+        isCached: true,
+        dataversion: cachedDataVersion,
+      });
+    }
+
+    console.error(error);
+    return res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+
+//top turnover
+const CACHE_KEY_TOP_TURNOVERS = 'topturnoverCached';
+const CACHE_KEY_TOP_TURNOVERS_FALLBACK = 'topturnover_fallback';
+
+export const TopTurnoverData = async (req, res) => {
+  console.log('Top turnover data requested');
+
+  try {
+    const cachedData = await fetchFromCache(CACHE_KEY_TOP_TURNOVERS);
+
+    if (cachedData !== null) {
+      console.log('Returning cached top turnover data');
+      return res.status(200).json({
+        data: cachedData,
+        isFallback: false,
+        isCached: true,
+        dataversion: cachedDataVersion,
+      });
+    }
+
+    const topGainersData = await topTurnoversShare();
+
+    if (!topGainersData) {
+      return res.status(500).json({ error: 'Failed to fetch top turnover data.' });
+    }
+
+    await storage.setItem(CACHE_KEY_TOP_TURNOVERS, topGainersData);
+    await storage.setItem(CACHE_KEY_TOP_TURNOVERS_FALLBACK, topGainersData);
+
+
+    return res.status(200).json({
+      data: topGainersData,
+      isFallback: false,
+      isCached: false,
+      dataversion: cachedDataVersion,
+    });
+  } catch (error) {
+
+    const cachedData = await fetchFromCache(CACHE_KEY_TOP_TURNOVERS_FALLBACK);
+
+    if (cachedData !== null) {
+      console.log('Returning top turnover fallback data');
+      return res.status(200).json({
+        data: cachedData,
+        isFallback: true,
+        isCached: true,
+        dataversion: cachedDataVersion,
+      });
+    }
+
+    console.error(error);
+    return res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+
+//top volume
+const CACHE_KEY_TOP_VOLUMES = 'topvolumecached';
+const CACHE_KEY_TOP_VOLUMES_FALLBACK = 'topvolume_fallback';
+
+export const TopVolumeData = async (req, res) => {
+  console.log('Top volume data requested');
+
+  try {
+    const cachedData = await fetchFromCache(CACHE_KEY_TOP_VOLUMES);
+
+    if (cachedData !== null) {
+      console.log('Returning cached top volume data');
+      return res.status(200).json({
+        data: cachedData,
+        isFallback: false,
+        isCached: true,
+        dataversion: cachedDataVersion,
+      });
+    }
+
+    const topGainersData = await topTradedShares();
+
+    if (!topGainersData) {
+      return res.status(500).json({ error: 'Failed to fetch top volume data.' });
+    }
+
+    await storage.setItem(CACHE_KEY_TOP_VOLUMES, topGainersData);
+    await storage.setItem(CACHE_KEY_TOP_VOLUMES_FALLBACK, topGainersData);
+
+
+    return res.status(200).json({
+      data: topGainersData,
+      isFallback: false,
+      isCached: false,
+      dataversion: cachedDataVersion,
+    });
+  } catch (error) {
+
+    const cachedData = await fetchFromCache(CACHE_KEY_TOP_VOLUMES_FALLBACK);
+
+    if (cachedData !== null) {
+      console.log('Returning top volume fallback data');
+      return res.status(200).json({
+        data: cachedData,
+        isFallback: true,
+        isCached: true,
+        dataversion: cachedDataVersion,
+      });
+    }
+
+    console.error(error);
+    return res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+
+const CACHE_KEY_TOP_TRANS = 'toptranscached';
+const CACHE_KEY_TOP_TRANS_FALLBACK = 'toptrans_fallback';
+
+export const TopTransData = async (req, res) => {
+  console.log('Top Transaction data requested');
+
+  try {
+    const cachedData = await fetchFromCache(CACHE_KEY_TOP_TRANS);
+
+    if (cachedData !== null) {
+      console.log('Returning cached top transaction data');
+      return res.status(200).json({
+        data: cachedData,
+        isFallback: false,
+        isCached: true,
+        dataversion: cachedDataVersion,
+      });
+    }
+
+    const topGainersData = await topTransactions();
+
+    if (!topGainersData) {
+      return res.status(500).json({ error: 'Failed to fetch top transaction data.' });
+    }
+
+    await storage.setItem(CACHE_KEY_TOP_TRANS, topGainersData);
+    await storage.setItem(CACHE_KEY_TOP_TRANS_FALLBACK, topGainersData);
+
+
+    return res.status(200).json({
+      data: topGainersData,
+      isFallback: false,
+      isCached: false,
+      dataversion: cachedDataVersion,
+    });
+  } catch (error) {
+
+    const cachedData = await fetchFromCache(CACHE_KEY_TOP_VOLUMES_FALLBACK);
+
+    if (cachedData !== null) {
+      console.log('Returning top transaction fallback data');
+      return res.status(200).json({
+        data: cachedData,
+        isFallback: true,
+        isCached: true,
+        dataversion: cachedDataVersion,
+      });
+    }
+
+    console.error(error);
+    return res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+
+
+export default {createAsset, fetchMetalPrices,TopVolumeData,TopTransData,TopTurnoverData,topLosersShare, AssetMergedData, SingeAssetMergedData, AssetMergedDataBySector, CommodityData, TopGainersData};
