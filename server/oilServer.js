@@ -1,6 +1,5 @@
 import axios from 'axios';
 import cheerio from 'cheerio';
-import Asset from '../models/assetModel.js';
 
 
 export async function oilExtractor(url = 'https://www.ktm2day.com/petrol-diesel-lpg-gas-aviation-fuel-price-in-nepal/') {
@@ -21,13 +20,7 @@ export async function oilExtractor(url = 'https://www.ktm2day.com/petrol-diesel-
                 price = price.replace(/^"(.*)"$/, '$1');
 
                 if (fuelType === 'Petrol' || fuelType === 'Diesel' || fuelType === 'Kerosene') {
-                    // fuelPrices.push({
-                    //     name: fuelType,
-                    //     category: 'Oil & Gas',
-                    //     unit: quantity,
-                    //     ltp: parseFloat(price) || null,
-                    // });
-                    return Asset({
+                    fuelPrices.push({
                         name: fuelType,
                         category: 'Oil & Gas',
                         unit: quantity,
@@ -44,4 +37,4 @@ export async function oilExtractor(url = 'https://www.ktm2day.com/petrol-diesel-
     }
 }
 
-//oilExtractor()
+oilExtractor()

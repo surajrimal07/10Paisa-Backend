@@ -166,9 +166,6 @@ export async function fetchvolume() {
 
 
 
-
-
-
 //preparing to switch to sharesansar as data provider
 export async function FetchSingularDataOfAsset() {
   const liveTradingUrl = 'https://www.sharesansar.com/live-trading';
@@ -279,7 +276,7 @@ export async function AddCategoryAndSector(stockData) {
             stockInfo.sector = 'Bank';
           } else if (lowerCaseName.includes('finance')) {
             stockInfo.sector = 'Finance';
-          } else if (lowerCaseName.includes('hydro') && lowerCaseName.includes('power')) {
+          } else if (lowerCaseName.includes('hydro') || lowerCaseName.includes('Hydro') || lowerCaseName.includes('power') || lowerCaseName.includes('Jal Vidhyut') || lowerCaseName.includes('Khola')) {
             stockInfo.sector = 'Hydropower';
           } else if (
             lowerCaseName.includes('bikas') ||
@@ -409,5 +406,240 @@ export async function FetchOldData() {
       throw error;
   }
 }
+//share sansar top gainers
+export const topgainersShare = async () => {
+  const url = "https://www.sharesansar.com/top-gainers?draw=1&columns%5B0%5D%5Bdata%5D=DT_Row_Index&columns%5B0%5D%5Bname%5D=&columns%5B0%5D%5Bsearchable%5D=false&columns%5B0%5D%5Borderable%5D=false&columns%5B0%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B0%5D%5Bsearch%5D%5Bregex%5D=false&columns%5B1%5D%5Bdata%5D=symbol&columns%5B1%5D%5Bname%5D=&columns%5B1%5D%5Bsearchable%5D=false&columns%5B1%5D%5Borderable%5D=false&columns%5B1%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B1%5D%5Bsearch%5D%5Bregex%5D=false&columns%5B2%5D%5Bdata%5D=companyname&columns%5B2%5D%5Bname%5D=&columns%5B2%5D%5Bsearchable%5D=false&columns%5B2%5D%5Borderable%5D=false&columns%5B2%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B2%5D%5Bsearch%5D%5Bregex%5D=false&columns%5B3%5D%5Bdata%5D=close&columns%5B3%5D%5Bname%5D=&columns%5B3%5D%5Bsearchable%5D=false&columns%5B3%5D%5Borderable%5D=false&columns%5B3%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B3%5D%5Bsearch%5D%5Bregex%5D=false&columns%5B4%5D%5Bdata%5D=change_pts&columns%5B4%5D%5Bname%5D=&columns%5B4%5D%5Bsearchable%5D=false&columns%5B4%5D%5Borderable%5D=false&columns%5B4%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B4%5D%5Bsearch%5D%5Bregex%5D=false&columns%5B5%5D%5Bdata%5D=diff_per&columns%5B5%5D%5Bname%5D=&columns%5B5%5D%5Bsearchable%5D=false&columns%5B5%5D%5Borderable%5D=false&columns%5B5%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B5%5D%5Bsearch%5D%5Bregex%5D=false&start=0&length=50&search%5Bvalue%5D=&search%5Bregex%5D=false&_=1702613311864";
 
-export default {fetchDataAndMapToAssetModel,fetchTopGainers, fetchturnvolume, fetchvolume, FetchSingularDataOfAsset,GetDebentures,FetchOldData};
+  try {
+    const response = await axios.get(url, {
+      headers: {
+        "accept": "application/json, text/javascript, */*; q=0.01",
+        "accept-language": "en-US,en;q=0.9,ne;q=0.8",
+        "sec-ch-ua": "\"Not_A Brand\";v=\"8\", \"Chromium\";v=\"120\", \"Microsoft Edge\";v=\"120\"",
+        "sec-ch-ua-mobile": "?0",
+        "sec-ch-ua-platform": "\"Windows\"",
+        "sec-fetch-dest": "empty",
+        "sec-fetch-mode": "cors",
+        "sec-fetch-site": "same-origin",
+        "x-requested-with": "XMLHttpRequest",
+        "cookie": "XSRF-TOKEN=your_XSRF_TOKEN_here; sharesansar_session=your_sharesansar_session_here",
+        "Referer": "https://www.sharesansar.com/top-gainers",
+        "Referrer-Policy": "strict-origin-when-cross-origin",
+      }
+    });
+
+    const data = response.data.data;
+
+    if (!Array.isArray(data)) {
+      throw new Error('Data is not an array.');
+    }
+
+    console.log('Data:', data);
+
+    // Process the data
+    const processedData = data.map(item => ({
+      symbol: item.symbol.replace(/<[^>]*>/g, ''),
+      companyname: item.companyname.replace(/<[^>]*>/g, ''),
+      ltp: parseFloat(item.close),
+      pointchange: parseFloat(item.change_pts),
+      percentchange: parseFloat(item.diff_per),
+    }));
+
+    console.log('Processed Data:', processedData);
+
+    return processedData;
+  } catch (error) {
+    console.error(error);
+    throw error;
+  }
+};
+
+//top loosers// sharesansar
+export const topLosersShare = async () => {
+  const url = "https://www.sharesansar.com/top-losers?draw=1&columns%5B0%5D%5Bdata%5D=DT_Row_Index&columns%5B0%5D%5Bname%5D=&columns%5B0%5D%5Bsearchable%5D=false&columns%5B0%5D%5Borderable%5D=false&columns%5B0%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B0%5D%5Bsearch%5D%5Bregex%5D=false&columns%5B1%5D%5Bdata%5D=symbol&columns%5B1%5D%5Bname%5D=&columns%5B1%5D%5Bsearchable%5D=false&columns%5B1%5D%5Borderable%5D=false&columns%5B1%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B1%5D%5Bsearch%5D%5Bregex%5D=false&columns%5B2%5D%5Bdata%5D=companyname&columns%5B2%5D%5Bname%5D=&columns%5B2%5D%5Bsearchable%5D=false&columns%5B2%5D%5Borderable%5D=false&columns%5B2%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B2%5D%5Bsearch%5D%5Bregex%5D=false&columns%5B3%5D%5Bdata%5D=close&columns%5B3%5D%5Bname%5D=&columns%5B3%5D%5Bsearchable%5D=false&columns%5B3%5D%5Borderable%5D=false&columns%5B3%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B3%5D%5Bsearch%5D%5Bregex%5D=false&columns%5B4%5D%5Bdata%5D=change_pts&columns%5B4%5D%5Bname%5D=&columns%5B4%5D%5Bsearchable%5D=false&columns%5B4%5D%5Borderable%5D=false&columns%5B4%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B4%5D%5Bsearch%5D%5Bregex%5D=false&columns%5B5%5D%5Bdata%5D=diff_per&columns%5B5%5D%5Bname%5D=&columns%5B5%5D%5Bsearchable%5D=false&columns%5B5%5D%5Borderable%5D=false&columns%5B5%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B5%5D%5Bsearch%5D%5Bregex%5D=false&start=0&length=50&search%5Bvalue%5D=&search%5Bregex%5D=false&_=1702614671747";
+
+  try {
+    const response = await axios.get(url, {
+      headers: {
+        "accept": "application/json, text/javascript, */*; q=0.01",
+        "accept-language": "en-US,en;q=0.9,ne;q=0.8",
+        "sec-ch-ua": "\"Not_A Brand\";v=\"8\", \"Chromium\";v=\"120\", \"Microsoft Edge\";v=\"120\"",
+        "sec-ch-ua-mobile": "?0",
+        "sec-ch-ua-platform": "\"Windows\"",
+        "sec-fetch-dest": "empty",
+        "sec-fetch-mode": "cors",
+        "sec-fetch-site": "same-origin",
+        "x-requested-with": "XMLHttpRequest",
+        "cookie": "XSRF-TOKEN=your_XSRF_TOKEN_here; sharesansar_session=your_sharesansar_session_here",
+        "Referer": "https://www.sharesansar.com/top-losers",
+        "Referrer-Policy": "strict-origin-when-cross-origin",
+      }
+    });
+
+    const data = response.data.data;
+
+    if (!Array.isArray(data)) {
+      throw new Error('Data is not in the expected format.');
+    }
+
+    const processedData = data.map((item) => ({
+      symbol: item.symbol.replace(/<[^>]*>/g, ''),
+      companyname: item.companyname.replace(/<[^>]*>/g, ''),
+      ltp: parseFloat(item.close),
+      pointchange: parseFloat(item.change_pts),
+      percentchange: parseFloat(item.diff_per),
+    }));
+
+    console.log('Processed Data:', processedData);
+
+    return processedData;
+  } catch (error) {
+    console.error(error);
+    throw error;
+  }
+};
+
+
+export const topTurnoversShare = async () => {
+  const url = "https://www.sharesansar.com/top-turnovers?draw=1&columns%5B0%5D%5Bdata%5D=DT_Row_Index&columns%5B0%5D%5Bname%5D=&columns%5B0%5D%5Bsearchable%5D=false&columns%5B0%5D%5Borderable%5D=false&columns%5B0%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B0%5D%5Bsearch%5D%5Bregex%5D=false&columns%5B1%5D%5Bdata%5D=symbol&columns%5B1%5D%5Bname%5D=&columns%5B1%5D%5Bsearchable%5D=false&columns%5B1%5D%5Borderable%5D=false&columns%5B1%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B1%5D%5Bsearch%5D%5Bregex%5D=false&columns%5B2%5D%5Bdata%5D=companyname&columns%5B2%5D%5Bname%5D=&columns%5B2%5D%5Bsearchable%5D=false&columns%5B2%5D%5Borderable%5D=false&columns%5B2%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B2%5D%5Bsearch%5D%5Bregex%5D=false&columns%5B3%5D%5Bdata%5D=traded_amount&columns%5B3%5D%5Bname%5D=&columns%5B3%5D%5Bsearchable%5D=false&columns%5B3%5D%5Borderable%5D=false&columns%5B3%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B3%5D%5Bsearch%5D%5Bregex%5D=false&columns%5B4%5D%5Bdata%5D=close&columns%5B4%5D%5Bname%5D=&columns%5B4%5D%5Bsearchable%5D=false&columns%5B4%5D%5Borderable%5D=false&columns%5B4%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B4%5D%5Bsearch%5D%5Bregex%5D=false&start=0&length=50&search%5Bvalue%5D=&search%5Bregex%5D=false&_=1702618064106";
+
+  try {
+    const response = await axios.get(url, {
+      headers: {
+        "accept": "application/json, text/javascript, */*; q=0.01",
+        "accept-language": "en-US,en;q=0.9,ne;q=0.8",
+        "sec-ch-ua": "\"Not_A Brand\";v=\"8\", \"Chromium\";v=\"120\", \"Microsoft Edge\";v=\"120\"",
+        "sec-ch-ua-mobile": "?0",
+        "sec-ch-ua-platform": "\"Windows\"",
+        "sec-fetch-dest": "empty",
+        "sec-fetch-mode": "cors",
+        "sec-fetch-site": "same-origin",
+        "x-requested-with": "XMLHttpRequest",
+        "cookie": "XSRF-TOKEN=your_XSRF_TOKEN_here; sharesansar_session=your_sharesansar_session_here",
+        "Referer": "https://www.sharesansar.com/top-turnovers",
+        "Referrer-Policy": "strict-origin-when-cross-origin",
+      }
+    });
+
+    const data = response.data.data;
+
+    if (!Array.isArray(data)) {
+      throw new Error('Data is not in the expected format.');
+    }
+
+    const processedData = data.map((item) => ({
+      symbol: item.symbol.replace(/<[^>]*>/g, ''),
+      companyname: item.companyname.replace(/<[^>]*>/g, ''),
+      turnover: parseFloat(item.traded_amount),
+      ltp: parseFloat(item.close),
+    }));
+
+    console.log('Processed Data:', processedData);
+
+    return processedData;
+  } catch (error) {
+    console.error(error);
+    throw error;
+  }
+};
+
+//top volume
+export const topTradedShares = async () => {
+  const url = "https://www.sharesansar.com/top-tradedshares?draw=1&columns%5B0%5D%5Bdata%5D=DT_Row_Index&columns%5B0%5D%5Bname%5D=&columns%5B0%5D%5Bsearchable%5D=false&columns%5B0%5D%5Borderable%5D=false&columns%5B0%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B0%5D%5Bsearch%5D%5Bregex%5D=false&columns%5B1%5D%5Bdata%5D=symbol&columns%5B1%5D%5Bname%5D=&columns%5B1%5D%5Bsearchable%5D=false&columns%5B1%5D%5Borderable%5D=false&columns%5B1%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B1%5D%5Bsearch%5D%5Bregex%5D=false&columns%5B2%5D%5Bdata%5D=companyname&columns%5B2%5D%5Bname%5D=&columns%5B2%5D%5Bsearchable%5D=false&columns%5B2%5D%5Borderable%5D=false&columns%5B2%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B2%5D%5Bsearch%5D%5Bregex%5D=false&columns%5B3%5D%5Bdata%5D=traded_quantity&columns%5B3%5D%5Bname%5D=&columns%5B3%5D%5Bsearchable%5D=false&columns%5B3%5D%5Borderable%5D=false&columns%5B3%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B3%5D%5Bsearch%5D%5Bregex%5D=false&columns%5B4%5D%5Bdata%5D=close&columns%5B4%5D%5Bname%5D=&columns%5B4%5D%5Bsearchable%5D=false&columns%5B4%5D%5Borderable%5D=false&columns%5B4%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B4%5D%5Bsearch%5D%5Bregex%5D=false&start=0&length=50&search%5Bvalue%5D=&search%5Bregex%5D=false&_=1702618649178";
+
+  try {
+    const response = await axios.get(url, {
+      headers: {
+        "accept": "application/json, text/javascript, */*; q=0.01",
+        "accept-encoding": "gzip, deflate, br",
+        "accept-language": "en-US,en;q=0.9,ne;q=0.8",
+        "cookie": "XSRF-TOKEN=your_XSRF_TOKEN_here; sharesansar_session=your_sharesansar_session_here",
+        "dnt": "1",
+        "referer": "https://www.sharesansar.com/top-tradedshares",
+        "sec-ch-ua": "\"Not_A Brand\";v=\"8\", \"Chromium\";v=\"120\", \"Microsoft Edge\";v=\"120\"",
+        "sec-ch-ua-mobile": "?0",
+        "sec-ch-ua-platform": "\"Windows\"",
+        "sec-fetch-dest": "empty",
+        "sec-fetch-mode": "cors",
+        "sec-fetch-site": "same-origin",
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0",
+        "x-requested-with": "XMLHttpRequest",
+      },
+    });
+
+    const data = response.data.data;
+
+    if (!Array.isArray(data)) {
+      throw new Error('Data is not in the expected format.');
+    }
+
+    const processedData = data.map((item) => ({
+      symbol: item.symbol.replace(/<[^>]*>/g, ''),
+      companyname: item.companyname.replace(/<[^>]*>/g, ''),
+      volume: parseFloat(item.traded_quantity),
+      ltp: parseFloat(item.close),
+    }));
+
+    console.log('Processed Data:', processedData);
+
+    return processedData;
+  } catch (error) {
+    console.error(error);
+    throw error;
+  }
+};
+
+//top transaction
+export const topTransactions = async () => {
+  const url = "https://www.sharesansar.com/top-transactions?draw=1&columns%5B0%5D%5Bdata%5D=DT_Row_Index&columns%5B0%5D%5Bname%5D=&columns%5B0%5D%5Bsearchable%5D=false&columns%5B0%5D%5Borderable%5D=false&columns%5B0%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B0%5D%5Bsearch%5D%5Bregex%5D=false&columns%5B1%5D%5Bdata%5D=symbol&columns%5B1%5D%5Bname%5D=&columns%5B1%5D%5Bsearchable%5D=false&columns%5B1%5D%5Borderable%5D=false&columns%5B1%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B1%5D%5Bsearch%5D%5Bregex%5D=false&columns%5B2%5D%5Bdata%5D=companyname&columns%5B2%5D%5Bname%5D=&columns%5B2%5D%5Bsearchable%5D=false&columns%5B2%5D%5Borderable%5D=false&columns%5B2%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B2%5D%5Bsearch%5D%5Bregex%5D=false&columns%5B3%5D%5Bdata%5D=no_trade&columns%5B3%5D%5Bname%5D=&columns%5B3%5D%5Bsearchable%5D=false&columns%5B3%5D%5Borderable%5D=false&columns%5B3%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B3%5D%5Bsearch%5D%5Bregex%5D=false&columns%5B4%5D%5Bdata%5D=close&columns%5B4%5D%5Bname%5D=&columns%5B4%5D%5Bsearchable%5D=false&columns%5B4%5D%5Borderable%5D=false&columns%5B4%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B4%5D%5Bsearch%5D%5Bregex%5D=false&start=0&length=50&search%5Bvalue%5D=&search%5Bregex%5D=false&_=1702618782413";
+
+  try {
+    const response = await axios.get(url, {
+      headers: {
+        "accept": "application/json, text/javascript, */*; q=0.01",
+        "accept-encoding": "gzip, deflate, br",
+        "accept-language": "en-US,en;q=0.9,ne;q=0.8",
+        "cookie": "XSRF-TOKEN=your_XSRF_TOKEN_here; sharesansar_session=your_sharesansar_session_here",
+        "dnt": "1",
+        "referer": "https://www.sharesansar.com/top-transactions",
+        "sec-ch-ua": "\"Not_A Brand\";v=\"8\", \"Chromium\";v=\"120\", \"Microsoft Edge\";v=\"120\"",
+        "sec-ch-ua-mobile": "?0",
+        "sec-ch-ua-platform": "\"Windows\"",
+        "sec-fetch-dest": "empty",
+        "sec-fetch-mode": "cors",
+        "sec-fetch-site": "same-origin",
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0",
+        "x-requested-with": "XMLHttpRequest",
+      },
+    });
+
+    const data = response.data.data;
+
+    if (!Array.isArray(data)) {
+      throw new Error('Data is not in the expected format.');
+    }
+
+    const processedData = data.map((item) => ({
+      symbol: item.symbol.replace(/<[^>]*>/g, ''),
+      companyname: item.companyname.replace(/<[^>]*>/g, ''),
+      transactions: parseFloat(item.no_trade),
+      ltp: parseFloat(item.close),
+    }));
+
+    console.log('Processed Data:', processedData);
+
+    return processedData;
+  } catch (error) {
+    console.error(error);
+    throw error;
+  }
+};
+
+// try {
+//   const extractedData = await topTransactions();
+//   console.log(extractedData);
+// } catch (error) {
+//   console.error(error);
+// }
+
+export default {fetchDataAndMapToAssetModel,fetchTopGainers, fetchturnvolume, fetchvolume, FetchSingularDataOfAsset,GetDebentures,FetchOldData, topgainersShare, topLosersShare, topTradedShares, topTurnoversShare, topTransactions};

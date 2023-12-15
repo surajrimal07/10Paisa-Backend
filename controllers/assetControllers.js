@@ -1,11 +1,15 @@
 import { DateTime } from 'luxon';
 import storage from 'node-persist';
+import path, { dirname } from 'path';
+import { fileURLToPath } from 'url';
 import saveDataToJson from '../controllers/jsonControllers.js';
 import Asset from '../models/assetModel.js';
+import Commodity from '../models/commodityModel.js';
 import HistoricPrice from '../models/historicModel.js';
 import { FetchOldData, FetchSingularDataOfAsset, fetchTopGainers, fetchturnvolume, fetchvolume } from '../server/assetServer.js';
+import { commodityprices } from '../server/commodityServer.js';
 import { metalChartExtractor, metalPriceExtractor } from '../server/metalServer.js';
-
+import { oilExtractor } from '../server/oilServer.js';
 await storage.init();
 
 //common functions
@@ -23,7 +27,7 @@ const fetchFromCache = async (cacheKey) => {
   try {
     const cachedData = await storage.getItem(cacheKey);
     if (cachedData) { //&& cachedData.length > 0
-      console.log('Returning cached data');
+      //console.log('Returning cached data');
       return cachedData;
     }
     return null;
@@ -32,6 +36,9 @@ const fetchFromCache = async (cacheKey) => {
     throw new Error('Error fetching data from cache');
   }
 };
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 
 const dataversion_cache = 'dataVersionCounter_c';
@@ -500,143 +507,6 @@ export const getTopVolume = async (req, res) => {
 };
 
 
-
-
-//get metal
-const assetToCategoryMap = {
-    'Gold hallmark': 'Fine Gold',
-    'Gold tejabi': 'Tejabi Gold',
-    'Silver': 'Silver',
-  };
-
-
-  const CACHE_KEY_METAL_PRICES = 'metalPriced';
-
-  export const fetchMetalPrices = async (req, res) => {
-    try {
-      const cachedData = await fetchFromCache(CACHE_KEY_METAL_PRICES);
-
-      if (cachedData !== null) {
-        console.log('Returning cached metal prices data');
-        return res.status(200).json({
-          data: cachedData,
-          isFallback: false,
-          isCached: true,
-          dataversion: cachedDataVersion,
-        });
-      }
-
-      const assets = Object.keys(assetToCategoryMap);
-      const metalPrices = [];
-
-      for (const asset of assets) {
-        const metalData = await metalPriceExtractor(asset);
-
-        if (metalData) {
-          const metalAsset = new Asset({
-            symbol: metalData.name,
-            name: metalData.name,
-            category: metalData.category,
-            sector: metalData.sector,
-            ltp: parseFloat(metalData.ltp),
-          });
-
-          metalPrices.push(metalAsset);
-        } else {
-          console.log(`Price for ${asset} not found`);
-        }
-      }
-
-      await storage.setItem(CACHE_KEY_METAL_PRICES, { metalPrices });
-
-      return res.status(200).json({
-        data: metalPrices,
-        isFallback: false,
-        isCached: false,
-        dataversion: cachedDataVersion,
-      });
-    } catch (error) {
-      console.error('Error fetching or logging metal prices:', error.message);
-
-      try {
-        const fallbackCacheData = await fetchFromCache(metalPrices_fallback);
-
-        if (fallbackCacheData !== null) {
-          console.log('Returning data from fallback cache');
-
-          return res.status(200).json({
-            data: fallbackCacheData,
-            isFallback: true,
-            isCached: true,
-            dataversion: cachedDataVersion,
-          });
-        }
-      } catch (fallbackError) {
-        console.error('Fallback cache failed:', fallbackError.message);
-      }
-      res.status(500).json({ error: 'Internal Server Error' });
-    }
-  };
-
-//metal history
-export async function metalHistController(req, res) {
-    try {
-      const metalPrices = await metalChartExtractor();
-
-      if (metalPrices) {
-        const { dates, prices } = metalPrices;
-
-        await saveToDatabase(req.body.assetName, dates, prices);
-
-        const responseData = {
-          dates: dates,
-          prices: prices[req.body.assetName],
-        };
-
-        return res.status(200).json(responseData);
-      } else {
-        console.log('Price extraction failed');
-        return res.status(500).json({ success: false, message: 'Price extraction failed' });
-      }
-    } catch (error) {
-      console.error('Error:', error.message);
-      return res.status(500).json({ success: false, message: 'Internal server error' });
-    }
-  }
-
-  async function saveToDatabase(assetName, dates, prices) {
-    const dataToSave = dates.map((date, index) => ({
-      date: new Date(date),
-      price: {
-        fineGold: prices.fineGold[index],
-        tejabiGold: prices.tejabiGold[index],
-        silver: prices.silver[index],
-      },
-    }));
-
-    await HistoricPrice.findOneAndUpdate(
-      { symbol: assetName },
-      { $push: { historicalData: { $each: dataToSave } } },
-      { upsert: true, new: true, useFindAndModify: false }
-    );
-
-    const savedDocument = await HistoricPrice.findOne(
-      { symbol: assetName },
-      { _id: 0, historicalData: { $slice: -15 } }
-    );
-
-    if (savedDocument && savedDocument.historicalData) {
-      const responseData = {
-        dates: savedDocument.historicalData.map(entry => entry.date.toISOString().split('T')[0]),
-        prices: savedDocument.historicalData.map(entry => entry.price),
-      };
-
-      return responseData;
-    } else {
-      return { dates: [] };
-    }
-  }
-
 // // single stopmic data from sharesansar
   const Asset_cached_key = 'atomic_asset_data';
   const Asset_fallback_key= 'shares_asset_fallback';
@@ -669,7 +539,8 @@ export const AssetMergedData = async (req, res) => {
     console.log('Incremented data version:', dataVersionCounter);
 
     const currentDate = new Date().toISOString().split('T')[0];
-    const assetDataFolderPath = './AssetData';
+    const Assetfolder = 'AssetArchive';
+    const assetDataFolderPath = path.join(__dirname, '..', 'AssetData', Assetfolder);
     const fileName = `${currentDate}_Stock.json`;
 
     saveDataToJson(
@@ -679,22 +550,33 @@ export const AssetMergedData = async (req, res) => {
         isCached: false,
         dataversion: { versionCode: dataVersionCounter, timestamp: DateTime.now().toISO() },
       },
-      fileName
+      fileName,
+      assetDataFolderPath
     );
 
     // Update existing documents based on symbol
-    await Promise.all(
-      mergedData.map(async (item) => {
-        await Asset.updateOne({ symbol: item.symbol }, { $set: item }, { upsert: true });
-      })
-    );
+    // await Promise.all(
+    //   mergedData.map(async (item) => {
+    //     await Asset.updateOne({ symbol: item.symbol }, { $set: item }, { upsert: true });
+    //   })
+    // );
+
+    try {
+      await Promise.all(
+        mergedData.map(async (item) => {
+          await Asset.updateOne({ symbol: item.symbol }, { $set: item }, { upsert: true });
+        })
+      );
+    } catch (error) {
+      console.error('DB Update Error:', error);
+    }
 
     // Update cache and counter
     await Promise.all([
       storage.setItem(dataversion_cache, { versionCode: dataVersionCounter, timestamp: DateTime.now().toISO() }),
       storage.setItem(counter, dataVersionCounter),
       storage.setItem(Asset_cached_key, mergedData),
-      storage.setItem(Asset_fallback_key, mergedData) //also adding in fallback data
+      storage.setItem(Asset_fallback_key, mergedData)
     ]);
 
     await Promise.all(
@@ -766,7 +648,7 @@ export const AssetMergedData = async (req, res) => {
 export const SingeAssetMergedData = async (req, res) => {
   console.log('Sharesansar Single Asset Data Requested');
 
-  const symbol = req.body.symbol.toUpperCase();
+  const symbol = req.body.symbol;
 
   if (!symbol) {
     console.error('No symbol provided in the request');
@@ -774,11 +656,13 @@ export const SingeAssetMergedData = async (req, res) => {
   }
   const cachedData = await fetchFromCache(Asset_cached_key);
 
+  const symboll = symbol.toUpperCase();
+
   try {
     if (cachedData !== null) {
-      console.log('Returning cached data for symbol:', symbol);
+      console.log('Returning cached data for symbol:', symboll);
 
-      const filteredData = cachedData.filter(item => item.symbol === symbol);
+      const filteredData = cachedData.filter(item => item.symbol === symboll);
 
       return res.status(200).json({
         data: filteredData,
@@ -937,4 +821,283 @@ export const AssetMergedDataBySector = async (req, res) => {
   }
 };
 
-export default {createAsset, metalHistController, fetchMetalPrices, AssetMergedData, SingeAssetMergedData, AssetMergedDataBySector};
+//get metal
+const assetToCategoryMap = {
+  'Gold hallmark': 'Fine Gold',
+  'Gold tejabi': 'Tejabi Gold',
+  'Silver': 'Silver',
+};
+
+const CACHE_KEY_METAL_PRICES = 'metal_cavccbhbbevglgdfdd';
+const CACHE_KEY_METAL_FALLBACK = 'metal_fallback';
+
+export const fetchMetalPrices = async (req, res) => {
+  console.log('Metal data requested');
+  try {
+    const cachedData = await fetchFromCache(CACHE_KEY_METAL_PRICES);
+
+    if (cachedData !== null) {
+      console.log('Returning cached metal prices data');
+      return res.status(200).json({
+        data: cachedData,
+        isFallback: false,
+        isCached: true,
+        dataversion: dataVersion,
+      });
+    }
+
+    const assets = Object.keys(assetToCategoryMap);
+    const metalPrices = [];
+
+    for (const asset of assets) {
+      const metalData = await metalPriceExtractor(asset);
+
+      if (metalData) {
+        const metalAsset = new Asset({
+          symbol: metalData.name,
+          name: metalData.name,
+          category: metalData.category,
+          sector: metalData.sector,
+          ltp: parseFloat(metalData.ltp),
+          unit: metalData.unit,
+        });
+
+        metalPrices.push(metalAsset);
+      } else {
+        console.log(`Price for ${asset} not found`);
+      }
+    }
+
+    await storage.setItem(CACHE_KEY_METAL_PRICES, { metalPrices });
+    await storage.setItem(CACHE_KEY_METAL_FALLBACK, { metalPrices });
+
+    await Promise.all(
+      metalPrices.map(async (item) => {
+        try {
+          await Commodity.updateOne(
+            { name : item.name},
+            {
+              $set: {
+                category: item.category,
+                unit: item.unit,
+                ltp: item.ltp,
+                isFallback: false,
+                isCached: false,
+                dataversion: { versionCode: dataVersion, timestamp: DateTime.now().toISO() },
+              },
+            },
+            { upsert: true }
+          );
+        } catch (error) {
+          console.error('DB Update Error:', error);
+        }
+      })
+        );
+
+    console.log('Returning live Metal prices');
+    return res.status(200).json({
+      data: metalPrices,
+      isFallback: false,
+      isCached: false,
+      dataversion: dataVersion,
+    });
+  } catch (error) {
+    console.error('Error fetching or logging metal prices:', error.message);
+
+    try {
+      const fallbackCacheData = await fetchFromCache(CACHE_KEY_METAL_FALLBACK);
+
+      if (fallbackCacheData !== null) {
+        console.log('Returning data from fallback cache');
+
+        return res.status(200).json({
+          data: fallbackCacheData,
+          isFallback: true,
+          isCached: true,
+          dataversion: cachedDataVersion,
+        });
+      }
+    } catch (fallbackError) {
+      console.error('Fallback cache failed:', fallbackError.message);
+    }
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+
+//metal history
+export async function metalHistController(req, res) {
+  try {
+    const metalPrices = await metalChartExtractor();
+
+    if (metalPrices) {
+      const { dates, prices } = metalPrices;
+
+      await saveToDatabase(req.body.assetName, dates, prices);
+
+      const responseData = {
+        dates: dates,
+        prices: prices[req.body.assetName],
+      };
+
+      return res.status(200).json(responseData);
+    } else {
+      console.log('Price extraction failed');
+      return res.status(500).json({ success: false, message: 'Price extraction failed' });
+    }
+  } catch (error) {
+    console.error('Error:', error.message);
+    return res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+}
+
+async function saveToDatabase(assetName, dates, prices) {
+  const dataToSave = dates.map((date, index) => ({
+    date: new Date(date),
+    price: {
+      fineGold: prices.fineGold[index],
+      tejabiGold: prices.tejabiGold[index],
+      silver: prices.silver[index],
+    },
+  }));
+
+  await HistoricPrice.findOneAndUpdate(
+    { symbol: assetName },
+    { $push: { historicalData: { $each: dataToSave } } },
+    { upsert: true, new: true, useFindAndModify: false }
+  );
+
+  const savedDocument = await HistoricPrice.findOne(
+    { symbol: assetName },
+    { _id: 0, historicalData: { $slice: -15 } }
+  );
+
+  if (savedDocument && savedDocument.historicalData) {
+    const responseData = {
+      dates: savedDocument.historicalData.map(entry => entry.date.toISOString().split('T')[0]),
+      prices: savedDocument.historicalData.map(entry => entry.price),
+    };
+
+    return responseData;
+  } else {
+    return { dates: [] };
+  }
+}
+
+//commodity
+const CACHE_KEY_COMMODITY_PRICES = 'commo_cached';
+const CACHE_KEY_COMMODITY_FALLBACK = 'commo_cached_fallback';
+
+export const CommodityData = async (req, res) => {
+  try {
+
+    const cachedData = await fetchFromCache(CACHE_KEY_COMMODITY_PRICES);
+
+      if (cachedData !== null) {
+        console.log('Returning cached commodity prices data');
+        return res.status(200).json({
+          data: cachedData,
+          isFallback: false,
+          isCached: true,
+          dataversion: cachedDataVersion,
+        });
+      }
+      const commodityTableData = await commodityprices();
+
+      if (!commodityTableData) {
+          return res.status(500).json({ error: 'Failed to fetch commodity data.' });
+      }
+
+      const commodityData = commodityTableData
+          .filter((rowData) => rowData[0].trim() !== '')
+          .map((rowData) => new Asset({
+              symbol: rowData[0],
+              name: rowData[0],
+              category: "Vegetables",
+              unit: rowData[1],
+              ltp: parseFloat(rowData[4])
+          }));
+
+      const oilData = await oilExtractor();
+
+      if (!oilData) {
+          return res.status(500).json({ error: 'Failed to fetch oil data.' });
+      }
+
+      const oilAssetData = oilData.map((oilItem) => new Asset(oilItem));
+
+      const mergedData = [...commodityData, ...oilAssetData];
+
+      // Update cache
+      await Promise.all([
+          storage.setItem(CACHE_KEY_COMMODITY_PRICES, mergedData),
+          storage.setItem(CACHE_KEY_COMMODITY_FALLBACK, mergedData)
+      ]);
+
+      await Promise.all(
+          mergedData.map(async (item) => {
+              try {
+                  await Commodity.updateOne(
+                      { symbol: item.symbol },
+                      {
+                          $set: {
+                              ...item,
+                              isFallback: false,
+                              isCached: false,
+                              dataversion: { versionCode: dataVersion, timestamp: DateTime.now().toISO() },
+                          },
+                      },
+                      { upsert: true }
+                  );
+              } catch (error) {
+                  console.error('DB Update Error:', error);
+              }
+          })
+      );
+
+      return res.status(200).json({
+          data: mergedData,
+          isFallback: false,
+          isCached: false,
+          dataversion: { versionCode: dataVersion, timestamp: DateTime.now().toISO() },
+      });
+  } catch (error) {
+      try {
+          console.log(error);
+          console.log('Using fallback key');
+          const cachedData = await fetchFromCache(CACHE_KEY_COMMODITY_FALLBACK);
+          if (cachedData !== null) {
+              console.log('fallback data sent');
+              return res.status(200).json({
+                  data: cachedData,
+                  isFallback: true,
+                  isCached: true,
+                  dataversion: cachedDataVersion,
+              });
+          } else {
+              const dataFromMongoDB = await Commodity.find({});
+
+              if (dataFromMongoDB) {
+                  storage.setItem(CACHE_KEY_COMMODITY_FALLBACK, dataFromMongoDB);
+
+                  return res.status(200).json({
+                      data: dataFromMongoDB,
+                      isFallback: true,
+                      isCached: true,
+                      dataversion: cachedDataVersion,
+                  });
+              }
+          }
+      } catch (fallbackError) {
+          console.log('Fallback failed:', fallbackError);
+          return res.status(500).json({ error: 'An error occurred while fetching data' });
+      }
+      console.error(error);
+      return res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+
+//top gainers //share sansar
+
+
+
+export default {createAsset, metalHistController, fetchMetalPrices, AssetMergedData, SingeAssetMergedData, AssetMergedDataBySector, CommodityData};

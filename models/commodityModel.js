@@ -11,7 +11,7 @@ const CommoditySchema = new mongoose.Schema({
     required: true,
   },
   unit: String,
-  ltp: String,
+  ltp: Number,
 
 }, { collection: 'commodity' });
 

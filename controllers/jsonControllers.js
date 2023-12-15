@@ -4,19 +4,14 @@ import path from 'path';
 const { writeFile: writeFilePromise, mkdir: mkdirPromise } = fsPromises;
 
 export default async function saveDataToJson(data, fileName, folder) {
-  try {
-    const currentModuleUrl = new URL(import.meta.url);
-    const currentModuleDir = path.dirname(currentModuleUrl.pathname);
+    try {
+      const fullPath = path.join(folder, fileName);
+      await mkdirPromise(folder, { recursive: true }).catch(() => {});
 
-    const folderPath = path.join(currentModuleDir, '..', folder);
+      const jsonData = JSON.stringify(data, null, 2);
+      await writeFilePromise(fullPath, jsonData);
 
-    await mkdirPromise(folderPath, { recursive: true }).catch(() => {});
-
-    const fullPath = path.join(folderPath, fileName);
-    const jsonData = JSON.stringify(data, null, 2);
-
-    await writeFilePromise(fullPath, jsonData);
-    console.log(`Data saved to ${fullPath}`);
+      console.log(`Today Data saved to ${fullPath}`);
   } catch (error) {
     console.error(`Error saving data to ${fileName} in folder ${folder}:`, error);
   }

@@ -1,6 +1,5 @@
 import { Router } from 'express';
-import { AssetMergedData, AssetMergedDataBySector, SingeAssetMergedData, createAsset, fetchMetalPrices, getTopGainers, getTopTurnover, getTopVolume, metalHistController } from '../controllers/assetControllers.js';
-import { CommodityData } from '../controllers/commodifyControllers.js';
+import { AssetMergedData, AssetMergedDataBySector, CommodityData, SingeAssetMergedData, createAsset, fetchMetalPrices, getTopGainers, getTopTurnover, getTopVolume, metalHistController } from '../controllers/assetControllers.js';
 import { sendOTP, verifyOTP } from '../controllers/otpControllers.js';
 import { addStockToPortfolio, createPortfolio, deletePortfolio, getAllPortfoliosForUser, removeStockFromPortfolio, renamePortfolio } from '../controllers/portfolioControllers.js';
 import { createUser, defaultportfolio, deleteAccount, fetchToken, forgetPass, loginUser, makeadmin, removedefaultportfolio, updateUser, verifyData, verifyUser } from '../controllers/userController.js';
@@ -34,7 +33,7 @@ router.post('/commodity', CommodityData);
 // router.post('/multiassetdetails', getMultiAssetDetails);
 router.post('/trending', getTopGainers);
 router.post('/metalhist', metalHistController);
-router.post('/metalprices', fetchMetalPrices);
+router.post('/metal', fetchMetalPrices);
 router.post('/turnover', getTopTurnover);
 router.post('/topvolume', getTopVolume);
 
