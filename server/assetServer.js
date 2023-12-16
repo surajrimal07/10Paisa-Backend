@@ -439,7 +439,7 @@ export const topgainersShare = async () => {
     // Process the data
     const processedData = data.map(item => ({
       symbol: item.symbol.replace(/<[^>]*>/g, ''),
-      companyname: item.companyname.replace(/<[^>]*>/g, ''),
+      name: item.companyname.replace(/<[^>]*>/g, ''),
       ltp: parseFloat(item.close),
       pointchange: parseFloat(item.change_pts),
       percentchange: parseFloat(item.diff_per),
@@ -484,7 +484,7 @@ export const topLosersShare = async () => {
 
     const processedData = data.map((item) => ({
       symbol: item.symbol.replace(/<[^>]*>/g, ''),
-      companyname: item.companyname.replace(/<[^>]*>/g, ''),
+      name: item.companyname.replace(/<[^>]*>/g, ''),
       ltp: parseFloat(item.close),
       pointchange: parseFloat(item.change_pts),
       percentchange: parseFloat(item.diff_per),
@@ -528,7 +528,7 @@ export const topTurnoversShare = async () => {
 
     const processedData = data.map((item) => ({
       symbol: item.symbol.replace(/<[^>]*>/g, ''),
-      companyname: item.companyname.replace(/<[^>]*>/g, ''),
+      name: item.companyname.replace(/<[^>]*>/g, ''),
       turnover: parseFloat(item.traded_amount),
       ltp: parseFloat(item.close),
     }));
@@ -574,7 +574,7 @@ export const topTradedShares = async () => {
 
     const processedData = data.map((item) => ({
       symbol: item.symbol.replace(/<[^>]*>/g, ''),
-      companyname: item.companyname.replace(/<[^>]*>/g, ''),
+      name: item.companyname.replace(/<[^>]*>/g, ''),
       volume: parseFloat(item.traded_quantity),
       ltp: parseFloat(item.close),
     }));
@@ -620,7 +620,7 @@ export const topTransactions = async () => {
 
     const processedData = data.map((item) => ({
       symbol: item.symbol.replace(/<[^>]*>/g, ''),
-      companyname: item.companyname.replace(/<[^>]*>/g, ''),
+      name: item.companyname.replace(/<[^>]*>/g, ''),
       transactions: parseFloat(item.no_trade),
       ltp: parseFloat(item.close),
     }));
