@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+
 const Schema = mongoose.Schema;
 
 const newSchema = new Schema({
@@ -21,10 +22,13 @@ const newSchema = new Schema({
       required: true,
     },
     phone:{
-      type: String,
+      type: Number,
       required: true,
     },
-    style:String,
+    style:{
+      type: Number,
+      default: 0,
+    },
     defaultport: {
       type: Number,
       default: 1,
@@ -40,7 +44,8 @@ const newSchema = new Schema({
     userAmount : {
       type: Number,
       default: 100000,
-    }
+    },
+    portfolio: [{ type: Schema.Types.ObjectId, ref: 'Portfolio' }],
 });
 
 const User = mongoose.model('User',newSchema);

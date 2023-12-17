@@ -4,12 +4,13 @@ export const sendOTP = (req, res, next) => {
     otpService.sendOTP(req.body, (error, results) => {
         if (error) {
             return res.status(400).send({
-                message: "error",
-                data: error,
+                success: false,
+                message: error.toString(),
             });
         }
         return res.status(200).send({
-            message: "Success",
+            success: true,
+            message: results.toString(),
             data: results,
         });
     });
@@ -19,7 +20,6 @@ export const verifyOTP = (req, res, next) => {
 
     otpService.verifyOTP(req.body, (error, results) => {
         if (error) {
-            //console.log("OTP ERROR THROWN")
             return res.status(400).send({
                 message: "error",
                 data: error,

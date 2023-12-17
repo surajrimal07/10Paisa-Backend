@@ -11,7 +11,6 @@ const CACHE_KEYS = [
   'metal_cached', //ss
   'atomic_asset_data', //ss
   'topGainersCached' //ss
-
 ];
 
 const oneDayInMilliseconds = 24 * 60 * 60 * 1000;
@@ -42,63 +41,43 @@ async function wipeCachesAndRefreshData() {
     const now = new Date();
     const currentDay = now.toLocaleDateString('en-US', { weekday: 'long' });
     const currentHour = now.getHours();
-    const currentMinute = now.getMinutes();
-    const isWeekday = now.getDay() >= 1 && now.getDay() <= 5;
+    const isWeekday = now.getDay() >= 0 && now.getDay() <= 4; // Sunday to Thursday
 
     const timeDifference = lastDataRefreshTime ? Math.floor((now - lastDataRefreshTime) / (1000 * 60)) : null;
     const dataAge = timeDifference !== null ? (timeDifference === 0 ? 'just now' : `${timeDifference} minute${timeDifference !== 1 ? 's' : ''} ago`) : 'N/A';
 
-    let remainingTime = 0;
-    if (isWeekday && currentHour < marketClosingHour) {
-      remainingTime = (marketClosingHour - currentHour) * 60 - currentMinute;
-    }
+    const isMarketOpen = isWeekday && currentHour >= 11 && currentHour < marketClosingHour;
 
-    const isMarketOpen = isWeekday && currentHour >= 11 && currentHour < marketClosingHour && now - lastDataRefreshTime > oneDayInMilliseconds;
+    console.log(`\x1b[33mData Age: ${dataAge}, Today is ${currentDay}, Time is ${now.toLocaleTimeString('en-US')}, ${isWeekday && isMarketOpen ? 'Market is open.' : 'Market is closed.'}\x1b[0m`);
 
-    console.log(`\x1b[33mData Age: ${dataAge}, Today is ${currentDay}, Time is ${currentHour}:${currentMinute < 10 ? '0' : ''}${currentMinute} ${currentHour >= 12 ? 'PM' : 'AM'}, ${isWeekday && isMarketOpen ? `${remainingTime} minutes remaining for market close.` : 'Market closed'}\x1b[0m`);
-
-    if (isMarketOpen || now - lastDataRefreshTime > oneDayInMilliseconds) {
+    if (isMarketOpen || (now - lastDataRefreshTime > oneDayInMilliseconds && isWeekday)) {
       console.log('Wiping cache and refreshing data.');
       await Promise.all(CACHE_KEYS.map(key => storage.removeItem(key)));
 
       try {
         await AssetMergedData();
       } catch (error) {
+        console.error('Error refreshing data:', error.message);
       }
 
       await saveLastDataRefreshTime(now);
-      console.log(`Data wipe and refresh successful. Last Refreshed: ${now.toLocaleDateString('en-US', { weekday: 'long' })} ${now.toLocaleTimeString('en-US')}`);
+      console.log(`Data wipe and refresh successful. Last Refreshed: ${now.toLocaleTimeString('en-US')}`);
     } else {
-      console.log(`Market is closed. Skipping data refresh. Last Refreshed: ${lastDataRefreshTime.toLocaleDateString('en-US', { weekday: 'long' })} ${lastDataRefreshTime.toLocaleTimeString('en-US')}`);
+      console.log(`Skipping data refresh. Last Refreshed: ${lastDataRefreshTime?.toLocaleTimeString('en-US')}`);
+      clearInterval(refreshIntervalId); // Clear the interval when the market is closed
     }
   } catch (error) {
     console.error('Error wiping caches:', error.message);
   }
 }
 
+let refreshIntervalId;
+
 export default async function initializeRefreshMechanism() {
   try {
     const refreshData = async () => {
       try {
-        const isMarketOpen = await checkMarketStatus();
-        const lastDataRefreshTime = await getLastDataRefreshTime();
-
-        console.log(
-          `\x1b[33mMarket is ${
-            isMarketOpen ? 'open' : 'closed'
-          }. ${
-            isMarketOpen
-              ? 'Refreshing data.'
-              : `Skipping data refresh. Last Refreshed: ${lastDataRefreshTime?.toLocaleDateString(
-                  'en-US',
-                  { weekday: 'long' }
-                )} ${lastDataRefreshTime?.toLocaleTimeString('en-US')}`
-          }\x1b[0m`
-        );
-
-        if (isMarketOpen) {
-          await wipeCachesAndRefreshData();
-        }
+        await wipeCachesAndRefreshData();
       } catch (error) {
         console.error('Error refreshing data:', error.message);
       }
@@ -107,17 +86,12 @@ export default async function initializeRefreshMechanism() {
     console.log('Initializing refresh mechanism...');
     await refreshData();
 
-    const marketCheckInterval = 5 * 60 * 1000;
-    setInterval(async () => {
+    refreshIntervalId = setInterval(async () => {
       const isMarketOpen = await checkMarketStatus();
       if (isMarketOpen) {
         await refreshData();
       }
     }, refreshInterval);
-
-    setInterval(async () => {
-      await refreshData();
-    }, marketCheckInterval);
   } catch (error) {
     console.error('Error initializing refresh mechanism:', error.message);
   }
@@ -128,7 +102,7 @@ async function checkMarketStatus() {
     const now = new Date();
     const currentHour = now.getHours();
 
-    const isWeekday = now.getDay() >= 1 && now.getDay() <= 5;
+    const isWeekday = now.getDay() >= 0 && now.getDay() <= 4; // Sunday to Thursday
     const lastDataRefreshTime = await getLastDataRefreshTime();
     const isMarketOpen = isWeekday && currentHour >= 11 && currentHour < marketClosingHour && now - lastDataRefreshTime > oneDayInMilliseconds;
 

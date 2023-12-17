@@ -12,7 +12,7 @@ export const createPortfolio = async (req, res) => {
     const existingPortfolio = await Portfolio.findOne({ userToken, name: portfolioName });
 
     if (existingPortfolio) {
-      return res.status(400).json({ error: 'Duplicate Portfolio' });
+      return res.status(400).json({success: false, message: "Duplicate Portfolio" });
     }
     const maxPortfolio = await Portfolio.findOne({ userToken }, {}, { sort: { id: -1 } });
 
@@ -22,7 +22,7 @@ export const createPortfolio = async (req, res) => {
 
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    res.status(500).json({success: false, message: "Internal Server Error" });
   }
 };
 
@@ -42,7 +42,6 @@ export const addStockToPortfolio = async (req, res) => {
       const costprice = req.body.price * quantity;
       const currentprice = await getLTPForStock(symbol) * quantity;
       const netgainloss = currentprice - costprice;
-      console.log("46");
       console.log(costprice);
       console.log(currentprice);
 
@@ -159,7 +158,6 @@ const updateGainLossRecords = (portfolio) => {
 };
 
 const createNewGainLossRecord = (portfolioValue, portfolioCost) => {
-  console.log("185");
   console.log(portfolioValue);
   console.log(portfolioCost);
 
@@ -213,13 +211,13 @@ export const deletePortfolio = async (req, res) => {
     });
 
     if (!portfolio) {
-      return res.status(404).json({ error: 'Portfolio not found' });
+      return res.status(404).json({success: false, message: "Portfolio not found" });
     }
 
-    res.status(200).json({ message: 'Portfolio deleted successfully' });
+    res.status(200).json({success: true, message: "Portfolio deleted successfully" });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    res.status(500).json({success: false, message: "Internal Server Error" });
   }
 };
 
@@ -237,12 +235,12 @@ export const renamePortfolio = async (req, res) => {
     );
 
     if (!portfolio) {
-      return res.status(404).json({ error: 'Portfolio not found' });
+      return res.status(404).json({success: false, message: "Portfolio not found" });
     }
 
-    res.status(200).json({ message: 'Portfolio renamed successfully', portfolio });
+    res.status(200).json({success: true, message: "Portfolio renamed successfully", portfolio });
   } catch (error) {
-    res.status(500).json({ error: 'Internal Server Error' });
+    res.status(500).json({success: false, message: "Internal Server Error" });
   }
 };
 
@@ -260,51 +258,12 @@ export const renamePortfolio = async (req, res) => {
       });
 
       if (!existingPortfolio) {
-        return res.status(404).json({ error: 'Portfolio not found' });
+        return res.status(404).json({success: false, message: "Portfolio not found" });
       }
 
-      const existingStockIndex = existingPortfolio.stocks.findIndex(
-        (stock) => stock.symbol === symbol
-      );
-
-      if (existingStockIndex !== -1) {
-        const existingStock = existingPortfolio.stocks[existingStockIndex];
-
-        if (existingStock.quantity <= quantity) {
-          // Remove the entire stock if the quantity to delete is greater or equal
-          existingPortfolio.stocks.splice(existingStockIndex, 1);
-        } else {
-          // Update the existing stock quantity and values
-          existingStock.quantity -= quantity;
-          existingStock.currentprice = await getLTPForStock(symbol) * existingStock.quantity;
-          existingStock.netgainloss = existingStock.currentprice - existingStock.costprice;
-          updateGainLossRecords(existingPortfolio);
-        }
-
-        // Update gainLossRecords
-        updateGainLossRecords(existingPortfolio);
-
-        // Update portfolio values
-        existingPortfolio.portfoliocost = existingPortfolio.stocks.reduce(
-          (total, stock) => total + parseFloat(stock.costprice),
-          0
-        ).toFixed(2);
-        existingPortfolio.portfoliovalue = await calculatePortfolioValue(existingPortfolio.stocks);
-        existingPortfolio.totalunits = existingPortfolio.stocks.reduce(
-          (total, stock) => total + stock.quantity,
-          0
-        );
-
-        // Save the updated portfolio
-        await existingPortfolio.save();
-        console.log("303");
-        return res.status(200).json(existingPortfolio);
-      } else {
-        return res.status(404).json({ error: 'Stock not found in the portfolio' });
-      }
     } catch (error) {
       console.error(error);
-      res.status(500).json({ error: 'Internal Server Error' });
+      res.status(500).json({success: false, message: "Internal Server Error" });
     }
   };
 //
@@ -320,11 +279,11 @@ export const renamePortfolio = async (req, res) => {
       const portfolios = await Portfolio.find({ userToken });
 
       if (!portfolios || portfolios.length === 0) {
-        return res.status(404).json({ error: 'Portfolios not found for the user' });
+        return res.status(404).json({success: false, message: "Portfolios not found for the user" });
       }
 
       res.status(200).json({ portfolios });
     } catch (error) {
-      res.status(500).json({ error: 'Internal Server Error' });
+      res.status(500).json({success: false, message: "Internal Server Error" });
     }
   };

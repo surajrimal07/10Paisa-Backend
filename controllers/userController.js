@@ -1,6 +1,6 @@
 import bcrypt from 'bcrypt';
-import { v2 as cloudinary } from 'cloudinary';
 import { forgetPassword } from '../controllers/otpControllers.js';
+import Portfolio from '../models/portfolioModel.js';
 import User from '../models/userModel.js';
 
 //use jsonwebtoken
@@ -15,18 +15,38 @@ export const createUser = async (req, res) => {
   const isAdmin = false;
   const userAmount = req.body.amount !== undefined ? req.body.amount : undefined;
 
+  console.log("Create user command passed")
+
+  if (!name || !email || !password || !token || !phone) {
+    return res.status(400).json({ success: false, message: "Empty data passed. Please provide all required fields." });
+  }
+
+  if (!/^\d{10}$/.test(phone)) {
+    return res.status(400).json({ success: false, message: "Invalid phone number. Please provide a 10-digit number." });
+  }
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return res.status(400).json({ success: false, message: "Invalid email format. Please provide a valid email address." });
+  }
+
   let dpImage;
 
   if (req.files && req.files.length > 0) {
     dpImage = req.files[0];
   }
 
-  console.log("Create user command passed")
   console.log("Name: "+name,"token "+ token,  "Email: "+email, "Password: "+password, "phone: "+phone, "Style: "+style);
 
-  console.log(token);
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
+
+    const samplePortfolio = await Portfolio.create({
+      id: 1,
+      userToken: token,
+      name: "Sample Portfolio",
+      stocks: [{ symbol: "CBBL", quantity: 1000000, wacc: 750 }],
+    });
 
     User.findOne({ email }, async (err, user) => {
       if (err) {
@@ -44,6 +64,7 @@ export const createUser = async (req, res) => {
             isAdmin,
             dpImage: dpImage ? dpImage.path : undefined,
             userAmount: userAmount !== undefined ? userAmount : undefined,
+            portfolio: [samplePortfolio._id]
 
           });
           try {
@@ -58,25 +79,26 @@ export const createUser = async (req, res) => {
               style: savedUser.style,
               isAdmin: savedUser.isAdmin,
               dpImage: savedUser.dpImage,
-              userAmount: savedUser.userAmount
+              userAmount: savedUser.userAmount,
+              portfolio: savedUser.portfolio
             };
             console.log(userData);
             res.status(200).json(userData);
             console.log("Singup Was Success");
           } catch (err) {
             console.error(err);
-            res.status(500).json(err);
+            return res.status(500).json({ success: false, message: err.toString() });
           }
         } else {
-          res.status(400).json({
-            message: 'Email already exists',
+          res.status(400).json({success: false,
+            message: "Email already exists",
           });
         }
       }
     });
   } catch (err) {
     console.error(err);
-    res.status(500).json(err);
+    return res.status(600).json({ success: false, message: err.toString() });
   }
 };
 
@@ -89,14 +111,14 @@ export const loginUser = async (req, res) => {
 
       if (!user || !(await bcrypt.compare(password, user.password))) {
         console.log("401 Invalid email or password.");
-        return res.status(401).json({ error: 'Invalid email or password.' });
+        return res.status(401).json({success:false, message: "Invalid email or password." });
       } else {
         console.log("200 Login Was Success");
       }
       res.json(user);
     } catch (error) {
       console.log("500 An error occurred during login.");
-      return res.status(500).json({ error: 'An error occurred during login.' });
+      return res.status(500).json({success: false, message: "An error occurred during login." });
     }
 };
 
@@ -109,13 +131,13 @@ export const forgetPass = async (req, res) => {
       if (user) {
           console.log("Existing user found: " + email);
           const hash = await forgetPassword(email);
-          res.status(200).json({
-              message: 'OTP Sent successfully, Final task completed',
+          res.status(200).json({success: true,
+              message: "OTP Sent successfully",
               hash: hash
           });
       } else {
-          res.status(404).json({
-              message: 'Email Not found'
+          res.status(404).json({success: false,
+              message: "Email Not found"
           });
           console.log("Existing user not found");
       }
@@ -135,15 +157,15 @@ export const verifyData = async (req, res) => {
     if (!existingUser) {
 
       console.log("Email is fresh");
-      return res.status(200).json({ message: "Email is fresh" });
+      return res.status(200).json({success: true, message: "Email is fresh" });
 
     } else {
       console.log("Email already exists");
-      return res.status(400).json({ message: "Email already exists" });
+      return res.status(400).json({success: true, message: "Email already exists" });
     }
   } catch (error) {
-    console.error("Error looking for data:", error);
-    return res.status(500).json({ message: "Error occured" });
+    console.error("Error looking for email:", error);
+    return res.status(500).json({success:false, message: "Error occured" });
   }}
 
   if (fieldToUpdate === 'phone') {
@@ -152,14 +174,14 @@ export const verifyData = async (req, res) => {
       const existingUser = await User.findOne({ phone: valueToCheck });
       if (!existingUser) {
         console.log("Phone is fresh");
-        return res.status(200).json({ message: "Phone is fresh" });
+        return res.status(200).json({success: true, message: "Phone is fresh" });
       } else {
         console.log("Phone already exists");
-        return res.status(400).json({ message: "Phone already exists" });
+        return res.status(400).json({success: false, message: "Phone already exists" });
       }
     } catch (error) {
       console.error("Error checking phone:", error);
-      return res.status(500).json({ message: "Error checking Phone" });
+      return res.status(500).json({success: false, message: "Error checking Phone" });
     }}
 };
 
@@ -176,10 +198,10 @@ export const updateUser = async (req, res) => {
   const userAmount = req.body.useramount;
 
   if (!token ) {
-    return res.json({ success : false, message: "User token missing" })
+    return res.json(401)({ success : false, message: "User token missing" })
   }
   if (!fieldToUpdate) {
-    return res.json({ success : false, message: "Field and Value missing" })
+    return res.json(401)({ success : false, message: "Field and Value missing" })
   }
 
   try {
@@ -187,109 +209,12 @@ export const updateUser = async (req, res) => {
 
     if (!user) {
       console.log("User not found");
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    if (fieldToUpdate === 'dp') {
-      let uploadedImage;
-
-      if (dpImage && dpImage.path) {
-        try {
-          uploadedImage = await cloudinary.uploader.upload(
-            dpImage.path,
-            {
-              folder: "UserDP",
-              crop: "scale",
-              overwrite: true,
-            },
-          );
-          console.log("User DP updated, new dp is " + uploadedImage.secure_url);
-          user.dpImage = uploadedImage.secure_url;
-        } catch (e) {
-          console.log(e);
-          return res.status(500).json({ success: false, message: "Error uploading image" });
-        }
-      } else {
-        console.log("No image provided for update");
-        return res.status(400).json({ success: false, message: "No image provided for update" });
-      }
-    }
-
-    if (fieldToUpdate === 'name') {
-      console.log("Username updated, new "+fieldToUpdate+ " is "+valueToUpdate)
-      user.name = valueToUpdate;
-    }
-
-    if (fieldToUpdate == 'useramount') {
-    console.log("User updated, new "+fieldToUpdate+ " is "+valueToUpdate)
-    user.userAmount = valueToUpdate;
-    }
-
-    if (fieldToUpdate === 'password') {
-      const newPassword = await bcrypt.hash(valueToUpdate, 10);
-      console.log("User password updated, new "+fieldToUpdate+ " is "+valueToUpdate)
-      user.password = newPassword;
-    }
-
-    if (fieldToUpdate === 'email') {
-      try {
-        const existingUser = await User.findOne({ email: valueToUpdate });
-        if (!existingUser) {
-          console.log("User email updated, new " + fieldToUpdate + " is " + valueToUpdate);
-
-          user.email = valueToUpdate;
-
-          await user.save();
-
-          return res.status(200).json({ success :  true, message: "Email updated successfully" });
-        } else {
-          console.log("Email already exists");
-          return res.status(400).json({ success :  false, message: "Email already exists" });
-        }
-      } catch (error) {
-        console.error("Error updating user email:", error);
-        return res.status(500).json({success :  false, message: "Error updating email" });
-      }
-    }
-
-    if (fieldToUpdate === 'phone') {
-      try {
-        const existingUser = await User.findOne({ phone: valueToUpdate });
-        if (!existingUser) {
-          console.log("User phone updated, new " + fieldToUpdate + " is " + valueToUpdate);
-
-          user.phone = valueToUpdate;
-
-          await user.save();
-
-          return res.status(200).json({ message: "Phone updated successfully" });
-        } else {
-          console.log("Phone already exists");
-          return res.status(400).json({ message: "Phone already exists" });
-        }
-      } catch (error) {
-        console.error("Error updating user Phone:", error);
-        return res.status(500).json({ message: "Error updating Phone" });
-      }
-    }
-
-    else if (fieldToUpdate === 'style') {
-      user.style = valueToUpdate;
-      console.log("User Style updated, new "+fieldToUpdate+ " is " +valueToUpdate)
-    }
-
-    try {
-      await user.save();
-      console.log('User ' + fieldToUpdate + ' updated successfully');
-      return res.status(200).json({ message: 'User ' + fieldToUpdate + ' updated successfully' });
-    } catch (error) {
-      console.error('User ' + fieldToUpdate + ' update failed: ' + error);
-      return res.status(500).json({ error: 'Failed to update user ' + fieldToUpdate });
+      return res.status(404).json({ success: false, message: "User not found" });
     }
 
   } catch (error) {
     console.error('Error updating user data:', error);
-    return res.status(500).json({ error: 'An error occurred while updating user data' });
+    return res.status(500).json({ success: false, message: "An error occurred updating user data" });
   }
 };
 
@@ -303,7 +228,7 @@ export const verifyUser = async (req, res) => {
 
     if (!user) {
       console.log("401 Invalid token.");
-      return res.status(401).json({ error: 'Invalid token.' });
+      return res.status(401).json({success: false, message: "Invalid token." });
     } else {
       console.log("200 User verification was successful");
       res.json({
@@ -320,7 +245,7 @@ export const verifyUser = async (req, res) => {
     }
   } catch (error) {
     console.log("500 An error occurred during user verification.");
-    return res.status(500).json({ error: 'An error occurred during verification.' });
+    return res.status(500).json({success: false, message: "An error occurred during verification." });
   }
 };
 
@@ -332,15 +257,15 @@ export const fetchToken = async (req, res) => {
 
     if (!user) {
       console.log("401 Invalid email");
-      return res.status(401).json({ error: 'Invalid email' });
+      return res.status(401).json({success: false, message: "Invalid email" });
     } else {
-      res.status(200).json({
+      res.status(200).json({success: true,
         token: user.token,
       });
     }
   } catch (error){
-    console.log("error occured");
-    return res.status(500).json({ error: 'An error occurred fetching token' });
+    console.log(error.toString());
+    return res.status(500).json({success: false, message: "An error occurred fetching token" });
   }
 };
 
@@ -354,7 +279,7 @@ export const saveToken = async (req, res) => {
 
     if (!user) {
       console.log("401 Invalid email");
-      return res.status(401).json({ error: 'Invalid email' });
+      return res.status(401).json({success: false, message: "Invalid email"});
     } else {
       user.token = token;
       await user.save();
@@ -364,10 +289,11 @@ export const saveToken = async (req, res) => {
     res.json(user);
   } catch (error) {
     console.log("500 An error occurred saving token");
-    return res.status(500).json({ error: 'An error occurred saving token' });
+    return res.status(500).json({success: false, message: "An error occurred saving token" });
   }
 };
 
+//this code seems incomplete
 export const deleteAccount = async (req, res) => {
   const tokens = req.body.token;
   const passwords = req.body.password;
@@ -375,22 +301,20 @@ export const deleteAccount = async (req, res) => {
     const user = await User.findOne({ token: tokens });
 
     if (!user) {
-      return res.status(404).json({ error: 'User not found' });
+      return res.status(404).json({success: false, message: "User not found" });
     }
 
-    const isPasswordValid = (await bcrypt.compare(passwords, user.password));
-
+    const isPasswordValid = await bcrypt.compare(passwords, user.password);
 
     if (!isPasswordValid) {
-      console.log("401 Invalid password");
-      return res.status(401).json({ error: 'Invalid password' });
+      return res.status(401).json({ success: false, message: "Invalid password" });
     }
-    await user.remove();
-    console.log("200 Account deleted");
-    return res.status(200).json({ error: 'Account deleted' });
+
+    await User.deleteOne({ token: tokens });
+    return res.status(200).json({ success: true, message: "User deleted successfully" });
 
   } catch (error) {
-    return res.status(500).json({ error: 'An error occurred deleting account' });
+    return res.status(500).json({success: false, message: "An error occurred deleting account" });
   }
 };
 
@@ -404,23 +328,13 @@ export const defaultportfolio = async (req, res) => {
     const user = await User.findOne({ token: token });
 
     if (!user) {
-      return res.status(404).json({ error: 'User not found' });
+      return res.status(404).json({success: false, message: "User not found" });
     }
 
-    if (user.defaultport === portfolioId) {
-      console.log('Portfolio is already set as default');
-      return res.status(301).json({ error: 'Portfolio is already set as default' });
-    }
-
-    user.defaultport = portfolioId;
-    await user.save();
-
-    console.log("200 Portfolio ID updated");
-    return res.status(200).json({ success: 'Portfolio ID updated' });
 
   } catch (error) {
     console.error(error);
-    return res.status(500).json({ error: 'An error occurred updating default portfolio' });
+    return res.status(500).json({success: false, message: "An error occurred updating default portfolio" });
   }
 };
 
@@ -431,18 +345,14 @@ export const removedefaultportfolio = async (req, res) => {
     const user = await User.findOne({ token });
 
     if (!user) {
-      return res.status(404).json({ error: 'User not found' });
+      return res.status(404).json({success: false, message: "User not found" });
     }
 
     user.defaultport = 1;
-    await user.save();
-
-    console.log("200 Portfolio ID deleted");
-    return res.status(200).json({ success: 'Portfolio ID deleted' });
 
   } catch (error) {
     console.error(error);
-    return res.status(500).json({ error: 'An error occurred deleting portfolio ID' });
+    return res.status(500).json({success: false, message: "An error occurred deleting portfolio ID" });
   }
 
 };
@@ -454,7 +364,7 @@ export const makeadmin = async (req, res) => {
     const user = await User.findOne({ token });
 
     if (!user) {
-      return res.status(404).json({ error: 'User not found' });
+      return res.status(404).json({success: false, message: "User not found" });
     }
 
     if (user.isAdmin !== undefined) {
@@ -467,11 +377,11 @@ export const makeadmin = async (req, res) => {
     await user.save();
 
     console.log("Made user admin");
-    return res.status(200).json({ success: 'Made user Admin' });
+    return res.status(200).json({success: true, message: "Made user Admin" });
 
   } catch (error) {
     console.error(error);
-    return res.status(500).json({ error: 'An error occurred making admin' });
+    return res.status(500).json({success: false, message: "An error occurred making admin"});
   }
 };
 

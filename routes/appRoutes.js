@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { deleteUserByToken, editUserByToken, getAllUsers } from '../controllers/adminController.js';
 import { AssetMergedData, AssetMergedDataBySector, CommodityData, SingeAssetMergedData, TopGainersData, TopLoosersData, TopTransData, TopTurnoverData, TopVolumeData, createAsset, fetchMetalPrices, getTopGainers, getTopTurnover, getTopVolume, metalHistController } from '../controllers/assetControllers.js';
 import { sendOTP, verifyOTP } from '../controllers/otpControllers.js';
 import { addStockToPortfolio, createPortfolio, deletePortfolio, getAllPortfoliosForUser, removeStockFromPortfolio, renamePortfolio } from '../controllers/portfolioControllers.js';
@@ -48,6 +49,13 @@ router.post('/toploosers', TopLoosersData);
 router.post('/topturnover', TopTurnoverData);
 router.post('/topvolume', TopVolumeData);
 router.post('/toptrans', TopTransData);
+
+//admin routes
+router.post('/allusers', getAllUsers);
+router.post('/deleteUser', deleteUserByToken);
+router.post('/edituser', editUserByToken);
+
+
 
 
 export default router;
