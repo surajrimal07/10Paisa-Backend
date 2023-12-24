@@ -4,7 +4,7 @@ import { forgetPassword } from '../controllers/otpControllers.js';
 import Portfolio from '../models/portfolioModel.js';
 import User from '../models/userModel.js';
 import { validateEmail, validateName, validatePassword, validatePhoneNumber } from '../utils/dataValidation_utils.js';
-import { respondWithData, respondWithError } from '../utils/response_utils.js';
+import { respondWithData, respondWithError, respondWithSuccess } from '../utils/response_utils.js';
 
 export const createUser = async (req, res) => {
   const name = req.body.name;
@@ -183,7 +183,6 @@ export const forgetPass = async (req, res) => {
   }
 };
 
-//not updated from here
 
 export const verifyData = async (req, res) => {
   const fieldToUpdate = req.body.field;
@@ -195,15 +194,15 @@ export const verifyData = async (req, res) => {
     if (!existingUser) {
 
       console.log("Email is fresh");
-      return res.status(200).json({success: true, message: "Email is fresh" });
+      return respondWithSuccess(res, 'SUCCESS', "Email is fresh");
 
     } else {
       console.log("Email already exists");
-      return res.status(400).json({success: true, message: "Email already exists" });
+      return respondWithError(res, 'BAD_REQUEST', "Email already exists");
     }
   } catch (error) {
     console.error("Error looking for email:", error);
-    return res.status(500).json({success:false, message: "Error occured" });
+    return respondWithError(res, 'INTERNAL_SERVER_ERROR', error.toString());
   }}
 
   if (fieldToUpdate === 'phone') {
@@ -212,14 +211,14 @@ export const verifyData = async (req, res) => {
       const existingUser = await User.findOne({ phone: valueToCheck });
       if (!existingUser) {
         console.log("Phone is fresh");
-        return res.status(200).json({success: true, message: "Phone is fresh" });
+        return respondWithSuccess(res, 'SUCCESS', "Phone is fresh");
       } else {
         console.log("Phone already exists");
-        return res.status(400).json({success: false, message: "Phone already exists" });
+        return respondWithError(res, 'BAD_REQUEST', "Phone already exists");
       }
     } catch (error) {
       console.error("Error checking phone:", error);
-      return res.status(500).json({success: false, message: "Error checking Phone" });
+      return respondWithError(res, 'INTERNAL_SERVER_ERROR', error.toString());
     }}
 };
 
@@ -236,10 +235,10 @@ export const updateUser = async (req, res) => {
   const userAmount = req.body.useramount;
 
   if (!token ) {
-    return res.json(401)({ success : false, message: "User token missing" })
+    return respondWithError(res, 'BAD_REQUEST', "User token missing");
   }
   if (!fieldToUpdate) {
-    return res.json(401)({ success : false, message: "Field and Value missing" })
+    return respondWithError(res, 'BAD_REQUEST', "Field to update missing");
   }
 
   try {
@@ -247,12 +246,108 @@ export const updateUser = async (req, res) => {
 
     if (!user) {
       console.log("User not found");
-      return res.status(404).json({ success: false, message: "User not found" });
+      return respondWithError(res, 'NOT_FOUND', "User not found");
     }
 
+    if (fieldToUpdate === 'dp') {
+      let uploadedImage;
+
+      if (dpImage && dpImage.path) {
+        try {
+          uploadedImage = await cloudinary.uploader.upload(
+            dpImage.path,
+            {
+              folder: "UserDP",
+              crop: "scale",
+              overwrite: true,
+            },
+          );
+          console.log("User DP updated, new dp is " + uploadedImage.secure_url);
+          user.dpImage = uploadedImage.secure_url;
+        } catch (e) {
+          console.log(e);
+          return respondWithError(res, 'INTERNAL_SERVER_ERROR', "Error uploading image");
+        }
+      } else {
+        console.log("No image provided for update");
+        return respondWithError(res, 'BAD_REQUEST', "No image provided for update");
+      }
+    }
+
+    if (fieldToUpdate === 'name') {
+      console.log("Username updated, new "+fieldToUpdate+ " is "+valueToUpdate)
+      user.name = valueToUpdate;
+    }
+
+    if (fieldToUpdate == 'useramount') {
+    console.log("User updated, new "+fieldToUpdate+ " is "+valueToUpdate)
+    user.userAmount = valueToUpdate;
+    }
+
+    if (fieldToUpdate === 'password') {
+      const newPassword = await bcrypt.hash(valueToUpdate, 10);
+      console.log("User password updated, new "+fieldToUpdate+ " is "+valueToUpdate)
+      user.password = newPassword;
+    }
+
+    if (fieldToUpdate === 'email') {
+      try {
+        const existingUser = await User.findOne({ email: valueToUpdate });
+        if (!existingUser) {
+          console.log("User email updated, new " + fieldToUpdate + " is " + valueToUpdate);
+
+          user.email = valueToUpdate;
+
+          await user.save();
+
+          return respondWithSuccess(res, 'SUCCESS', "Email updated successfully");
+        } else {
+          console.log("Email already exists");
+          return respondWithError(res, 'BAD_REQUEST', "Email already exists");
+        }
+      } catch (error) {
+        console.error("Error updating user email:", error);
+        return respondWithError(res, 'INTERNAL_SERVER_ERROR', "Error updating email");
+      }
+    }
+
+    if (fieldToUpdate === 'phone') {
+      try {
+        const existingUser = await User.findOne({ phone: valueToUpdate });
+        if (!existingUser) {
+          console.log("User phone updated, new " + fieldToUpdate + " is " + valueToUpdate);
+
+          user.phone = valueToUpdate;
+
+          await user.save();
+
+          return respondWithSuccess(res, 'SUCCESS', "Phone updated successfully");
+        } else {
+          console.log("Phone already exists");
+          return respondWithError(res, 'BAD_REQUEST', "Phone already exists");
+        }
+      } catch (error) {
+        console.error("Error updating user Phone:", error);
+        return respondWithError(res, 'INTERNAL_SERVER_ERROR', "Error updating phone");
+      }
+    }
+
+    else if (fieldToUpdate === 'style') {
+      user.style = valueToUpdate;
+      console.log("User Style updated, new "+fieldToUpdate+ " is " +valueToUpdate)
+    }
+
+    try {
+      await user.save();
+      console.log('User ' + fieldToUpdate + ' updated successfully');
+      return respondWithSuccess(res, 'SUCCESS', "User " + fieldToUpdate + " updated successfully");
+    } catch (error) {
+      console.error('User ' + fieldToUpdate + ' update failed: ' + error);
+      return respondWithError(res, 'INTERNAL_SERVER_ERROR', "Error updating user " + fieldToUpdate);
+    }
   } catch (error) {
     console.error('Error updating user data:', error);
-    return res.status(500).json({ success: false, message: "An error occurred updating user data" });
+    return respondWithError(res, 'INTERNAL_SERVER_ERROR', "Error updating user data");
   }
 };
 
@@ -266,7 +361,7 @@ export const verifyUser = async (req, res) => {
 
     if (!user) {
       console.log("401 Invalid token.");
-      return res.status(401).json({success: false, message: "Invalid token." });
+      return respondWithError(res, 'UNAUTHORIZED', "Invalid token.");
     } else {
       console.log("200 User verification was successful");
       res.json({
@@ -285,7 +380,7 @@ export const verifyUser = async (req, res) => {
     }
   } catch (error) {
     console.log("500 An error occurred during user verification.");
-    return res.status(500).json({success: false, message: "An error occurred during verification." });
+    return respondWithError(res, 'INTERNAL_SERVER_ERROR', "An error occurred during user verification.");
   }
 };
 
@@ -297,18 +392,19 @@ export const fetchToken = async (req, res) => {
 
     if (!user) {
       console.log("401 Invalid email");
-      return res.status(401).json({success: false, message: "Invalid email" });
+      return respondWithError(res, 'UNAUTHORIZED', "Invalid email");
     } else {
-      res.status(200).json({success: true,
-        token: user.token,
-      });
+      return respondWithData(res, 'SUCCESS', "Token fetched successfully", user.token);
+
     }
   } catch (error){
     console.log(error.toString());
-    return res.status(500).json({success: false, message: "An error occurred fetching token" });
+    return respondWithError(res, 'INTERNAL_SERVER_ERROR', error.toString());
   }
 };
 
+
+//this code is not necessary remove it later
 export const saveToken = async (req, res) => {
   const email = req.body.email;
   const token = req.body.token;
@@ -333,7 +429,6 @@ export const saveToken = async (req, res) => {
   }
 };
 
-//this code seems incomplete
 export const deleteAccount = async (req, res) => {
   const tokens = req.body.token;
   const passwords = req.body.password;
@@ -341,20 +436,20 @@ export const deleteAccount = async (req, res) => {
     const user = await User.findOne({ token: tokens });
 
     if (!user) {
-      return res.status(404).json({success: false, message: "User not found" });
+      return respondWithError(res, 'NOT_FOUND', "User not found");
     }
 
     const isPasswordValid = await bcrypt.compare(passwords, user.password);
 
     if (!isPasswordValid) {
-      return res.status(401).json({ success: false, message: "Invalid password" });
+      return respondWithError(res, 'UNAUTHORIZED', "Invalid password");
     }
 
     await User.deleteOne({ token: tokens });
-    return res.status(200).json({ success: true, message: "User deleted successfully" });
+    return respondWithSuccess(res, 'SUCCESS', "User deleted successfully");
 
   } catch (error) {
-    return res.status(500).json({success: false, message: "An error occurred deleting account" });
+    return respondWithError(res, 'INTERNAL_SERVER_ERROR', error.toString());
   }
 };
 
@@ -368,15 +463,26 @@ export const defaultportfolio = async (req, res) => {
     const user = await User.findOne({ token: token });
 
     if (!user) {
-      return res.status(404).json({success: false, message: "User not found" });
+      return respondWithError(res, 'NOT_FOUND', "User not found");
+    }
+    if (user.defaultport === portfolioId) {
+      console.log('Portfolio is already set as default');
+      return respondWithError(res, 'BAD_REQUEST', "Portfolio is already set as default");
     }
 
+    user.defaultport = portfolioId;
+    await user.save();
+
+    console.log("200 Portfolio ID updated");
+    return respondWithSuccess(res, 'SUCCESS', "Portfolio ID updated");
 
   } catch (error) {
     console.error(error);
-    return res.status(500).json({success: false, message: "An error occurred updating default portfolio" });
+
+    return respondWithError(res, 'INTERNAL_SERVER_ERROR', error.toString());
   }
 };
+
 
 export const removedefaultportfolio = async (req, res) => {
   const token = req.body.token;
@@ -385,14 +491,14 @@ export const removedefaultportfolio = async (req, res) => {
     const user = await User.findOne({ token });
 
     if (!user) {
-      return res.status(404).json({success: false, message: "User not found" });
+      return respondWithError(res, 'NOT_FOUND', "User not found");
     }
 
     user.defaultport = 1;
 
   } catch (error) {
     console.error(error);
-    return res.status(500).json({success: false, message: "An error occurred deleting portfolio ID" });
+    return respondWithError(res, 'INTERNAL_SERVER_ERROR', error.toString());
   }
 
 };
@@ -404,7 +510,7 @@ export const makeadmin = async (req, res) => {
     const user = await User.findOne({ token });
 
     if (!user) {
-      return res.status(404).json({success: false, message: "User not found" });
+      return respondWithError(res, 'NOT_FOUND', "User not found");
     }
 
     if (user.isAdmin !== undefined) {
@@ -417,11 +523,11 @@ export const makeadmin = async (req, res) => {
     await user.save();
 
     console.log("Made user admin");
-    return res.status(200).json({success: true, message: "Made user Admin" });
+    return respondWithSuccess(res, 'SUCCESS', "Made user Admin");
 
   } catch (error) {
     console.error(error);
-    return res.status(500).json({success: false, message: "An error occurred making admin"});
+    return respondWithError(res, 'INTERNAL_SERVER_ERROR', error.toString());
   }
 };
 
