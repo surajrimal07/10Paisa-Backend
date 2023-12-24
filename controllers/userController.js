@@ -140,14 +140,6 @@ export const loginUser = async (req, res) => {
         console.log("Login Was Success");
         return respondWithData(res, 'SUCCESS', "Login successful", userData);
       }
-      //creating new token
-
-      // const token = jwt.sign({email : email},process.env.JWT_TOKEN_SECRET,{expiresIn: '7d'});
-      // console.log("Token: "+token);
-      // console.log(email);
-      //for now we will be saving token in db to avoid error in flutter
-      //in user model update the token field from above token and pass that data below
-
     } catch (error) {
       console.log(error.toString());
       return respondWithError(res, 'INTERNAL_SERVER_ERROR', error.toString());
