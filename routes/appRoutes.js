@@ -4,6 +4,7 @@ import { AssetMergedData, AssetMergedDataBySector, CommodityData, SingeAssetMerg
 import { sendOTP, verifyOTP } from '../controllers/otpControllers.js';
 import { addStockToPortfolio, createPortfolio, deletePortfolio, getAllPortfoliosForUser, removeStockFromPortfolio, renamePortfolio } from '../controllers/portfolioControllers.js';
 import { createUser, defaultportfolio, deleteAccount, fetchToken, forgetPass, loginUser, makeadmin, removedefaultportfolio, updateUser, verifyData, verifyUser } from '../controllers/userController.js';
+import { authGuard } from '../middleware/authGuard.js';
 import { startNewsServer } from '../server/newsServer.js';
 
 const router = Router();
@@ -14,20 +15,20 @@ router.post('/login', loginUser);
 router.post('/otp-login', sendOTP);
 router.post('/otp-verify', verifyOTP);
 router.post('/forget', forgetPass);
-router.post('/updateuser', updateUser);
+router.post('/updateuser',authGuard, updateUser);
 router.post('/news', startNewsServer);
 router.post('/verify', verifyUser);
 router.post('/whattoken', fetchToken);
 router.post('/delete-acc',deleteAccount);
 router.post('/pre-verify',verifyData);
 //portfolio
-router.post('/newport', createPortfolio);
-router.post('/addstock', addStockToPortfolio);
-router.post('/delport',deletePortfolio);
-router.post('/renameportfolio',renamePortfolio);
-router.post('/getallportforuser',getAllPortfoliosForUser);
-router.post('/remstock',removeStockFromPortfolio);
-router.post('/newasset',createAsset);
+router.post('/newport', authGuard,createPortfolio);
+router.post('/addstock',authGuard, addStockToPortfolio);
+router.post('/delport',authGuard,deletePortfolio);
+router.post('/renameportfolio',authGuard,renamePortfolio);
+router.post('/getallportforuser',authGuard,getAllPortfoliosForUser);
+router.post('/remstock',authGuard,removeStockFromPortfolio);
+router.post('/newasset',authGuard,createAsset);
 // router.post('/getassetnames',getAllAssetNames);
 router.post('/commodity', CommodityData);
 // router.post('/singleassetdetails', getSingleAssetDetails);
@@ -38,9 +39,9 @@ router.post('/metal', fetchMetalPrices);
 router.post('/turnover', getTopTurnover);
 router.post('/volume', getTopVolume);
 
-router.post('/adddefaultport', defaultportfolio);
-router.post('/removedefaultport', removedefaultportfolio);
-router.post('/makeadmin', makeadmin);
+router.post('/adddefaultport',authGuard, defaultportfolio);
+router.post('/removedefaultport',authGuard, removedefaultportfolio);
+router.post('/makeadmin',authGuard, makeadmin);
 router.post('/sharesansardata', AssetMergedData);
 router.post('/singlesharesansardata', SingeAssetMergedData);
 router.post('/sectorsharesansardata', AssetMergedDataBySector);
@@ -51,9 +52,9 @@ router.post('/topvolume', TopVolumeData);
 router.post('/toptrans', TopTransData);
 
 //admin routes
-router.post('/allusers', getAllUsers);
-router.post('/deleteUser', deleteUserByToken);
-router.post('/edituser', editUserByToken);
+router.post('/allusers',authGuard, getAllUsers);
+router.post('/deleteUser',authGuard, deleteUserByToken);
+router.post('/edituser',authGuard, editUserByToken);
 
 
 

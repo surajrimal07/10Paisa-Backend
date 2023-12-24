@@ -39,7 +39,7 @@ const newSchema = new Schema({
   },
     dpImage : {
     type: String,
-    default: "https://res.cloudinary.com/dio3qwd9q/image/upload/v1702262191/UserDP/ktsqwgc2zpeiynaekfct.png"
+    default: "https://res.cloudinary.com/dio3qwd9q/image/upload/v1703030558/default_ww723l.png"
     },
     userAmount : {
       type: Number,

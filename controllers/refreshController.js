@@ -64,7 +64,7 @@ async function wipeCachesAndRefreshData() {
       console.log(`Data wipe and refresh successful. Last Refreshed: ${now.toLocaleTimeString('en-US')}`);
     } else {
       console.log(`Skipping data refresh. Last Refreshed: ${lastDataRefreshTime?.toLocaleTimeString('en-US')}`);
-      clearInterval(refreshIntervalId); // Clear the interval when the market is closed
+      clearInterval(refreshIntervalId);
     }
   } catch (error) {
     console.error('Error wiping caches:', error.message);
