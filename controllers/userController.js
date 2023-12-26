@@ -117,12 +117,13 @@ export const loginUser = async (req, res) => {
     console.log("Email: "+email, "Password: "+password);
     try {
       const user = await User.findOne({ email: email.toLowerCase() });
+
       if (!user || !(await bcrypt.compare(password, user.password))) {
         console.log("Invalid email or password.");
         return respondWithError(res, 'UNAUTHORIZED', "Invalid email or password.");
       } else {
         console.log("user found");
-        const token = jwt.sign({email : email},process.env.JWT_SECRET,{expiresIn: '7d'});
+        const token = jwt.sign({email : email, isAdmin: user.isAdmin},process.env.JWT_SECRET,{expiresIn: '7d'});
 
         let userData = {
           _id: user._id,

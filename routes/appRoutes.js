@@ -4,7 +4,7 @@ import { AssetMergedData, AssetMergedDataBySector, CommodityData, SingeAssetMerg
 import { sendOTP, verifyOTP } from '../controllers/otpControllers.js';
 import { addStockToPortfolio, createPortfolio, deletePortfolio, getAllPortfoliosForUser, removeStockFromPortfolio, renamePortfolio } from '../controllers/portfolioControllers.js';
 import { createUser, defaultportfolio, deleteAccount, fetchToken, forgetPass, loginUser, makeadmin, removedefaultportfolio, updateUser, verifyData, verifyUser } from '../controllers/userController.js';
-import { authGuard } from '../middleware/authGuard.js';
+import { authGuard, authGuardAdmin } from '../middleware/authGuard.js';
 import { startNewsServer } from '../server/newsServer.js';
 
 const router = Router();
@@ -52,9 +52,9 @@ router.post('/topvolume', TopVolumeData);
 router.post('/toptrans', TopTransData);
 
 //admin routes
-router.post('/allusers',authGuard, getAllUsers);
-router.post('/deleteUser',authGuard, deleteUserByToken);
-router.post('/edituser',authGuard, editUserByToken);
+router.post('/allusers',authGuardAdmin, getAllUsers);
+router.post('/deleteUser',authGuardAdmin, deleteUserByToken);
+router.post('/edituser',authGuardAdmin, editUserByToken);
 
 
 
