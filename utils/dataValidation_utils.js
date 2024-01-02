@@ -1,5 +1,5 @@
 export const validatePhoneNumber = (phone) => {
-    if (phone.length == 10) {
+    if (phone.length == 10 && !isNaN(phone)) {
         return true;
     }
     return false;

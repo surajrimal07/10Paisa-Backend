@@ -15,11 +15,12 @@ export const getAllUsers = async (req, res) => {
     }
 };
 
-export const deleteUserByToken = async (req, res) => {
-    const { token } = req.body;
+export const deleteUserByEmail = async (req, res) => {
+    const { email } = req.body;
+    console.log(email);
 
     try {
-        const deletedUser = await User.findOneAndDelete({ token });
+        const deletedUser = await User.findOneAndDelete({ email });
 
         if (!deletedUser) {
             return respondWithError(res, 'NOT_FOUND', 'User not found');
@@ -30,11 +31,13 @@ export const deleteUserByToken = async (req, res) => {
     }
 };
 
-export const editUserByToken = async (req, res) => {
-    const { token, newData } = req.body;
+
+
+export const editUserByEmail = async (req, res) => {
+    const { email, newData } = req.body;
 
     try {
-        const updatedUser = await User.findOneAndUpdate({ token }, newData, { new: true });
+        const updatedUser = await User.findOneAndUpdate({ email }, newData, { new: true });
 
         if (!updatedUser) {
             return respondWithError(res, 'NOT_FOUND', 'User not found');
@@ -45,3 +48,4 @@ export const editUserByToken = async (req, res) => {
         return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'An error occurred while updating the user');
     }
 };
+

@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { deleteUserByToken, editUserByToken, getAllUsers } from '../controllers/adminController.js';
+import { deleteUserByEmail, editUserByEmail, getAllUsers } from '../controllers/adminController.js';
 import { AssetMergedData, AssetMergedDataBySector, CommodityData, SingeAssetMergedData, TopGainersData, TopLoosersData, TopTransData, TopTurnoverData, TopVolumeData, createAsset, fetchMetalPrices, getTopGainers, getTopTurnover, getTopVolume, metalHistController } from '../controllers/assetControllers.js';
 import { sendOTP, verifyOTP } from '../controllers/otpControllers.js';
 import { addStockToPortfolio, createPortfolio, deletePortfolio, getAllPortfoliosForUser, removeStockFromPortfolio, renamePortfolio } from '../controllers/portfolioControllers.js';
@@ -52,9 +52,9 @@ router.post('/topvolume', TopVolumeData);
 router.post('/toptrans', TopTransData);
 
 //admin routes
-router.post('/allusers',authGuardAdmin, getAllUsers);
-router.post('/deleteUser',authGuardAdmin, deleteUserByToken);
-router.post('/edituser',authGuardAdmin, editUserByToken);
+router.get('/allusers',authGuardAdmin, getAllUsers);
+router.delete('/deleteUser',authGuardAdmin, deleteUserByEmail);
+router.put('/edituser',authGuardAdmin, editUserByEmail);
 
 
 

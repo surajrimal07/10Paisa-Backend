@@ -97,10 +97,12 @@ export const createUser = async (req, res) => {
             return respondWithData(res, 'CREATED', "User created successfully", userData);
 
           } catch (err) {
-            console.error(err);
+            //console.error(err);
+            console.log("Singup Was Failed");
             return respondWithError(res, 'INTERNAL_SERVER_ERROR', err.toString());
           }
         } else {
+          console.log("Email already exists");
           return respondWithError(res, 'BAD_REQUEST', "Email already exists");
         }
       }
