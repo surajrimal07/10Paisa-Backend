@@ -10,8 +10,8 @@ export const sendOTP = (req, res, next) => {
         }
         return res.status(200).send({
             success: true,
-            message: results.toString(),
-            data: results,
+            message: 'OTP sent successfully',
+            hash: results,
         });
     });
 };
@@ -21,7 +21,7 @@ export const verifyOTP = (req, res, next) => {
     otpService.verifyOTP(req.body, (error, results) => {
         if (error) {
             return res.status(400).send({
-                message: "error",
+                message: "Invalid OTP",
                 data: error,
             });
         }

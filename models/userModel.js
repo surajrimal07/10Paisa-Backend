@@ -45,7 +45,7 @@ const newSchema = new Schema({
       type: Number,
       default: 100000,
     },
-    portfolio: [{ type: Schema.Types.ObjectId, ref: 'Portfolio' }],
+    portfolio: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Portfolio' }],
 });
 
 const User = mongoose.model('User',newSchema);

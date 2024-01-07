@@ -4,11 +4,11 @@ import { respondWithError } from '../utils/response_utils.js';
 export const authGuard = (req, res,next) => {
     const authHeader = req.headers.authorization;
 
-    // if (!authHeader) {
-    //     console.log("Warning Token Not Provided");
-    //     return respondWithError(res,'BAD_REQUEST', "No token provided");
+    if (!authHeader) {
+        console.log("Warning Token Not Provided");
+        return respondWithError(res,'BAD_REQUEST', "No token provided");
 
-    // }
+    }
     const token = authHeader.split(' ')[1];
     if (!token) {
         console.log("Warning Invalid Token Provided");
@@ -32,11 +32,11 @@ export const authGuardAdmin = (req, res,next) => {
     const authHeader = req.headers.authorization;
     console.log("Passed Header is "+ req.headers.authorization)
 
-    // if (!authHeader) {
-    //     console.log("Warning Token Not Provided");
-    //     return respondWithError(res,'BAD_REQUEST', "No token provided");
+    if (!authHeader) {
+        console.log("Warning Token Not Provided");
+        return respondWithError(res,'BAD_REQUEST', "No token provided");
 
-    // }
+    }
     const token = authHeader.split(' ')[1];
     if (!token) {
         console.log("Warning Invalid Token Provided");

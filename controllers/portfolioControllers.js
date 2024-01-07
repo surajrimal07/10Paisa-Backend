@@ -1,23 +1,24 @@
 import Asset from '../models/assetModel.js';
 import Portfolio from '../models/portfolioModel.js';
+import { respondWithError } from '../utils/response_utils.js';
 
 export const createPortfolio = async (req, res) => {
   try {
     console.log('Create Portfolio Requested');
-    const userToken = req.body.token;
+    const userEmail = req.body.email;
     const portfolioName = req.body.name;
 
-    console.log(userToken, portfolioName);
+    console.log(userEmail, portfolioName);
 
-    const existingPortfolio = await Portfolio.findOne({ userToken, name: portfolioName });
+    const existingPortfolio = await Portfolio.findOne({ userEmail, name: portfolioName });
 
     if (existingPortfolio) {
       return res.status(400).json({success: false, message: "Duplicate Portfolio" });
     }
-    const maxPortfolio = await Portfolio.findOne({ userToken }, {}, { sort: { id: -1 } });
+    const maxPortfolio = await Portfolio.findOne({ userEmail }, {}, { sort: { id: -1 } });
 
     const newPortfolioId = maxPortfolio ? maxPortfolio.id + 1 : 1;
-    const portfolio = await Portfolio.create({ userToken, name: portfolioName, id: newPortfolioId });
+    const portfolio = await Portfolio.create({ userEmail, name: portfolioName, id: newPortfolioId });
     res.status(200).json(portfolio);
 
   } catch (error) {
@@ -269,21 +270,58 @@ export const renamePortfolio = async (req, res) => {
 //
 
   //fetch portfolio //tested working
+  // export const getAllPortfoliosForUser = async (req, res) => {
+  //   try {
+  //     const useremail = req.body.email;
+
+  //     console.log("recieved email is "+useremail);
+  //     console.log(useremail);
+
+  //     const portfolios = await Portfolio.find({ userEmail: useremail });
+
+  //     if (!portfolios || portfolios.length === 0) {
+  //       return respondWithError(res, 'NOT_FOUND', 'No portfolios found');
+  //       //return res.status(404).json({success: false, message: "Portfolios not found for the user" });
+  //     }
+
+  //    return res.status(200).json(portfolios);  //no error
+  //     //return respondWithData(res, 'SUCCESS', 'Portfolios fetched successfully', portfolios); //throws error
+  //   } catch (error) {
+  //     return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'An error occurred while fetching portfolios');
+  //   }
+
   export const getAllPortfoliosForUser = async (req, res) => {
     try {
-      const userToken = req.body.token;
+      const useremail = req.body.email;
 
-      console.log("recieved token is");
-      console.log(userToken);
+      console.log("received email is " + useremail);
+      console.log(useremail);
 
-      const portfolios = await Portfolio.find({ userToken });
+      const portfolios = await Portfolio.find({ userEmail: useremail });
 
       if (!portfolios || portfolios.length === 0) {
-        return res.status(404).json({success: false, message: "Portfolios not found for the user" });
+        return respondWithError(res, 'NOT_FOUND', 'No portfolios found');
       }
 
-      res.status(200).json({ portfolios });
+      const formattedPortfolios = portfolios.map(portfolio => {
+        const { _id, __v, ...rest } = portfolio._doc;
+        return {
+          id: rest.id,
+          name: rest.name,
+          stocks: rest.stocks,
+          totalunits: rest.totalunits,
+          gainLossRecords: rest.gainLossRecords,
+          portfoliocost: rest.portfoliocost,
+          portfoliovalue: rest.portfoliovalue,
+        };
+      });
+
+     // return respondWithData(res, 'SUCCESS', 'Portfolios fetched successfully', formattedPortfolios); //throws error
+      return res.status(200).json({ Portfolios: formattedPortfolios });
     } catch (error) {
-      res.status(500).json({success: false, message: "Internal Server Error" });
+      return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'An error occurred while fetching portfolios');
     }
   };
+
+
+

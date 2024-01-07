@@ -12,11 +12,12 @@ export const createUser = async (req, res) => {
   const password = req.body.password;
   const phone = req.body.phone;
   const style = req.body.style !== undefined ? req.body.style : undefined;
-  const isAdmin = false;
+  const isAdmin = req.body.isAdmin ?? false;
   const userAmount = req.body.amount !== undefined ? req.body.amount : undefined;
 
   console.log("Create user command passed")
-  console.log("Name: "+name,  "Email: "+email, "Password: "+password, "phone: "+phone, "Style: "+style);
+  console.log(req.body);
+  //console.log("Name: "+name,  "Email: "+email, "Password: "+password, "phone: "+phone, "Style: "+style);
 
 
   if (!name || !email || !password || !phone) {
@@ -24,6 +25,8 @@ export const createUser = async (req, res) => {
   }
 
   if (!validatePhoneNumber(phone)) {
+    //print phone along with it's data type
+    console.log(phone, typeof phone);
     return respondWithError(res, 'BAD_REQUEST', "Invalid phone number. Please provide a 10-digit number.");
   }
 
@@ -52,7 +55,7 @@ export const createUser = async (req, res) => {
 
     const samplePortfolio = await Portfolio.create({
       id: 1,
-      userToken: token,
+      userEmail: email,
       name: "Sample Portfolio",
       stocks: [{ symbol: "CBBL", quantity: 1000000, wacc: 750 }],
     });
@@ -64,6 +67,13 @@ export const createUser = async (req, res) => {
       } else {
         if (user === null) {
 
+          User.findOne({ phone }, async (phoneErr, phoneUser) => {
+            if (phoneErr) {
+              console.error(phoneErr);
+              return respondWithError(res, 'INTERNAL_SERVER_ERROR', phoneErr.toString());
+
+          } else {
+              if (phoneUser === null) {
           const newUser = new User({
             token,
             name,
@@ -97,28 +107,49 @@ export const createUser = async (req, res) => {
             return respondWithData(res, 'CREATED', "User created successfully", userData);
 
           } catch (err) {
-            //console.error(err);
-            console.log("Singup Was Failed");
+            console.log("Singup failed");
             return respondWithError(res, 'INTERNAL_SERVER_ERROR', err.toString());
           }
         } else {
-          console.log("Email already exists");
-          return respondWithError(res, 'BAD_REQUEST', "Email already exists");
+          // Duplicate phone found
+          console.log("Phone number already exists");
+          return respondWithError(res, 'BAD_REQUEST', "Phone number already exists");
         }
       }
     });
-  } catch (err) {
-    console.error(err);
-    return respondWithError(res, 'INTERNAL_SERVER_ERROR', err.toString());
+  } else {
+    console.log("Email already exists");
+    return respondWithError(res, 'BAD_REQUEST', "Email already exists");
   }
-};
+  }
+  });
+  } catch (err) {
+  console.error(err);
+  return respondWithError(res, 'INTERNAL_SERVER_ERROR', err.toString());
+  }
+  };
 
+
+//         } else {
+//           console.log("Email already exists");
+//           return respondWithError(res, 'BAD_REQUEST', "Email already exists");
+//         }
+//       }
+//     });
+//   } catch (err) {
+//     console.error(err);
+//     return respondWithError(res, 'INTERNAL_SERVER_ERROR', err.toString());
+//   }
+// };
+
+//
 export const loginUser = async (req, res) => {
     const email = req.body.email;
     const password = req.body.password;
     console.log("Email: "+email, "Password: "+password);
     try {
-      const user = await User.findOne({ email: email.toLowerCase() });
+      //const user = await User.findOne({ email: email.toLowerCase() });
+      const user = await User.findOne({ email: email.toLowerCase() }).populate('portfolio');
 
       if (!user || !(await bcrypt.compare(password, user.password))) {
         console.log("Invalid email or password.");
@@ -226,10 +257,10 @@ export const updateUser = async (req, res) => {
   const invStyle = req.body.style;
   const fieldToUpdate = req.body.field;
   const valueToUpdate = req.body.value;
-  const {dpImage} = req.files;
+  //const {dpImage} = req.files;
   const userAmount = req.body.useramount;
 
-  if (!token ) {
+  if (!email ) {
     return respondWithError(res, 'BAD_REQUEST', "User token missing");
   }
   if (!fieldToUpdate) {
@@ -237,7 +268,7 @@ export const updateUser = async (req, res) => {
   }
 
   try {
-    const user = await User.findOne({ token });
+    const user = await User.findOne({ email });
 
     if (!user) {
       console.log("User not found");
@@ -245,6 +276,7 @@ export const updateUser = async (req, res) => {
     }
 
     if (fieldToUpdate === 'dp') {
+      const {dpImage} = req.files;
       let uploadedImage;
 
       if (dpImage && dpImage.path) {
@@ -347,16 +379,19 @@ export const updateUser = async (req, res) => {
 };
 
 export const verifyUser = async (req, res) => {
-  const token = req.body.token;
+  const email = req.body.email;
 
-  console.log("Token is: " + token);
+  console.log("email is: " + email);
 
   try {
-    const user = await User.findOne({ token: token });
+    //const user = await User.findOne({ email: email });
+    const user = await User.findOne({ email: email.toLowerCase() }).populate('portfolio');
+
+    //const user = await User.findOne({ email: email.toLowerCase() }).populate('portfolio').execPopulate();
 
     if (!user) {
-      console.log("401 Invalid token.");
-      return respondWithError(res, 'UNAUTHORIZED', "Invalid token.");
+      console.log("401 Invalid email.");
+      return respondWithError(res, 'UNAUTHORIZED', "Invalid email.");
     } else {
       console.log("200 User verification was successful");
       res.json({

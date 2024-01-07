@@ -148,7 +148,7 @@ const portfolioSchema = new mongoose.Schema({
         type: Number,
         required: true,
     },
-    userToken: {
+    userEmail: {
         type: String,
         required: true,
     },

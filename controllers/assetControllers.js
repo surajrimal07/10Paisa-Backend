@@ -383,7 +383,7 @@ export const getTopGainers = async (req, res) => {
     console.error('Error fetching data:', error.message);
 
     try {
-      const fallbackCacheData = await fetchFromCache(topGainers_fallback);
+      const fallbackCacheData = await fetchFromCache(CACHE_KEY_TOP_GAINER_FALLBACK);
 
       if (fallbackCacheData !== null) {
         console.log('Returning data from fallback cache');

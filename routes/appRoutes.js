@@ -26,7 +26,7 @@ router.post('/newport', authGuard,createPortfolio);
 router.post('/addstock',authGuard, addStockToPortfolio);
 router.post('/delport',authGuard,deletePortfolio);
 router.post('/renameportfolio',authGuard,renamePortfolio);
-router.post('/getallportforuser',authGuard,getAllPortfoliosForUser);
+router.get('/getallportforuser',authGuard,getAllPortfoliosForUser);
 router.post('/remstock',authGuard,removeStockFromPortfolio);
 router.post('/newasset',authGuard,createAsset);
 // router.post('/getassetnames',getAllAssetNames);

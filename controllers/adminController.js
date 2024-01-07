@@ -6,7 +6,9 @@ export const getAllUsers = async (req, res) => {
         const users = await User.find();
 
         if (!users || users.length === 0) {
+            console.log("No users found");
             return respondWithError(res, 'NOT_FOUND', 'No users found');
+
         }
 
         return respondWithData(res, 'SUCCESS', 'Users fetched successfully', users);
@@ -17,12 +19,13 @@ export const getAllUsers = async (req, res) => {
 
 export const deleteUserByEmail = async (req, res) => {
     const { email } = req.body;
-    console.log(email);
+    console.log("Delete User by email requested for email: " + email );
 
     try {
         const deletedUser = await User.findOneAndDelete({ email });
 
         if (!deletedUser) {
+            console.log("User not found");
             return respondWithError(res, 'NOT_FOUND', 'User not found');
         }
         return respondWithData(res, 'SUCCESS', 'User deleted successfully', deletedUser);
@@ -40,6 +43,7 @@ export const editUserByEmail = async (req, res) => {
         const updatedUser = await User.findOneAndUpdate({ email }, newData, { new: true });
 
         if (!updatedUser) {
+            console.log("User not found");
             return respondWithError(res, 'NOT_FOUND', 'User not found');
         }
 
