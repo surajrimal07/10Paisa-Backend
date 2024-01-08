@@ -1,17 +1,28 @@
 import nodemailer from 'nodemailer';
 
+
+// Name	Brain Rutherford
+// Username	brain27@ethereal.email
+// Password	z3QmD6Bc4SY43TDBF4
+
+
+//scfc wrlr ijtf fmkl
+
+
 const sendEmail = (params, callback) => {
     const transporter = nodemailer.createTransport({
-        host: 'smtp.ethereal.email',
-        port: 587,
+        service: "Gmail",
+        host: 'smtp.gmail.com',
+        secure: true,
+        port: 465,
         auth: {
-            user: 'ewald59@ethereal.email',
-            pass: 'KACakxDsphSMCp1FpW'
+            user: '10paisaservices@gmail.com',
+            pass: 'scfc wrlr ijtf fmkl'
         }
     });
 
     const mailOptions = {
-        from: 'supersonicmega6@gmail.com',
+        from: '10paisaservices@gmail.com',
         to: params.email,
         subject: params.subject,
         text: params.body,
