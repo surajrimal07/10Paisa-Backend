@@ -169,6 +169,7 @@ export const loginUser = async (req, res) => {
           isAdmin: user.isAdmin,
           dpImage: user.dpImage,
           userAmount: user.userAmount,
+          defaultport: user.defaultport,
           portfolio: user.portfolio
         };
         console.log("Login Was Success");
@@ -384,17 +385,14 @@ export const verifyUser = async (req, res) => {
   console.log("email is: " + email);
 
   try {
-    //const user = await User.findOne({ email: email });
     const user = await User.findOne({ email: email.toLowerCase() }).populate('portfolio');
-
-    //const user = await User.findOne({ email: email.toLowerCase() }).populate('portfolio').execPopulate();
-
     if (!user) {
       console.log("401 Invalid email.");
       return respondWithError(res, 'UNAUTHORIZED', "Invalid email.");
     } else {
-      console.log("200 User verification was successful");
-      res.json({
+      console.log("User verification was successful");
+
+        let userData = {
         username: user.name,
         email: user.email,
         phone: user.phone,
@@ -406,7 +404,8 @@ export const verifyUser = async (req, res) => {
         userAmount: user.userAmount,
         portfolio: user.portfolio
 
-      });
+      };
+      return respondWithData(res, 'SUCCESS', "User verification was successful", userData);
     }
   } catch (error) {
     console.log("500 An error occurred during user verification.");

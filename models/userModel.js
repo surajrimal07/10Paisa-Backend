@@ -8,7 +8,6 @@ const newSchema = new Schema({
         required: true,
         unique: true,
       },
-    picture:String,
     name:{
       type: String,
       required: true,
@@ -39,7 +38,7 @@ const newSchema = new Schema({
   },
     dpImage : {
     type: String,
-    default: "https://res.cloudinary.com/dio3qwd9q/image/upload/v1703030558/default_ww723l.png"
+    default: "https://res.cloudinary.com/dio3qwd9q/image/upload/v1703030558/ktsqwgc2zpeiynaekfct.png"
     },
     userAmount : {
       type: Number,
