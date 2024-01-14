@@ -4,11 +4,11 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import express from 'express';
 import storage from 'node-persist';
+import initializeRefreshMechanism from './controllers/refreshController.js';
 import { mainDB } from './database/db.js';
 import userRouter from './routes/appRoutes.js';
 import { startNewsServer } from './server/newsServer.js';
 
-import initializeRefreshMechanism from './controllers/refreshController.js';
 
 import multipart from 'connect-multiparty';
 
@@ -64,6 +64,11 @@ app.listen(port, () => {
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
+//testing
+app.get('/test', (req, res) => {
+  res.send('Testing API is running live🥳');
+});
+
 app.use('/api', userRouter);
 
 app.get('/', (req, res) => {
@@ -71,3 +76,6 @@ app.get('/', (req, res) => {
 });
 
 startNewsServer(app);
+
+
+export default app;

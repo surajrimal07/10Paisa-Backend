@@ -7,9 +7,6 @@ export const mainDB = async () => {
   try {
 
     const mongooseOptions = {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-      useCreateIndex: true,
       socketTimeoutMS: 30000,
       connectTimeoutMS: 30000,
     };
