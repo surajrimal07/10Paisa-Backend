@@ -434,7 +434,7 @@ export const topgainersShare = async () => {
       throw new Error('Data is not an array.');
     }
 
-    console.log('Data:', data);
+   // console.log('Data:', data);
 
     // Process the data
     const processedData = data.map(item => ({

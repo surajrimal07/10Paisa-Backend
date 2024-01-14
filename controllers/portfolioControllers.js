@@ -1,6 +1,6 @@
 import Asset from '../models/assetModel.js';
 import Portfolio from '../models/portfolioModel.js';
-import { respondWithError } from '../utils/response_utils.js';
+import { respondWithData, respondWithError, respondWithSuccess } from '../utils/response_utils.js';
 
 export const createPortfolio = async (req, res) => {
   try {
@@ -13,17 +13,17 @@ export const createPortfolio = async (req, res) => {
     const existingPortfolio = await Portfolio.findOne({ userEmail, name: portfolioName });
 
     if (existingPortfolio) {
-      return res.status(400).json({success: false, message: "Duplicate Portfolio" });
+      return respondWithError(res, 'BAD_REQUEST', 'Duplicate Portfolio');
     }
     const maxPortfolio = await Portfolio.findOne({ userEmail }, {}, { sort: { id: -1 } });
 
     const newPortfolioId = maxPortfolio ? maxPortfolio.id + 1 : 1;
     const portfolio = await Portfolio.create({ userEmail, name: portfolioName, id: newPortfolioId });
-    res.status(200).json(portfolio);
+    return respondWithData(res, 'SUCCESS', 'Portfolio created successfully', portfolio);
 
   } catch (error) {
     console.error(error);
-    res.status(500).json({success: false, message: "Internal Server Error" });
+    return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'An error occurred while creating portfolio');
   }
 };
 
@@ -32,10 +32,10 @@ export const createPortfolio = async (req, res) => {
 export const addStockToPortfolio = async (req, res) => {
   console.log('Add to Portfolio Requested');
   try {
-    const { token, id, symbol, quantity } = req.body;
+    const { email, id, symbol, quantity } = req.body;
 
     const existingPortfolio = await Portfolio.findOne({
-      userToken: token,
+      userEmail: email,
       id: id,
     });
 
@@ -66,8 +66,8 @@ export const addStockToPortfolio = async (req, res) => {
       });
 
       await newPortfolio.save();
-
-      return res.status(200).json(newPortfolio);
+      return respondWithData(res, 'SUCCESS', 'Stock added to portfolio successfully', newPortfolio);
+     // return res.status(200).json(newPortfolio);
     }
 
     let wacc = req.body.price;
@@ -132,10 +132,12 @@ export const addStockToPortfolio = async (req, res) => {
 
     await existingPortfolio.save();
 
-    res.status(200).json(existingPortfolio);
+    return respondWithData(res, 'SUCCESS', 'Stock added to portfolio successfully', existingPortfolio);
+    //res.status(200).json(existingPortfolio);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'An error occurred while adding stock to portfolio');
+    //res.status(500).json({ error: 'Internal Server Error' });
   }
 };
 
@@ -203,45 +205,51 @@ const getLTPForStock = async (symbol) => {
 // tested and working
 export const deletePortfolio = async (req, res) => {
   try {
-    const userToken = req.body.token;
+    const userEmail = req.body.email;
     const portid = req.body.id;
 
     const portfolio = await Portfolio.findOneAndDelete({
-      userToken: userToken,
+      userEmail: userEmail,
       id: portid,
     });
 
     if (!portfolio) {
-      return res.status(404).json({success: false, message: "Portfolio not found" });
+      return respondWithError(res, 'NOT_FOUND', 'Portfolio not found');
+     // return res.status(404).json({success: false, message: "Portfolio not found" });
     }
 
-    res.status(200).json({success: true, message: "Portfolio deleted successfully" });
+    return respondWithSuccess(res, 'SUCCESS', 'Portfolio deleted successfully');
+    //res.status(200).json({success: true, message: "Portfolio deleted successfully" });
   } catch (error) {
     console.error(error);
-    res.status(500).json({success: false, message: "Internal Server Error" });
+    return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'An error occurred while deleting portfolio');
+    //res.status(500).json({success: false, message: "Internal Server Error" });
   }
 };
 
 //rename portfolio //tested working
 export const renamePortfolio = async (req, res) => {
   try {
-    const userToken = req.body.token;
+    const userEmail = req.body.email;
     const portId = req.body.id;
     const newName = req.body.newName;
 
     const portfolio = await Portfolio.findOneAndUpdate(
-      { userToken: userToken, id: portId },
+      { userEmail: userEmail, id: portId },
       { name: newName },
       { new: true }
     );
 
     if (!portfolio) {
-      return res.status(404).json({success: false, message: "Portfolio not found" });
+      return respondWithError(res, 'NOT_FOUND', 'Portfolio not found');
+      //return res.status(404).json({success: false, message: "Portfolio not found" });
     }
 
-    res.status(200).json({success: true, message: "Portfolio renamed successfully", portfolio });
+    return respondWithData(res, 'SUCCESS', 'Portfolio renamed successfully', portfolio);
+  //  res.status(200).json({success: true, message: "Portfolio renamed successfully", portfolio });
   } catch (error) {
-    res.status(500).json({success: false, message: "Internal Server Error" });
+    return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'An error occurred while renaming portfolio');
+   // res.status(500).json({success: false, message: "Internal Server Error" });
   }
 };
 
@@ -249,12 +257,12 @@ export const renamePortfolio = async (req, res) => {
   export const removeStockFromPortfolio = async (req, res) => {
     console.log('Delete Stock from Portfolio Requested');
     try {
-      const { token, id, symbol, quantity } = req.body;
+      const { email, id, symbol, quantity } = req.body;
 
-      console.log(token, id, symbol, quantity);
+      console.log(email, id, symbol, quantity);
 
       const existingPortfolio = await Portfolio.findOne({
-        userToken: token,
+        userEmail: email,
         id: id,
       });
 
@@ -295,7 +303,6 @@ export const renamePortfolio = async (req, res) => {
       const useremail = req.body.email;
 
       console.log("received email is " + useremail);
-      console.log(useremail);
 
       const portfolios = await Portfolio.find({ userEmail: useremail });
 
@@ -308,6 +315,7 @@ export const renamePortfolio = async (req, res) => {
         return {
           id: rest.id,
           name: rest.name,
+          userEmail: rest.userEmail,
           stocks: rest.stocks,
           totalunits: rest.totalunits,
           gainLossRecords: rest.gainLossRecords,
@@ -317,7 +325,7 @@ export const renamePortfolio = async (req, res) => {
       });
 
      // return respondWithData(res, 'SUCCESS', 'Portfolios fetched successfully', formattedPortfolios); //throws error
-      return res.status(200).json({ Portfolios: formattedPortfolios });
+      return res.status(200).json({ portfolio: formattedPortfolios });
     } catch (error) {
       return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'An error occurred while fetching portfolios');
     }

@@ -1,5 +1,6 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import storage from 'node-persist';
 import { forgetPassword } from '../controllers/otpControllers.js';
 import Portfolio from '../models/portfolioModel.js';
 import User from '../models/userModel.js';
@@ -157,6 +158,8 @@ export const loginUser = async (req, res) => {
       } else {
         console.log("user found");
         const token = jwt.sign({email : email, isAdmin: user.isAdmin},process.env.JWT_SECRET,{expiresIn: '7d'});
+        //save this token
+        await storage.setItem('user_token', token);
 
         let userData = {
           _id: user._id,
@@ -379,8 +382,11 @@ export const updateUser = async (req, res) => {
   }
 };
 
+const User_token_key = 'user_token';
+
 export const verifyUser = async (req, res) => {
   const email = req.body.email;
+  let user_token;
 
   console.log("email is: " + email);
 
@@ -390,12 +396,24 @@ export const verifyUser = async (req, res) => {
       console.log("401 Invalid email.");
       return respondWithError(res, 'UNAUTHORIZED', "Invalid email.");
     } else {
+
       console.log("User verification was successful");
+      const cachedtkn = await storage.getItem(User_token_key);
+
+      if (!cachedtkn) {
+        const token = jwt.sign({email : email, isAdmin: user.isAdmin},process.env.JWT_SECRET,{expiresIn: '7d'});
+        await storage.setItem(User_token_key, token);
+        user_token = token;
+      } else {
+        user_token = cachedtkn;
+      }
 
         let userData = {
+        _id: user._id,
         username: user.name,
         email: user.email,
         phone: user.phone,
+        token: user_token,
         profilePicture: user.profilePicture,
         style: user.style,
         defaultport: user.defaultport,
@@ -485,11 +503,11 @@ export const deleteAccount = async (req, res) => {
 //works
 export const defaultportfolio = async (req, res) => {
   console.log("Change default portfolio requested")
-  const token = req.body.token;
+  const email = req.body.email;
   const portfolioId = req.body.id;
 
   try {
-    const user = await User.findOne({ token: token });
+    const user = await User.findOne({ email });
 
     if (!user) {
       return respondWithError(res, 'NOT_FOUND', "User not found");

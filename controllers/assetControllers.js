@@ -838,12 +838,14 @@ export const fetchMetalPrices = async (req, res) => {
 
     if (cachedData !== null) {
       console.log('Returning cached metal prices data');
-      return res.status(200).json({
-        data: cachedData,
-        isFallback: false,
-        isCached: true,
-        dataversion: dataVersion,
-      });
+      console.log(cachedData);
+      return res.status(200).json(
+        cachedData
+        // data: cachedData,
+        // isFallback: false,
+        // isCached: true,
+        // dataversion: dataVersion,
+      );
     }
 
     const assets = Object.keys(assetToCategoryMap);
@@ -895,11 +897,11 @@ export const fetchMetalPrices = async (req, res) => {
         );
 
     console.log('Returning live Metal prices');
-    return res.status(200).json({
-      data: metalPrices,
-      isFallback: false,
-      isCached: false,
-      dataversion: dataVersion,
+    return res.status(200).json({metalPrices
+      // data: metalPrices,
+      // isFallback: false,
+      // isCached: false,
+      // dataversion: dataVersion,
     });
   } catch (error) {
     console.error('Error fetching or logging metal prices:', error.message);
@@ -1370,5 +1372,59 @@ export const TopTransData = async (req, res) => {
   }
 };
 
+export const DashBoardData = async (req, res) => {
+  try {
+    const cachedData = await fetchFromCache('dashboardDataCached');
 
-export default {createAsset, fetchMetalPrices,TopVolumeData,TopTransData,TopTurnoverData,topLosersShare, AssetMergedData, SingeAssetMergedData, AssetMergedDataBySector, CommodityData, TopGainersData};
+    if (cachedData !== null) {
+      console.log('Returning cached dashboard data');
+      return res.status(200).json({
+        data: cachedData,
+        isFallback: false,
+        isCached: true,
+        dataversion: cachedDataVersion,
+      });
+    }
+
+    const topGainersData = await topgainersShare();
+    const topLoosersData = await topLosersShare();
+    const topTurnoverData = await topTurnoversShare();
+    const topVolumeData = await topTradedShares();
+    const topTransData = await topTransactions();
+
+    const dashboardData = {
+      topGainers: {
+        data: topGainersData
+      },
+      topLoosers: {
+        data: topLoosersData
+      },
+      topTurnover: {
+        data: topTurnoverData
+      },
+      topVolume: {
+        data: topVolumeData
+      },
+      topTrans: {
+        data: topTransData
+      },
+    };
+
+    await storage.setItem('dashboardDataCached', dashboardData);
+
+    return res.status(200).json({
+      data: dashboardData,
+      isFallback: false,
+      isCached: false,
+      dataversion: cachedDataVersion,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+
+
+
+
+export default {createAsset, fetchMetalPrices,TopVolumeData,TopTransData,TopTurnoverData,topLosersShare, AssetMergedData, SingeAssetMergedData, AssetMergedDataBySector, CommodityData, TopGainersData, DashBoardData};
