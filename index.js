@@ -37,12 +37,28 @@ app.use((req, res, next) => {
 //multiparty middleware
 app.use(multipart())
 
-const corsOrigin ={
-  origin:'http://localhost:3000',
-  credentials:true,
-  optionSuccessStatus:200
-}
-app.use(cors(corsOrigin));
+// const corsOrigin ={
+//   origin: '*', // allow all origins
+//   //origin:'http://localhost:3000',
+//   credentials:true,
+//   optionSuccessStatus:200
+// }
+
+app.use(cors({
+  origin: (origin, callback) => {
+    callback(null, origin);
+  },
+  credentials: true,
+  optionsSuccessStatus: 200
+}));
+
+
+// const corsOptions = {
+//   origin: '*',
+//   credentials: true,
+//   optionsSuccessStatus: 200
+// };
+// app.use(cors(corsOptions));
 
 
 //cloudnary config

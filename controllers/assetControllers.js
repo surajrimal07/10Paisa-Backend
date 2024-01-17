@@ -6,7 +6,7 @@ import saveDataToJson from '../controllers/jsonControllers.js';
 import Asset from '../models/assetModel.js';
 import Commodity from '../models/commodityModel.js';
 import HistoricPrice from '../models/historicModel.js';
-import { FetchOldData, FetchSingularDataOfAsset, fetchTopGainers, fetchturnvolume, fetchvolume, topLosersShare, topTradedShares, topTransactions, topTurnoversShare, topgainersShare } from '../server/assetServer.js';
+import { FetchOldData, FetchSingularDataOfAsset, fetchIndexes, fetchTopGainers, fetchturnvolume, fetchvolume, topLosersShare, topTradedShares, topTransactions, topTurnoversShare, topgainersShare } from '../server/assetServer.js';
 import { commodityprices } from '../server/commodityServer.js';
 import { metalChartExtractor, metalPriceExtractor } from '../server/metalServer.js';
 import { oilExtractor } from '../server/oilServer.js';
@@ -1423,6 +1423,41 @@ export const DashBoardData = async (req, res) => {
     return res.status(500).json({ error: 'Internal Server Error' });
   }
 };
+
+export const IndexData = async (req, res) => {
+  try {
+    const cachedData = await fetchFromCache('inssssdexDastaCachedd');
+
+    if (cachedData !== null) {
+      console.log('Returning cached index data');
+      return res.status(200).json({
+        data: cachedData,
+        isFallback: false,
+        isCached: true,
+        dataversion: dataVersion,
+      });
+    }
+
+    const indexData = await fetchIndexes();
+
+    if (!indexData) {
+
+      return res.status(500).json({ error: 'Failed to fetch index data.' });
+    }
+
+   // await storage.setItem('indexDataCached', indexData);
+
+    return res.status(200).json({
+      data: indexData,
+      isFallback: false,
+      isCached: false,
+      dataversion: dataVersion,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: 'Internal Server Error' });
+  }
+}
 
 
 

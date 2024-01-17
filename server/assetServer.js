@@ -1,4 +1,5 @@
 import axios from 'axios';
+import cheerio from 'cheerio';
 import fs from 'fs/promises';
 import { JSDOM } from 'jsdom';
 import nepseUrls from '../middleware/nepseapiUrl.js';
@@ -634,11 +635,88 @@ export const topTransactions = async () => {
   }
 };
 
-// try {
-//   const extractedData = await topTransactions();
-//   console.log(extractedData);
-// } catch (error) {
-//   console.error(error);
-// }
+export async function fetchIndexes() {
+  try {
+    const url = 'https://www.sharesansar.com/live-trading'
+      const response = await axios.get(url);
+      const html = response.data;
+      const $ = cheerio.load(html);
 
-export default {fetchDataAndMapToAssetModel,fetchTopGainers, fetchturnvolume, fetchvolume, FetchSingularDataOfAsset,GetDebentures,FetchOldData, topgainersShare, topLosersShare, topTradedShares, topTurnoversShare, topTransactions};
+      const fieldsToExtract = [
+        'Banking SubIndex',
+        'Development Bank Ind.',
+        'Finance Index',
+        'Float Index',
+        'Hotels And Tourism',
+        'HydroPower Index',
+        'Investment',
+        'Life Insurance',
+        'Manufacturing And Pr.',
+        'Microfinance Index',
+        'Mutual Fund',
+        'NEPSE Index',
+        'Non Life Insurance',
+        'Others Index',
+        'Sensitive Float Inde.',
+        'Sensitive Index',
+        'Trading Index',
+      ];
+
+      const extractedData = {};
+
+      fieldsToExtract.forEach((field) => {
+        const $element = $(`h4:contains('${field}')`).closest('.mu-list');
+        const price = $element.find('.mu-price').text().trim();
+
+        const valueText = $element.find('.mu-value').text().trim();
+        const values = valueText.match(/\d{1,3}(,\d{3})*\.\d+/g) || [];
+
+        const percent = $element.find('.mu-percent').text().trim();
+
+        extractedData[field] = {
+          price,
+          values,
+          percent,
+        };
+      });
+
+      console.log(extractedData);
+      return extractedData;
+    } catch (error) {
+      console.error('Error fetching or parsing the HTML:', error.message);
+    }
+  }
+
+export async function scrapeLifeInsurance(url) {
+  try {
+    const response = await axios.get(url);
+    const html = response.data;
+    const $ = cheerio.load(html);
+
+    const nepseIndexContainer = $('h4:contains("NEPSE Index")').closest('.mu-list');
+    const Turnover = parseFloat(nepseIndexContainer.find('.mu-price').text().replace(/,/g, ''));
+    //const Turnover = nepseIndexContainer.find('.mu-price').text().trim();
+    const Index = nepseIndexContainer.find('.mu-value').text().trim();
+    const Percentage = nepseIndexContainer.find('.mu-percent').text().trim();
+
+    const nepseIndexData = {
+      Index,
+      Percentage,
+      Turnover,
+    };
+
+    console.log(nepseIndexData);
+    return nepseIndexData;
+  } catch (error) {
+    console.error('Error fetching or parsing the HTML:', error.message);
+  }
+}
+
+// Example usage
+const targetUrl = 'https://www.sharesansar.com/live-trading';
+scrapeLifeInsurance(targetUrl);
+
+
+
+
+export default {fetchDataAndMapToAssetModel,fetchIndexes,fetchTopGainers, fetchturnvolume, fetchvolume, FetchSingularDataOfAsset,GetDebentures,FetchOldData, topgainersShare, topLosersShare, topTradedShares, topTurnoversShare, topTransactions};
