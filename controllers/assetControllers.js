@@ -6,7 +6,7 @@ import saveDataToJson from '../controllers/jsonControllers.js';
 import Asset from '../models/assetModel.js';
 import Commodity from '../models/commodityModel.js';
 import HistoricPrice from '../models/historicModel.js';
-import { FetchOldData, FetchSingularDataOfAsset, fetchIndexes, fetchTopGainers, fetchturnvolume, fetchvolume, topLosersShare, topTradedShares, topTransactions, topTurnoversShare, topgainersShare } from '../server/assetServer.js';
+import { FetchOldData,extractIndex, FetchSingularDataOfAsset, fetchTopGainers, fetchturnvolume, fetchvolume, topLosersShare, topTradedShares, topTransactions, topTurnoversShare, topgainersShare } from '../server/assetServer.js';
 import { commodityprices } from '../server/commodityServer.js';
 import { metalChartExtractor, metalPriceExtractor } from '../server/metalServer.js';
 import { oilExtractor } from '../server/oilServer.js';
@@ -1438,14 +1438,14 @@ export const IndexData = async (req, res) => {
       });
     }
 
-    const indexData = await fetchIndexes();
+    const indexData = await extractIndex();
 
     if (!indexData) {
 
       return res.status(500).json({ error: 'Failed to fetch index data.' });
     }
 
-   // await storage.setItem('indexDataCached', indexData);
+   //await storage.setItem('indexDataCached', indexData);
 
     return res.status(200).json({
       data: indexData,

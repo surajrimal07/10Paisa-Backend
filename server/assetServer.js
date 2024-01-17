@@ -687,15 +687,15 @@ export async function fetchIndexes() {
     }
   }
 
-export async function scrapeLifeInsurance(url) {
+export async function extractIndex() {
   try {
-    const response = await axios.get(url);
+    const targetUrl = 'https://www.sharesansar.com/live-trading';
+    const response = await axios.get(targetUrl);
     const html = response.data;
     const $ = cheerio.load(html);
 
     const nepseIndexContainer = $('h4:contains("NEPSE Index")').closest('.mu-list');
     const Turnover = parseFloat(nepseIndexContainer.find('.mu-price').text().replace(/,/g, ''));
-    //const Turnover = nepseIndexContainer.find('.mu-price').text().trim();
     const Index = nepseIndexContainer.find('.mu-value').text().trim();
     const Percentage = nepseIndexContainer.find('.mu-percent').text().trim();
 
@@ -705,18 +705,12 @@ export async function scrapeLifeInsurance(url) {
       Turnover,
     };
 
-    console.log(nepseIndexData);
     return nepseIndexData;
   } catch (error) {
     console.error('Error fetching or parsing the HTML:', error.message);
   }
 }
 
-// Example usage
-const targetUrl = 'https://www.sharesansar.com/live-trading';
-scrapeLifeInsurance(targetUrl);
 
 
-
-
-export default {fetchDataAndMapToAssetModel,fetchIndexes,fetchTopGainers, fetchturnvolume, fetchvolume, FetchSingularDataOfAsset,GetDebentures,FetchOldData, topgainersShare, topLosersShare, topTradedShares, topTurnoversShare, topTransactions};
+export default {extractIndex,fetchDataAndMapToAssetModel,fetchIndexes,fetchTopGainers, fetchturnvolume, fetchvolume, FetchSingularDataOfAsset,GetDebentures,FetchOldData, topgainersShare, topLosersShare, topTradedShares, topTurnoversShare, topTransactions};
