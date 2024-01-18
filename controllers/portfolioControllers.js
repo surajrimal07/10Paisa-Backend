@@ -302,7 +302,7 @@ export const renamePortfolio = async (req, res) => {
     try {
       const useremail = req.body.email;
 
-      console.log("received email is " + useremail);
+    //  console.log("received email is " + useremail);
 
       const portfolios = await Portfolio.find({ userEmail: useremail });
 

@@ -13,7 +13,7 @@ export const sendOTP = (params, callback) => {
     });
 
     console.log("Otp generated from backend "+ otp)
-    const ttl = 5 * 60 * 1000; // 5 minutes expiry
+    const ttl = 5 * 60 * 1000;
     const expires = Date.now() + ttl;
     const data = `${params.email}.${otp}.${expires}`;
     const hash = crypto.createHmac("sha256", key).update(data).digest("hex");
@@ -38,7 +38,6 @@ export const sendOTP = (params, callback) => {
 };
 
 export const verifyOTP = (params, callback) => {
-    //console.log("0")
     const [hashValue, expires] = params.hash.split('.');
     const now = Date.now();
     console.log(params.email);
@@ -62,8 +61,6 @@ export const verifyOTP = (params, callback) => {
         console.log("Otp Matched, Success")
         return callback(null, "Success");
     }
-
-    //console.log(params.email,params.hash,params.otp+ " Otp Error")
     return callback("Invalid OTP");
 };
 
@@ -75,7 +72,7 @@ export const forgotpass = (emails, callback) => {
         lowerCaseAlphabets: false
     });
 
-    const ttl = 5 * 60 * 1000; // 5 minutes expiry
+    const ttl = 5 * 60 * 1000;
     const expires = Date.now() + ttl;
     const data = `${emails}.${otp}.${expires}`; //
     const hash = crypto.createHmac("sha256", key).update(data).digest("hex");
@@ -92,16 +89,12 @@ export const forgotpass = (emails, callback) => {
     console.log("Otp generated from backend "+ otp +" hash is "+ fullhash)
     console.log(otpMessage)
 
-    //
     emailServices.sendEmail(model, (error, result) => {
         if (error) {
             return callback(error);
         } else{
             console.log(callback);
-            //console.log("line 94 of otpservices, email service bata success vayo, no error, hash is "+ fullhash)
-            return callback(null, fullhash); //null
-
+            return callback(null, fullhash);
     }
     });
 };
-//

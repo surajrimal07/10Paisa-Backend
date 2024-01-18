@@ -7,6 +7,7 @@ const CACHE_KEYS = [
   'cacheKey',
   'topGainers',
   'topTurnover',
+  'dashboardDataCached',
   'topVolume',
   'metal_cached', //ss
   'atomic_asset_data', //ss

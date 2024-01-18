@@ -6,7 +6,7 @@ import saveDataToJson from '../controllers/jsonControllers.js';
 import Asset from '../models/assetModel.js';
 import Commodity from '../models/commodityModel.js';
 import HistoricPrice from '../models/historicModel.js';
-import { FetchOldData,extractIndex, FetchSingularDataOfAsset, fetchTopGainers, fetchturnvolume, fetchvolume, topLosersShare, topTradedShares, topTransactions, topTurnoversShare, topgainersShare } from '../server/assetServer.js';
+import { FetchOldData, FetchSingularDataOfAsset, extractIndex, fetchTopGainers, fetchturnvolume, fetchvolume, topLosersShare, topTradedShares, topTransactions, topTurnoversShare, topgainersShare } from '../server/assetServer.js';
 import { commodityprices } from '../server/commodityServer.js';
 import { metalChartExtractor, metalPriceExtractor } from '../server/metalServer.js';
 import { oilExtractor } from '../server/oilServer.js';
@@ -828,7 +828,7 @@ const assetToCategoryMap = {
   'Silver': 'Silver',
 };
 
-const CACHE_KEY_METAL_PRICES = 'metal_cavccbhbbevglgdfdd';
+const CACHE_KEY_METAL_PRICES = 'metal_cached';
 const CACHE_KEY_METAL_FALLBACK = 'metal_fallback';
 
 export const fetchMetalPrices = async (req, res) => {
@@ -838,13 +838,8 @@ export const fetchMetalPrices = async (req, res) => {
 
     if (cachedData !== null) {
       console.log('Returning cached metal prices data');
-      console.log(cachedData);
       return res.status(200).json(
         cachedData
-        // data: cachedData,
-        // isFallback: false,
-        // isCached: true,
-        // dataversion: dataVersion,
       );
     }
 
@@ -1374,17 +1369,17 @@ export const TopTransData = async (req, res) => {
 
 export const DashBoardData = async (req, res) => {
   try {
-    const cachedData = await fetchFromCache('dashboardDataCached');
+    // const cachedData = await fetchFromCache('dashboardDataCached');
 
-    if (cachedData !== null) {
-      console.log('Returning cached dashboard data');
-      return res.status(200).json({
-        data: cachedData,
-        isFallback: false,
-        isCached: true,
-        dataversion: cachedDataVersion,
-      });
-    }
+    // if (cachedData !== null) {
+    //   console.log('Returning cached dashboard data');
+    //   return res.status(200).json({
+    //     data: cachedData,
+    //     isFallback: false,
+    //     isCached: true,
+    //     dataversion: cachedDataVersion,
+    //   });
+    // }
 
     const topGainersData = await topgainersShare();
     const topLoosersData = await topLosersShare();
@@ -1410,7 +1405,7 @@ export const DashBoardData = async (req, res) => {
       },
     };
 
-    await storage.setItem('dashboardDataCached', dashboardData);
+    //await storage.setItem('dashboardDataCached', dashboardData);
 
     return res.status(200).json({
       data: dashboardData,
@@ -1431,10 +1426,7 @@ export const IndexData = async (req, res) => {
     if (cachedData !== null) {
       console.log('Returning cached index data');
       return res.status(200).json({
-        data: cachedData,
-        isFallback: false,
-        isCached: true,
-        dataversion: dataVersion,
+cachedData
       });
     }
 
@@ -1445,13 +1437,10 @@ export const IndexData = async (req, res) => {
       return res.status(500).json({ error: 'Failed to fetch index data.' });
     }
 
-   //await storage.setItem('indexDataCached', indexData);
+   await storage.setItem('indexDataCached', indexData);
 
-    return res.status(200).json({
-      data: indexData,
-      isFallback: false,
-      isCached: false,
-      dataversion: dataVersion,
+    return res.status(200).json({indexData,
+
     });
   } catch (error) {
     console.error(error);

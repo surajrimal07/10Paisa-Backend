@@ -138,8 +138,6 @@ export async function startNewsServer(app) {
 
                   try {
                     await newsModel.create(new_item_data);
-                    //console.log(`found new item from ${source}. Total count: ${newsCountBySource[source]}`);
-
                     const messageData = {
                       title: new_item_data.title,
                       description: new_item_data.description,
@@ -167,7 +165,14 @@ export async function startNewsServer(app) {
       app.get('/news', async (req, res) => {
         console.log('News data requested');
         try {
-          const items = await newsModel.find().exec();
+          const page = parseInt(req.query._page) || 1;
+          const limit = parseInt(req.query.limit) || 10;
+          console.log("page and limit requested is ",page ,limit)
+          const skip = (page - 1) * limit;
+
+          const items = await newsModel.find().sort({ _id: -1 }).skip(skip).limit(limit).exec();
+
+          //const items = await newsModel.find().exec();
           const item_list = items.map((item) => ({
             title: item.title,
             link: item.link,
@@ -175,8 +180,7 @@ export async function startNewsServer(app) {
             img_url: item.img_url,
             source: item.source
           }));
-          const reversedItemList = item_list.reverse();
-          res.json(reversedItemList);
+        res.json(item_list);
         } catch (error) {
           console.error('Error retrieving items:', error);
           res.status(500).json({ error: 'Internal Server Error' });

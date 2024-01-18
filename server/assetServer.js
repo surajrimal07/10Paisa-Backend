@@ -695,14 +695,14 @@ export async function extractIndex() {
     const $ = cheerio.load(html);
 
     const nepseIndexContainer = $('h4:contains("NEPSE Index")').closest('.mu-list');
-    const Turnover = parseFloat(nepseIndexContainer.find('.mu-price').text().replace(/,/g, ''));
-    const Index = nepseIndexContainer.find('.mu-value').text().trim();
-    const Percentage = nepseIndexContainer.find('.mu-percent').text().trim();
+    const turnover = parseFloat(nepseIndexContainer.find('.mu-price').text().replace(/,/g, ''));
+    const index = nepseIndexContainer.find('.mu-value').text().trim();
+    const percentage = nepseIndexContainer.find('.mu-percent').text().trim();
 
     const nepseIndexData = {
-      Index,
-      Percentage,
-      Turnover,
+      index,
+      percentage,
+      turnover,
     };
 
     return nepseIndexData;
