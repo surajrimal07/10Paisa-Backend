@@ -1,11 +1,12 @@
 import axios from 'axios';
 import cheerio from 'cheerio';
+import { headers } from '../utils/headers.js';
 
 export async function metalPriceExtractor(asset) {
   const url = "https://www.hamropatro.com/gold";
 
   try {
-      const response = await axios.get(url);
+      const response = await axios.get(url, { headers });
       const html = response.data;
       const $ = cheerio.load(html);
 

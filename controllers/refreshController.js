@@ -6,12 +6,14 @@ const CACHE_KEYS = [
   'singleAsset',
   'cacheKey',
   'topGainers',
+  'commodity_cached',
   'topTurnover',
   'dashboardDataCached',
   'topVolume',
   'metal_cached', //ss
   'atomic_asset_data', //ss
-  'topGainersCached' //ss
+  'topGainersCached', //ss
+  'indexDataCached'
 ];
 
 const oneDayInMilliseconds = 24 * 60 * 60 * 1000;

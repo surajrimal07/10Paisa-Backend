@@ -1,13 +1,13 @@
 import axios from 'axios';
-import fs from 'fs/promises';
 import { JSDOM } from 'jsdom';
+import { headers } from '../utils/headers.js';
 
 async function fetchAndExtractStockData() {
     const liveTradingUrl = 'https://www.sharesansar.com/live-trading';
     const todaySharePriceUrl = 'https://www.sharesansar.com/today-share-price';
 
     try {
-        const responseLiveTrading = await axios.get(liveTradingUrl);
+        const responseLiveTrading = await axios.get(liveTradingUrl, { headers });
 
         if (!responseLiveTrading.data) {
             throw new Error(`Failed to fetch live trading data. Status: ${responseLiveTrading.status}`);

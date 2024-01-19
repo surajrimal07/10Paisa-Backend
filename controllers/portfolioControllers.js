@@ -302,7 +302,9 @@ export const renamePortfolio = async (req, res) => {
     try {
       const useremail = req.body.email;
 
-    //  console.log("received email is " + useremail);
+      if (!useremail) {
+        return respondWithError(res, 'BAD_REQUEST', 'Email is required');
+      }
 
       const portfolios = await Portfolio.find({ userEmail: useremail });
 
@@ -323,8 +325,6 @@ export const renamePortfolio = async (req, res) => {
           portfoliovalue: rest.portfoliovalue,
         };
       });
-
-     // return respondWithData(res, 'SUCCESS', 'Portfolios fetched successfully', formattedPortfolios); //throws error
       return res.status(200).json({ portfolio: formattedPortfolios });
     } catch (error) {
       return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'An error occurred while fetching portfolios');

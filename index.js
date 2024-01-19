@@ -3,11 +3,11 @@ import { v2 as cloudinary } from 'cloudinary';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import express from 'express';
-import storage from 'node-persist';
 import initializeRefreshMechanism from './controllers/refreshController.js';
 import { mainDB } from './database/db.js';
 import userRouter from './routes/appRoutes.js';
 import { startNewsServer } from './server/newsServer.js';
+import { initializeStorage } from './utils/initilize_storage.js';
 
 
 import multipart from 'connect-multiparty';
@@ -37,13 +37,6 @@ app.use((req, res, next) => {
 //multiparty middleware
 app.use(multipart())
 
-// const corsOrigin ={
-//   origin: '*', // allow all origins
-//   //origin:'http://localhost:3000',
-//   credentials:true,
-//   optionSuccessStatus:200
-// }
-
 app.use(cors({
   origin: (origin, callback) => {
     callback(null, origin);
@@ -51,15 +44,6 @@ app.use(cors({
   credentials: true,
   optionsSuccessStatus: 200
 }));
-
-
-// const corsOptions = {
-//   origin: '*',
-//   credentials: true,
-//   optionsSuccessStatus: 200
-// };
-// app.use(cors(corsOptions));
-
 
 //cloudnary config
 cloudinary.config({
@@ -70,7 +54,16 @@ cloudinary.config({
 
 
 mainDB();
-await storage.init();
+
+initializeStorage()
+  .then(() => {
+    console.log('Storage initialized successfully');
+  })
+  .catch((error) => {
+    console.error('Error initializing storage:', error);
+  });
+
+//await storage.init();
 initializeRefreshMechanism();
 
 app.listen(port, () => {

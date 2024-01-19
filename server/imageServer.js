@@ -2,12 +2,13 @@ import axios from 'axios';
 import cheerio from 'cheerio';
 import fs from 'fs';
 import newsSources from '../middleware/newsUrl.js';
+import { headers } from '../utils/headers.js';
 
 let errorDetails = [];
 
 async function extractFeaturedImage(url, publisher) {
     try {
-      const response = await axios.get(url);
+      const response = await axios.get(url, { headers });
       const html = response.data;
 
       const $ = cheerio.load(html);

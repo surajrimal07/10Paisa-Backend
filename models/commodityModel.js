@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 
 const CommoditySchema = new mongoose.Schema({
+  _id: { type: mongoose.Schema.Types.ObjectId, select: false },
   name: {
     type: String,
     required: true,

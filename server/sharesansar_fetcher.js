@@ -1,11 +1,12 @@
 import axios from 'axios';
 import { JSDOM } from 'jsdom';
+import { headers } from '../utils/headers.js';
 
 async function fetchAndCategorizeStockData() {
     const hardcodedUrl = 'https://www.sharesansar.com/today-share-price';
 
     try {
-        const response = await axios.get(hardcodedUrl);
+        const response = await axios.get(hardcodedUrl, { headers });
 
         if (!response.data) {
             throw new Error(`Failed to fetch data. Status: ${response.status}`);

@@ -3,7 +3,7 @@ import { deleteUserByEmail, editUserByEmail, getAllUsers } from '../controllers/
 import { AssetMergedData, AssetMergedDataBySector, CommodityData, DashBoardData, IndexData, SingeAssetMergedData, TopGainersData, TopLoosersData, TopTransData, TopTurnoverData, TopVolumeData, createAsset, fetchMetalPrices, metalHistController } from '../controllers/assetControllers.js';
 import { sendOTP, verifyOTP } from '../controllers/otpControllers.js';
 import { addStockToPortfolio, createPortfolio, deletePortfolio, getAllPortfoliosForUser, removeStockFromPortfolio, renamePortfolio } from '../controllers/portfolioControllers.js';
-import { createUser, defaultportfolio, deleteAccount, fetchToken, forgetPass, loginUser, makeadmin, removedefaultportfolio, updateUser, verifyData, verifyUser } from '../controllers/userController.js';
+import { createUser, defaultportfolio, deleteAccount, fetchToken, forgetPass, googleSignIn, loginUser, makeadmin, removedefaultportfolio, updateUser, verifyData, verifyUser } from '../controllers/userController.js';
 import { authGuard, authGuardAdmin } from '../middleware/authGuard.js';
 import { startNewsServer } from '../server/newsServer.js';
 
@@ -11,7 +11,7 @@ const router = Router();
 
 router.post('/create', createUser);
 router.post('/login', loginUser);
-
+router.post('/googlelogin', googleSignIn);
 router.post('/otp-login', sendOTP);
 router.post('/otp-verify', verifyOTP);
 router.post('/forget', forgetPass);
@@ -26,7 +26,7 @@ router.post('/newport', authGuard,createPortfolio);
 router.post('/addstock',authGuard, addStockToPortfolio);
 router.delete('/delport',authGuard,deletePortfolio);
 router.post('/renameportfolio',authGuard,renamePortfolio);
-router.get('/getallportforuser',getAllPortfoliosForUser);
+router.post('/getallportforuser',getAllPortfoliosForUser);
 router.post('/remstock',authGuard,removeStockFromPortfolio);
 router.post('/newasset',authGuard,createAsset);
 // router.post('/getassetnames',getAllAssetNames);

@@ -1,4 +1,5 @@
 import bcrypt from 'bcrypt';
+import { OAuth2Client } from 'google-auth-library';
 import jwt from 'jsonwebtoken';
 import storage from 'node-persist';
 import { forgetPassword } from '../controllers/otpControllers.js';
@@ -149,7 +150,6 @@ export const loginUser = async (req, res) => {
     const password = req.body.password;
     console.log("Email: "+email, "Password: "+password);
     try {
-      //const user = await User.findOne({ email: email.toLowerCase() });
       const user = await User.findOne({ email: email.toLowerCase() }).populate('portfolio');
 
       if (!user || !(await bcrypt.compare(password, user.password))) {
@@ -578,3 +578,44 @@ export const makeadmin = async (req, res) => {
   }
 };
 
+//google signin
+export const googleSignIn = async (req, res) => {
+  const { googleToken } = req.body;
+
+  try {
+    const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+    const ticket = await client.verifyIdToken({
+      idToken: googleToken,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const { email } = ticket.getPayload();
+    let user = await User.findOne({ email });
+
+    if (!user) {
+      return respondWithError(res, 'UNAUTHORIZED', "No Account found with this email");
+    }
+    const token = jwt.sign({ email, isAdmin: user.isAdmin }, process.env.JWT_SECRET, { expiresIn: '7d' });
+     await storage.setItem('user_token', token);
+
+     let userData = {
+      _id: user._id,
+      token: token,
+      name: user.name,
+      email: user.email,
+      pass: user.password,
+      phone: user.phone,
+      style: user.style,
+      isAdmin: user.isAdmin,
+      dpImage: user.dpImage,
+      userAmount: user.userAmount,
+      defaultport: user.defaultport,
+      portfolio: user.portfolio
+    };
+
+    return respondWithData(res, 'SUCCESS', 'Google Sign-In successful', userData);
+  } catch (error) {
+    console.error(error.toString());
+    return respondWithError(res, 'INTERNAL_SERVER_ERROR', error.toString());
+  }
+};

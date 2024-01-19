@@ -981,7 +981,7 @@ async function saveToDatabase(assetName, dates, prices) {
 }
 
 //commodity
-const CACHE_KEY_COMMODITY_PRICES = 'commo_cached';
+const CACHE_KEY_COMMODITY_PRICES = 'commodity_cached';
 const CACHE_KEY_COMMODITY_FALLBACK = 'commo_cached_fallback';
 
 export const CommodityData = async (req, res) => {
@@ -1014,13 +1014,29 @@ export const CommodityData = async (req, res) => {
               ltp: parseFloat(rowData[4])
           }));
 
-      const oilData = await oilExtractor();
+      //const oilData = await oilExtractor();
 
-      if (!oilData) {
-          return res.status(500).json({ error: 'Failed to fetch oil data.' });
+      // if (!oilData) {
+      //     return res.status(500).json({ error: 'Failed to fetch oil data.' });
+      // }
+
+      // const oilAssetData = oilData.map((oilItem) => new Asset(oilItem));
+      let oilData;
+      try {
+        oilData = await oilExtractor();
+      } catch (oilError) {
+        console.error('Failed to fetch oil data:', oilError.message);
+        oilData = null;
       }
 
-      const oilAssetData = oilData.map((oilItem) => new Asset(oilItem));
+      let oilAssetData = [];
+      if (oilData) {
+        oilAssetData = oilData.map((oilItem) => new Asset(oilItem));
+      }
+
+
+
+
 
       const mergedData = [...commodityData, ...oilAssetData];
 
@@ -1031,25 +1047,22 @@ export const CommodityData = async (req, res) => {
       ]);
 
       await Promise.all(
-          mergedData.map(async (item) => {
-              try {
-                  await Commodity.updateOne(
-                      { symbol: item.symbol },
-                      {
-                          $set: {
-                              ...item,
-                              isFallback: false,
-                              isCached: false,
-                              dataversion: { versionCode: dataVersion, timestamp: DateTime.now().toISO() },
-                          },
-                      },
-                      { upsert: true }
-                  );
-              } catch (error) {
-                  console.error('DB Update Error:', error);
-              }
-          })
-      );
+        mergedData.map(async (item) => {
+          try {
+            const query = { name: item.name };
+            const update = {
+              $set: {
+                ltp: item.ltp,
+              },
+            };
+
+            const options = { upsert: true, new: true };
+            await Commodity.findOneAndUpdate(query, update, options);
+          } catch (error) {
+            console.error('DB Update Error:', error);
+          }
+        })
+      )
 
       return res.status(200).json({
           data: mergedData,
@@ -1420,14 +1433,15 @@ export const DashBoardData = async (req, res) => {
 };
 
 export const IndexData = async (req, res) => {
+  console.log("Index Data Requested");
   try {
-    const cachedData = await fetchFromCache('inssssdexDastaCachedd');
+    const cachedData = await fetchFromCache('indexDataCached');
 
     if (cachedData !== null) {
       console.log('Returning cached index data');
-      return res.status(200).json({
+      return res.status(200).json(
 cachedData
-      });
+      );
     }
 
     const indexData = await extractIndex();

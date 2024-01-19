@@ -6,6 +6,7 @@ import xml2js from 'xml2js';
 import newsSources from '../middleware/newsUrl.js';
 import newsModel from '../models/newsModel.js';
 import extractFeaturedImage from './imageServer.js';
+import { headers } from '../utils/headers.js';
 
 export async function startNewsServer(app) {
     const processedTitles = new Set();
@@ -99,7 +100,7 @@ export async function startNewsServer(app) {
 
     async function fetch_data(url,sources) {
         try {
-          const response = await axios.get(url);
+          const response = await axios.get(url, { headers });
 
           if (response.status === 200) {
             const xml_data = response.data;

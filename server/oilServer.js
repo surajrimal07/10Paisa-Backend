@@ -1,10 +1,12 @@
 import axios from 'axios';
 import cheerio from 'cheerio';
+import { headers } from '../utils/headers.js';
 
 
 export async function oilExtractor(url = 'https://www.ktm2day.com/petrol-diesel-lpg-gas-aviation-fuel-price-in-nepal/') {
     try {
-        const response = await axios.get(url);
+        const response = await axios.get(url, {headers});
+        //const response = await axios.get(url);
         const html = response.data;
         const $ = cheerio.load(html);
 
