@@ -1381,18 +1381,20 @@ export const TopTransData = async (req, res) => {
 };
 
 export const DashBoardData = async (req, res) => {
-  try {
-    // const cachedData = await fetchFromCache('dashboardDataCached');
 
-    // if (cachedData !== null) {
-    //   console.log('Returning cached dashboard data');
-    //   return res.status(200).json({
-    //     data: cachedData,
-    //     isFallback: false,
-    //     isCached: true,
-    //     dataversion: cachedDataVersion,
-    //   });
-    // }
+  console.log('Dashboard data requested');
+  try {
+    const cachedData = await fetchFromCache('dashboardDataCached');
+
+    if (cachedData !== null) {
+      console.log('Returning cached dashboard data');
+      return res.status(200).json({
+        data: cachedData,
+        isFallback: false,
+        isCached: true,
+        dataversion: cachedDataVersion,
+      });
+    }
 
     const topGainersData = await topgainersShare();
     const topLoosersData = await topLosersShare();
@@ -1418,7 +1420,7 @@ export const DashBoardData = async (req, res) => {
       },
     };
 
-    //await storage.setItem('dashboardDataCached', dashboardData);
+    await storage.setItem('dashboardDataCached', dashboardData);
 
     return res.status(200).json({
       data: dashboardData,

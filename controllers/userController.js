@@ -8,6 +8,129 @@ import User from '../models/userModel.js';
 import { validateEmail, validateName, validatePassword, validatePhoneNumber } from '../utils/dataValidation_utils.js';
 import { respondWithData, respondWithError, respondWithSuccess } from '../utils/response_utils.js';
 
+// export const createUser = async (req, res) => {
+//   const name = req.body.name;
+//   const email = req.body.email;
+//   const password = req.body.password;
+//   const phone = req.body.phone;
+//   const style = req.body.style !== undefined ? req.body.style : undefined;
+//   const isAdmin = req.body.isAdmin ?? false;
+//   const userAmount = req.body.amount !== undefined ? req.body.amount : undefined;
+
+//   console.log("Create user command passed")
+//   console.log(req.body);
+//   //console.log("Name: "+name,  "Email: "+email, "Password: "+password, "phone: "+phone, "Style: "+style);
+
+
+//   if (!name || !email || !password || !phone) {
+//     return respondWithError(res, 'BAD_REQUEST', "Empty data passed. Please provide all required fields.");
+//   }
+
+//   if (!validatePhoneNumber(phone)) {
+//     //print phone along with it's data type
+//     console.log(phone, typeof phone);
+//     return respondWithError(res, 'BAD_REQUEST', "Invalid phone number. Please provide a 10-digit number.");
+//   }
+
+//   if (!validateEmail(email)) {
+//     return respondWithError(res, 'BAD_REQUEST', "Invalid email format. Please provide a valid email address.");
+//   }
+
+//   if (!validatePassword(password)) {
+//     return respondWithError(res, 'BAD_REQUEST', "Password should be at least 6 characters long.");
+//   }
+
+//   if (!validateName(name)) {
+//     return respondWithError(res, 'BAD_REQUEST', "Name should be fname and lname format.");
+//   }
+
+//   let dpImage;
+
+//   if (req.files && req.files.length > 0) {
+//     dpImage = req.files[0];
+//   }
+
+//   try {
+//     const hashedPassword = await bcrypt.hash(password, 10);
+
+//     const token = jwt.sign({email : email}, process.env.JWT_SECRET, { expiresIn: '7d' });
+
+//     const samplePortfolio = await Portfolio.create({
+//       id: 1,
+//       userEmail: email,
+//       name: "Sample Portfolio",
+//       stocks: [{ symbol: "CBBL", quantity: 1000000, wacc: 750 }],
+//     });
+
+//     User.findOne({ email }, async (err, user) => {
+//       if (err) {
+//         console.error(err);
+//         return respondWithError(res, 'INTERNAL_SERVER_ERROR', err.toString());
+//       } else {
+//         if (user === null) {
+
+//           User.findOne({ phone }, async (phoneErr, phoneUser) => {
+//             if (phoneErr) {
+//               console.error(phoneErr);
+//               return respondWithError(res, 'INTERNAL_SERVER_ERROR', phoneErr.toString());
+
+//           } else {
+//               if (phoneUser === null) {
+//           const newUser = new User({
+//             token,
+//             name,
+//             email: email.toLowerCase(),
+//             password: hashedPassword,
+//             phone,
+//             style,
+//             isAdmin,
+//             dpImage: dpImage ? dpImage.path : undefined,
+//             userAmount: userAmount !== undefined ? userAmount : undefined,
+//             portfolio: [samplePortfolio._id]
+
+//           });
+//           try {
+//             const savedUser = await newUser.save();
+//             const userData = {
+//               _id: savedUser._id,
+//               token: savedUser.token,
+//               name: savedUser.name,
+//               email: savedUser.email,
+//               pass: savedUser.password,
+//               phone: savedUser.phone,
+//               style: savedUser.style,
+//               isAdmin: savedUser.isAdmin,
+//               dpImage: savedUser.dpImage,
+//               userAmount: savedUser.userAmount,
+//               portfolio: savedUser.portfolio
+//             };
+//             console.log(userData);
+//             console.log("Singup Was Success");
+//             return respondWithData(res, 'CREATED', "User created successfully", userData);
+
+//           } catch (err) {
+//             console.log("Singup failed");
+//             return respondWithError(res, 'INTERNAL_SERVER_ERROR', err.toString());
+//           }
+//         } else {
+//           // Duplicate phone found
+//           console.log("Phone number already exists");
+//           return respondWithError(res, 'BAD_REQUEST', "Phone number already exists");
+//         }
+//       }
+//     });
+//   } else {
+//     console.log("Email already exists");
+//     return respondWithError(res, 'BAD_REQUEST', "Email already exists");
+//   }
+//   }
+//   });
+//   } catch (err) {
+//   console.error(err);
+//   return respondWithError(res, 'INTERNAL_SERVER_ERROR', err.toString());
+//   }
+//   };
+
 export const createUser = async (req, res) => {
   const name = req.body.name;
   const email = req.body.email;
@@ -17,17 +140,14 @@ export const createUser = async (req, res) => {
   const isAdmin = req.body.isAdmin ?? false;
   const userAmount = req.body.amount !== undefined ? req.body.amount : undefined;
 
-  console.log("Create user command passed")
+  console.log("Create user command passed");
   console.log(req.body);
-  //console.log("Name: "+name,  "Email: "+email, "Password: "+password, "phone: "+phone, "Style: "+style);
-
 
   if (!name || !email || !password || !phone) {
     return respondWithError(res, 'BAD_REQUEST', "Empty data passed. Please provide all required fields.");
   }
 
   if (!validatePhoneNumber(phone)) {
-    //print phone along with it's data type
     console.log(phone, typeof phone);
     return respondWithError(res, 'BAD_REQUEST', "Invalid phone number. Please provide a 10-digit number.");
   }
@@ -52,8 +172,7 @@ export const createUser = async (req, res) => {
 
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
-
-    const token = jwt.sign({email : email}, process.env.JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign({ email: email }, process.env.JWT_SECRET, { expiresIn: '7d' });
 
     const samplePortfolio = await Portfolio.create({
       id: 1,
@@ -62,75 +181,59 @@ export const createUser = async (req, res) => {
       stocks: [{ symbol: "CBBL", quantity: 1000000, wacc: 750 }],
     });
 
-    User.findOne({ email }, async (err, user) => {
-      if (err) {
-        console.error(err);
-        return respondWithError(res, 'INTERNAL_SERVER_ERROR', err.toString());
-      } else {
-        if (user === null) {
+    const user = await User.findOne({ email });
+    const phoneUser = await User.findOne({ phone });
 
-          User.findOne({ phone }, async (phoneErr, phoneUser) => {
-            if (phoneErr) {
-              console.error(phoneErr);
-              return respondWithError(res, 'INTERNAL_SERVER_ERROR', phoneErr.toString());
+    if (!user) {
+      if (!phoneUser) {
+        const newUser = new User({
+          token,
+          name,
+          email: email.toLowerCase(),
+          password: hashedPassword,
+          phone,
+          style,
+          isAdmin,
+          dpImage: dpImage ? dpImage.path : undefined,
+          userAmount: userAmount !== undefined ? userAmount : undefined,
+          portfolio: [samplePortfolio._id],
+        });
 
-          } else {
-              if (phoneUser === null) {
-          const newUser = new User({
-            token,
-            name,
-            email: email.toLowerCase(),
-            password: hashedPassword,
-            phone,
-            style,
-            isAdmin,
-            dpImage: dpImage ? dpImage.path : undefined,
-            userAmount: userAmount !== undefined ? userAmount : undefined,
-            portfolio: [samplePortfolio._id]
-
-          });
-          try {
-            const savedUser = await newUser.save();
-            const userData = {
-              _id: savedUser._id,
-              token: savedUser.token,
-              name: savedUser.name,
-              email: savedUser.email,
-              pass: savedUser.password,
-              phone: savedUser.phone,
-              style: savedUser.style,
-              isAdmin: savedUser.isAdmin,
-              dpImage: savedUser.dpImage,
-              userAmount: savedUser.userAmount,
-              portfolio: savedUser.portfolio
-            };
-            console.log(userData);
-            console.log("Singup Was Success");
-            return respondWithData(res, 'CREATED', "User created successfully", userData);
-
-          } catch (err) {
-            console.log("Singup failed");
-            return respondWithError(res, 'INTERNAL_SERVER_ERROR', err.toString());
-          }
-        } else {
-          // Duplicate phone found
-          console.log("Phone number already exists");
-          return respondWithError(res, 'BAD_REQUEST', "Phone number already exists");
+        try {
+          const savedUser = await newUser.save();
+          const userData = {
+            _id: savedUser._id,
+            token: savedUser.token,
+            name: savedUser.name,
+            email: savedUser.email,
+            pass: savedUser.password,
+            phone: savedUser.phone,
+            style: savedUser.style,
+            isAdmin: savedUser.isAdmin,
+            dpImage: savedUser.dpImage,
+            userAmount: savedUser.userAmount,
+            portfolio: savedUser.portfolio,
+          };
+          console.log(userData);
+          console.log("Signup Was Success");
+          return respondWithData(res, 'CREATED', "User created successfully", userData);
+        } catch (err) {
+          console.log("Signup failed");
+          return respondWithError(res, 'INTERNAL_SERVER_ERROR', err.toString());
         }
+      } else {
+        console.log("Phone number already exists");
+        return respondWithError(res, 'BAD_REQUEST', "Phone number already exists");
       }
-    });
-  } else {
-    console.log("Email already exists");
-    return respondWithError(res, 'BAD_REQUEST', "Email already exists");
-  }
-  }
-  });
+    } else {
+      console.log("Email already exists");
+      return respondWithError(res, 'BAD_REQUEST', "Email already exists");
+    }
   } catch (err) {
-  console.error(err);
-  return respondWithError(res, 'INTERNAL_SERVER_ERROR', err.toString());
+    console.error(err);
+    return respondWithError(res, 'INTERNAL_SERVER_ERROR', err.toString());
   }
-  };
-
+};
 
 //         } else {
 //           console.log("Email already exists");
