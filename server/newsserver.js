@@ -5,8 +5,8 @@ import WebSocket, { WebSocketServer } from 'ws';
 import xml2js from 'xml2js';
 import newsSources from '../middleware/newsUrl.js';
 import newsModel from '../models/newsModel.js';
-import extractFeaturedImage from './imageServer.js';
 import { headers } from '../utils/headers.js';
+import extractFeaturedImage from './imageServer.js';
 
 export async function startNewsServer(app) {
     const processedTitles = new Set();
@@ -138,6 +138,7 @@ export async function startNewsServer(app) {
                   processedTitles.add(title);
 
                   try {
+                    //console.log('Adding item:', new_item_data);
                     await newsModel.create(new_item_data);
                     const messageData = {
                       title: new_item_data.title,
@@ -150,7 +151,7 @@ export async function startNewsServer(app) {
                     newItemsCount++;
 
                   } catch (error) {
-                    console.error('Error adding item:', error);
+                    //console.error('Error adding item:', error);
                   }
 
               }
@@ -167,21 +168,32 @@ export async function startNewsServer(app) {
         console.log('News data requested');
         try {
           const page = parseInt(req.query._page) || 1;
-          const limit = parseInt(req.query.limit) || 10;
+          const limit = parseInt(req.query.limit) || 100;
           console.log("page and limit requested is ",page ,limit)
-          const skip = (page - 1) * limit;
 
-          const items = await newsModel.find().sort({ _id: -1 }).skip(skip).limit(limit).exec();
+          const options = {
+            page: page,
+            limit: limit,
+            sort: { _id: -1 },
+          };
+
+          const result = await newsModel.paginate({}, options);
+
+          // const skip = (page - 1) * limit;
+
+          // const items = await newsModel.find().sort({ id: -1 }).skip(skip).limit(limit).exec();
 
           //const items = await newsModel.find().exec();
-          const item_list = items.map((item) => ({
-            title: item.title,
-            link: item.link,
-            description: item.description,
-            img_url: item.img_url,
-            source: item.source
-          }));
-        res.json(item_list);
+          res.json(result.docs);
+        //   const item_list = result.docs.map((item) => ({
+        //     title: item.title,
+        //     link: item.link,
+        //     description: item.description,
+        //     img_url: item.img_url,
+        //     source: item.source
+        //   })
+        //   );
+        // res.json(item_list);
         } catch (error) {
           console.error('Error retrieving items:', error);
           res.status(500).json({ error: 'Internal Server Error' });

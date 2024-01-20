@@ -1,7 +1,14 @@
 import crypto from 'crypto';
 import mongoose from 'mongoose';
+import mongooseSequence from 'mongoose-sequence';
+import mongoosePaginate from 'mongoose-paginate-v2';
+
+const AutoIncrement = mongooseSequence(mongoose);
 
 const newsSchema = new mongoose.Schema({
+  id: {
+    type: Number
+  },
   title: {
     type: String,
     required: true,
@@ -20,6 +27,9 @@ const newsSchema = new mongoose.Schema({
     unique: true,
   },
 }, { collection: 'news' });
+
+newsSchema.plugin(AutoIncrement, { id: 'news_id', inc_field: 'id' });
+newsSchema.plugin(mongoosePaginate);
 
 newsSchema.index({ unique_key: 1 }, { unique: true });
 
