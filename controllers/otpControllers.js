@@ -1,6 +1,20 @@
+import User from '../models/userModel.js';
 import * as otpService from '../services/otpServices.js';
+import { respondWithError } from '../utils/response_utils.js';
 
-export const sendOTP = (req, res, next) => {
+export const sendOTP = async (req, res, next) => {
+
+
+const email = req.body.email;
+
+if (email == null || email == undefined || email == "") {
+
+return respondWithError(res, 'BAD_REQUEST', "Email is required");
+}
+
+const user = await User.findOne({ email: email });
+
+if (!user) {
     otpService.sendOTP(req.body, (error, results) => {
         if (error) {
             return res.status(400).send({
@@ -14,9 +28,17 @@ export const sendOTP = (req, res, next) => {
             hash: results,
         });
     });
-};
+}
+ else {
+    return respondWithError(res, 'BAD_REQUEST', "Email already exists");
+ }
+}
 
 export const verifyOTP = (req, res, next) => {
+
+    if (!req.body.email || !req.body.otp || !req.body.hash) {
+        return respondWithError(res, 'BAD_REQUEST', "Invalid OTP");
+    }
 
     otpService.verifyOTP(req.body, (error, results) => {
         if (error) {

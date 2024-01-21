@@ -15,7 +15,7 @@ router.post('/googlelogin', googleSignIn);
 router.post('/otp-login', sendOTP);
 router.post('/otp-verify', verifyOTP);
 router.post('/forget', forgetPass);
-router.post('/updateuser',authGuard, updateUser);
+router.post('/updateuser', updateUser);
 router.post('/news', startNewsServer);
 router.post('/verify', verifyUser);
 router.post('/whattoken', fetchToken);

@@ -38,6 +38,10 @@ export const sendOTP = (params, callback) => {
 };
 
 export const verifyOTP = (params, callback) => {
+
+    if (!params.email || !params.otp || !params.hash) {
+        return callback("Invalid OTP");
+    }
     const [hashValue, expires] = params.hash.split('.');
     const now = Date.now();
     console.log(params.email);
