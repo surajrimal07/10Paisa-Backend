@@ -6,6 +6,7 @@ import { addStockToPortfolio, createPortfolio, deletePortfolio, getAllPortfolios
 import { createUser, defaultportfolio, deleteAccount, fetchToken, forgetPass, googleSignIn, loginUser, makeadmin, removedefaultportfolio, updateUser, verifyData, verifyUser } from '../controllers/userController.js';
 import { authGuard, authGuardAdmin } from '../middleware/authGuard.js';
 import { startNewsServer } from '../server/newsServer.js';
+import { createWatchlist,removeStockFromWatchlist, deleteWatchlist,addStockToWatchlist, getWatchlistsByUserEmail, renameWatchlist } from '../controllers/watchlistController.js';
 
 const router = Router();
 
@@ -60,6 +61,14 @@ router.get('/allusers',authGuardAdmin, getAllUsers);
 router.delete('/deleteUser',authGuardAdmin, deleteUserByEmail);
 router.put('/edituser',authGuardAdmin, editUserByEmail);
 
+//watchlist routes
+
+router.post('/createwatchlist', createWatchlist);
+router.post('/getwatchlist', getWatchlistsByUserEmail);
+router.post('/renamewatchlist', renameWatchlist);
+router.post('/deletewatchlist', deleteWatchlist);
+router.post('/addstocktowatchlist', addStockToWatchlist);
+router.post('/remstockfromwatchlist', removeStockFromWatchlist);
 
 
 
