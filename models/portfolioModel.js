@@ -115,7 +115,11 @@
 
 
 import mongoose from 'mongoose';
+import mongooseSequence from 'mongoose-sequence';
 import Asset from '../models/assetModel.js';
+
+
+const AutoIncrement = mongooseSequence(mongoose);
 
 const gainLoss = new mongoose.Schema({
     date: {
@@ -176,13 +180,15 @@ const portfolioSchema = new mongoose.Schema({
     gainLossRecords: [gainLoss],
 });
 
+portfolioSchema.plugin(AutoIncrement, { id: 'portfolio_id', inc_field: 'id' });
+
+
 portfolioSchema.pre('save', async function (next) {
   try {
-      if (!this.id) {
-        const maxIdPortfolio = await this.constructor.findOne({}, { id: 1 }).sort({ id: -1 });
-        this.id = (maxIdPortfolio ? maxIdPortfolio.id : 0) + 1;
-    }
-
+    //   if (!this.id) {
+    //     const maxIdPortfolio = await this.constructor.findOne({}, { id: 1 }).sort({ id: -1 });
+    //     this.id = (maxIdPortfolio ? maxIdPortfolio.id : 0) + 1;
+    // }
       const updateStockPrices = async () => {
           for (const stock of this.stocks) {
               const asset = await Asset.findOne({ symbol: stock.symbol });

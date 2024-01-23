@@ -32,6 +32,12 @@ export const createPortfolio = async (req, res) => {
 export const addStockToPortfolio = async (req, res) => {
   console.log('Add to Portfolio Requested');
   try {
+
+    if (!req.body.email || !req.body.id || !req.body.symbol || !req.body.price || !req.body.quantity) {
+      return respondWithError(res, 'BAD_REQUEST', 'Email, id, symbol, price and quantity are required')
+      };
+
+
     const { email, id, symbol, quantity } = req.body;
 
     const existingPortfolio = await Portfolio.findOne({
@@ -299,6 +305,9 @@ export const renamePortfolio = async (req, res) => {
   //   }
 
   export const getAllPortfoliosForUser = async (req, res) => {
+
+    console.log("Get all portfolios for user requested");
+    console.log(req.body.email);
     try {
       const useremail = req.body.email;
 
@@ -313,8 +322,9 @@ export const renamePortfolio = async (req, res) => {
       }
 
       const formattedPortfolios = portfolios.map(portfolio => {
-        const { _id, __v, ...rest } = portfolio._doc;
+        const { __v, _id, ...rest } = portfolio._doc;
         return {
+          _id,
           id: rest.id,
           name: rest.name,
           userEmail: rest.userEmail,
