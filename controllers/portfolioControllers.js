@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import Asset from '../models/assetModel.js';
 import Portfolio from '../models/portfolioModel.js';
 import { respondWithData, respondWithError, respondWithSuccess } from '../utils/response_utils.js';
@@ -27,30 +28,32 @@ export const createPortfolio = async (req, res) => {
   }
 };
 
-
 //add stock to porfolio, don't ever change this
 export const addStockToPortfolio = async (req, res) => {
   console.log('Add to Portfolio Requested');
+
+  const ObjectId = mongoose.Types.ObjectId;
+
   try {
 
-    if (!req.body.email || !req.body.id || !req.body.symbol || !req.body.price || !req.body.quantity) {
+    if (!req.body.email || !req.body.id || !req.body.symboll || !req.body.price || !req.body.quantityy) {
       return respondWithError(res, 'BAD_REQUEST', 'Email, id, symbol, price and quantity are required')
       };
 
+    const { email, id, symboll,quantityy} = req.body;
 
-    const { email, id, symbol, quantity } = req.body;
+    const symbol = String(symboll).toUpperCase();
+    const quantity = Number(quantityy);
 
     const existingPortfolio = await Portfolio.findOne({
       userEmail: email,
-      id: id,
+      _id: new ObjectId(id),
     });
 
     if (!existingPortfolio) {
       const costprice = req.body.price * quantity;
       const currentprice = await getLTPForStock(symbol) * quantity;
       const netgainloss = currentprice - costprice;
-      console.log(costprice);
-      console.log(currentprice);
 
       const newPortfolio = new Portfolio({
         userToken: token,
@@ -71,9 +74,18 @@ export const addStockToPortfolio = async (req, res) => {
         gainLossRecords: createNewGainLossRecord(currentprice, costprice)
       });
 
+      const isStockValid = await isStockExists(symbol);
+      if (!isStockValid) {
+        return respondWithError(res, 'BAD_REQUEST', 'Stock not found');
+      }
+
       await newPortfolio.save();
       return respondWithData(res, 'SUCCESS', 'Stock added to portfolio successfully', newPortfolio);
-     // return res.status(200).json(newPortfolio);
+    }
+
+    const isStockValid = await isStockExists(symbol);
+    if (!isStockValid) {
+      return respondWithError(res, 'BAD_REQUEST', 'Stock not found');
     }
 
     let wacc = req.body.price;
@@ -118,6 +130,8 @@ export const addStockToPortfolio = async (req, res) => {
 
       existingPortfolio.portfoliovalue = (await calculatePortfolioValue(existingPortfolio.stocks)).toFixed(2);
       existingPortfolio.totalunits = existingPortfolio.quantity + quantity;
+
+
       updateGainLossRecords(existingPortfolio);
     }
     updateGainLossRecords(existingPortfolio);
@@ -139,11 +153,20 @@ export const addStockToPortfolio = async (req, res) => {
     await existingPortfolio.save();
 
     return respondWithData(res, 'SUCCESS', 'Stock added to portfolio successfully', existingPortfolio);
-    //res.status(200).json(existingPortfolio);
   } catch (error) {
     console.error(error);
     return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'An error occurred while adding stock to portfolio');
-    //res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+
+//function to check if stock exists in assets collection
+const isStockExists = async (symbol) => {
+  try {
+    const asset = await Asset.findOne({ symbol: symbol });
+    return !!asset;
+  } catch (error) {
+    console.error('Error checking if stock exists:', error.message);
+    return false;
   }
 };
 
@@ -211,25 +234,35 @@ const getLTPForStock = async (symbol) => {
 // tested and working
 export const deletePortfolio = async (req, res) => {
   try {
+    console.log('Delete Portfolio Requested');
+
     const userEmail = req.body.email;
     const portid = req.body.id;
 
-    const portfolio = await Portfolio.findOneAndDelete({
-      userEmail: userEmail,
-      id: portid,
-    });
+    console.log(userEmail, portid);
+
+    const ObjectId = mongoose.Types.ObjectId;
+
+    const portfolio = await Portfolio.findOne({ _id: new ObjectId(portid) });
 
     if (!portfolio) {
       return respondWithError(res, 'NOT_FOUND', 'Portfolio not found');
-     // return res.status(404).json({success: false, message: "Portfolio not found" });
     }
 
-    return respondWithSuccess(res, 'SUCCESS', 'Portfolio deleted successfully');
-    //res.status(200).json({success: true, message: "Portfolio deleted successfully" });
+    if (portfolio.userEmail !== userEmail) {
+      return respondWithError(res, 'FORBIDDEN', 'You do not have permission to delete this portfolio');
+    }
+
+    const delectedportfolio = await Portfolio.findByIdAndDelete(portid);
+
+    if (!delectedportfolio) {
+    return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'An error occurred while deleting portfolio');
+    }
+
+    return respondWithData(res, 'SUCCESS', 'Portfolio deleted successfully', delectedportfolio);
   } catch (error) {
     console.error(error);
     return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'An error occurred while deleting portfolio');
-    //res.status(500).json({success: false, message: "Internal Server Error" });
   }
 };
 
@@ -240,47 +273,82 @@ export const renamePortfolio = async (req, res) => {
     const portId = req.body.id;
     const newName = req.body.newName;
 
-    const portfolio = await Portfolio.findOneAndUpdate(
-      { userEmail: userEmail, id: portId },
-      { name: newName },
-      { new: true }
-    );
+    const ObjectId = mongoose.Types.ObjectId;
+
+    const portfolio = await Portfolio.findOne({ _id: new ObjectId(portId) });
 
     if (!portfolio) {
       return respondWithError(res, 'NOT_FOUND', 'Portfolio not found');
-      //return res.status(404).json({success: false, message: "Portfolio not found" });
     }
 
-    return respondWithData(res, 'SUCCESS', 'Portfolio renamed successfully', portfolio);
-  //  res.status(200).json({success: true, message: "Portfolio renamed successfully", portfolio });
+    if (portfolio.userEmail !== userEmail) {
+      return respondWithError(res, 'FORBIDDEN', 'You do not have permission to rename this portfolio');
+    }
+
+    const existingPortfolio = await Portfolio.findOne({ userEmail, name: newName });
+
+    if (existingPortfolio) {
+      return respondWithError(res, 'BAD_REQUEST', 'Duplicate Portfolio');
+    }
+
+    portfolio.name = newName;
+    const updatedPortfolio = await portfolio.save();
+    return respondWithData(res, 'SUCCESS', 'Portfolio renamed successfully', updatedPortfolio);
+
   } catch (error) {
     return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'An error occurred while renaming portfolio');
-   // res.status(500).json({success: false, message: "Internal Server Error" });
   }
 };
 
   //remove stock from portfolio // gainLossRecords is broken, felt tired to fix
   export const removeStockFromPortfolio = async (req, res) => {
     console.log('Delete Stock from Portfolio Requested');
+    const ObjectId = mongoose.Types.ObjectId;
+
     try {
-      const { email, id, symbol, quantity } = req.body;
+      const { email, id, quantity } = req.body;
+
+      const symbol = String(req.body.symbol).toUpperCase();
+
+      if (!email || !id || !symbol || !quantity) {
+        return respondWithError(res, 'BAD_REQUEST', 'Email, id, symbol and quantity are required');
+      }
 
       console.log(email, id, symbol, quantity);
 
-      const existingPortfolio = await Portfolio.findOne({
-        userEmail: email,
-        id: id,
-      });
+      const portfolio = await Portfolio.findOne({ _id: new ObjectId(id) });
 
-      if (!existingPortfolio) {
-        return res.status(404).json({success: false, message: "Portfolio not found" });
+      if (!portfolio) {
+        return respondWithError(res, 'NOT_FOUND', 'Portfolio not found');
       }
 
+      const stockIndex = portfolio.stocks.findIndex((stock) => stock.symbol === symbol);
+
+      if (stockIndex === -1) {
+        return respondWithError(res, 'NOT_FOUND', 'Stock not found in portfolio');
+      }
+
+      const existingQuantity = portfolio.stocks[stockIndex].quantity;
+
+      if (quantity > existingQuantity) {
+        return respondWithError(res, 'BAD_REQUEST', 'Quantity to remove exceeds existing quantity');
+      }
+
+      if (quantity === existingQuantity) {
+        portfolio.stocks.splice(stockIndex, 1);
+      } else {
+        portfolio.stocks[stockIndex].quantity -= quantity;
+      }
+
+      await portfolio.save();
+
+      return respondWithSuccess(res, 'SUCCESS', 'Stock removed from portfolio successfully');
     } catch (error) {
       console.error(error);
-      res.status(500).json({success: false, message: "Internal Server Error" });
+      res.status(500).json({ success: false, message: 'Internal Server Error' });
     }
   };
+
 //
 
   //fetch portfolio //tested working

@@ -7,6 +7,7 @@ import Portfolio from '../models/portfolioModel.js';
 import User from '../models/userModel.js';
 import { validateEmail, validateName, validatePassword, validatePhoneNumber } from '../utils/dataValidation_utils.js';
 import { respondWithData, respondWithError, respondWithSuccess } from '../utils/response_utils.js';
+import { v2 as cloudinary } from 'cloudinary';
 
 // export const createUser = async (req, res) => {
 //   const name = req.body.name;
@@ -720,5 +721,112 @@ export const googleSignIn = async (req, res) => {
   } catch (error) {
     console.error(error.toString());
     return respondWithError(res, 'INTERNAL_SERVER_ERROR', error.toString());
+  }
+
+};
+
+//extracting all user data //one to upload user one to upload picture
+export const updateUserData = async (req, res) => {
+  const oldEmail = req.body.oldEmail;
+  const newEmail = req.body.newEmail;
+  const newPassword = req.body.password;
+  const phone = req.body.phone;
+  const invStyle = req.body.style;
+  const userName = req.body.name;
+  const userAmount = req.body.useramount;
+
+  if (!oldEmail) {
+    return respondWithError(res, 'BAD_REQUEST', "Old email missing");
+  }
+
+  try {
+    const user = await User.findOne({ email: oldEmail }).populate('portfolio');
+
+    if (!user) {
+      console.log("User not found");
+      return respondWithError(res, 'NOT_FOUND', "User not found");
+    }
+
+    if (newPassword) {
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      user.password = hashedPassword;
+    }
+
+    user.email = newEmail || user.email;
+    user.name = userName || user.name;
+    user.phone = phone || user.phone;
+    user.style = invStyle || user.style;
+    user.userAmount = userAmount || user.userAmount;
+
+    if (newEmail && newEmail !== oldEmail) {
+      const existingUser = await User.findOne({ email: newEmail });
+      if (existingUser && !existingUser._id.equals(user._id)) {
+        console.log("Email already exists");
+        return respondWithError(res, 'BAD_REQUEST', "Email already exists");
+      }
+    }
+
+    try {
+      await user.save();
+      console.log('User data updated successfully');
+      return respondWithData(res, 'SUCCESS', "User data updated successfully", user);
+    } catch (error) {
+      console.error('User data update failed: ' + error);
+      return respondWithError(res, 'INTERNAL_SERVER_ERROR', "Error updating user data");
+    }
+  } catch (error) {
+    console.error('Error updating user data:', error);
+    return respondWithError(res, 'INTERNAL_SERVER_ERROR', "Error updating user data");
+  }
+};
+
+//image part //upload
+export const updateUserProfilePicture = async (req, res) => {
+  const oldEmail = req.body.oldEmail;
+  const { dpImage } = req.files;
+
+  if (!oldEmail) {
+    return respondWithError(res, 'BAD_REQUEST', "Old email missing");
+  }
+
+  try {
+    const user = await User.findOne({ email: oldEmail }).populate('portfolio');
+
+    if (!user) {
+      console.log("User not found");
+      return respondWithError(res, 'NOT_FOUND', "User not found");
+    }
+
+    // Update profile image if provided
+    if (dpImage && dpImage.path) {
+      let uploadedImage;
+      try {
+        uploadedImage = await cloudinary.uploader.upload(
+          dpImage.path,
+          {
+            folder: "UserDP",
+            crop: "scale",
+            overwrite: true,
+          },
+        );
+        console.log("User DP updated, new dp is " + uploadedImage.secure_url);
+        user.dpImage = uploadedImage.secure_url;
+      } catch (e) {
+        console.log(e);
+        return respondWithError(res, 'INTERNAL_SERVER_ERROR', "Error uploading image");
+      }
+    }
+
+    try {
+      await user.save();
+      console.log('User profile picture updated successfully');
+      return respondWithData(res, 'SUCCESS', "User profile picture updated successfully", user);
+    } catch (error) {
+      console.error('User profile picture update failed: ' + error);
+      return respondWithError(res, 'INTERNAL_SERVER_ERROR', "Error updating profile picture");
+    }
+  } catch (error) {
+    console.error('Error updating user profile picture:', error);
+    return respondWithError(res, 'INTERNAL_SERVER_ERROR', "Error updating profile picture");
   }
 };

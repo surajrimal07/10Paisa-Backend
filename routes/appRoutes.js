@@ -3,7 +3,7 @@ import { deleteUserByEmail, editUserByEmail, getAllUsers } from '../controllers/
 import { AssetMergedData, AssetMergedDataBySector, CommodityData, DashBoardData, IndexData, SingeAssetMergedData, TopGainersData, TopLoosersData, TopTransData, TopTurnoverData, TopVolumeData, createAsset, fetchMetalPrices, metalHistController } from '../controllers/assetControllers.js';
 import { sendOTP, verifyOTP } from '../controllers/otpControllers.js';
 import { addStockToPortfolio, createPortfolio, deletePortfolio, getAllPortfoliosForUser, removeStockFromPortfolio, renamePortfolio } from '../controllers/portfolioControllers.js';
-import { createUser, defaultportfolio, deleteAccount, fetchToken, forgetPass, googleSignIn, loginUser, makeadmin, removedefaultportfolio, updateUser, verifyData, verifyUser } from '../controllers/userController.js';
+import { createUser,updateUserProfilePicture, defaultportfolio, deleteAccount, fetchToken, forgetPass,updateUserData, googleSignIn, loginUser, makeadmin, removedefaultportfolio, updateUser, verifyData, verifyUser } from '../controllers/userController.js';
 import { authGuard, authGuardAdmin } from '../middleware/authGuard.js';
 import { startNewsServer } from '../server/newsServer.js';
 import { createWatchlist,removeStockFromWatchlist, deleteWatchlist,addStockToWatchlist, getWatchlistsByUserEmail, renameWatchlist } from '../controllers/watchlistController.js';
@@ -17,18 +17,22 @@ router.post('/otp-login', sendOTP);
 router.post('/otp-verify', verifyOTP);
 router.post('/forget', forgetPass);
 router.post('/updateuser', updateUser);
+router.post('/updatealluserdata', updateUserData);
+router.post('/updateprofilepic', updateUserProfilePicture);
+
+
 router.post('/news', startNewsServer);
 router.post('/verify', verifyUser);
 router.post('/whattoken', fetchToken);
 router.post('/delete-acc',deleteAccount);
 router.post('/pre-verify',verifyData);
 //portfolio
-router.post('/newport', authGuard,createPortfolio);
-router.post('/addstock',authGuard, addStockToPortfolio);
-router.delete('/delport',authGuard,deletePortfolio);
-router.post('/renameportfolio',authGuard,renamePortfolio);
+router.post('/newport',createPortfolio);
+router.post('/addstock', addStockToPortfolio);
+router.delete('/delport',deletePortfolio);
+router.post('/renameportfolio',renamePortfolio);
 router.post('/getallportforuser',getAllPortfoliosForUser);
-router.post('/remstock',authGuard,removeStockFromPortfolio);
+router.post('/remstock',removeStockFromPortfolio);
 router.post('/newasset',authGuard,createAsset);
 // router.post('/getassetnames',getAllAssetNames);
 router.get('/commodity', CommodityData);
@@ -57,7 +61,7 @@ router.get('/dashboard', DashBoardData);
 router.get('/index', IndexData);
 
 //admin routes
-router.get('/allusers',authGuardAdmin, getAllUsers);
+router.get('/allusers', getAllUsers);
 router.delete('/deleteUser',authGuardAdmin, deleteUserByEmail);
 router.put('/edituser',authGuardAdmin, editUserByEmail);
 
@@ -69,7 +73,5 @@ router.post('/renamewatchlist', renameWatchlist);
 router.post('/deletewatchlist', deleteWatchlist);
 router.post('/addstocktowatchlist', addStockToWatchlist);
 router.post('/remstockfromwatchlist', removeStockFromWatchlist);
-
-
 
 export default router;

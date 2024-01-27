@@ -4,53 +4,6 @@ import User from '../models/userModel.js';
 import Watchlist from '../models/watchlistModel.js';
 import { respondWithData, respondWithError } from '../utils/response_utils.js';
 
-// Create Watchlist //working
-
-// export const createWatchlist = async (req, res) => {
-
-//     console.log("Create Watchlist requested");
-
-//     const {email, name, stocks } = req.body;
-//     try {
-//       const user = await User.findOne({ email });
-
-//       console.log("User found");
-
-//       if (!user) {
-//         console.log("User not found");
-//         return respondWithError(res, 'NOT_FOUND', 'User not found');
-//       }
-
-//       const existingWatchlist = await Watchlist.findOne({ user: user.email, name: name });
-
-//       console.log("test 123");
-
-//       if (existingWatchlist) {
-//         console.log("Watchlist already exists with same name");
-//         return respondWithError(res, 'BAD_REQUEST', 'Watchlist already exists');
-//       }
-
-
-//       const stocksUpper = stocks ? stocks.toString().toUpperCase() : '';
-
-//       const newWatchlist = new Watchlist({
-//         user: user.email,
-//         name,
-//         stocks: stocksUpper,
-//       });
-
-//       console.log(" watchlist to be created is " + newWatchlist);
-
-//       const savedWatchlist = await newWatchlist.save();
-
-//      console.log("Watchlist created successfully");
-//       return respondWithData(res, 'SUCCESS', 'Watchlist created successfully', savedWatchlist);
-//     } catch (error) {
-//       return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'An error occurred while creating the watchlist');
-//     }
-//   };
-
-
 //working
 export const createWatchlist = async (req, res) => {
 
