@@ -734,6 +734,7 @@ export const updateUserData = async (req, res) => {
   const invStyle = req.body.style;
   const userName = req.body.name;
   const userAmount = req.body.useramount;
+  const isAdmin = req.body.isAdmin;
 
   if (!oldEmail) {
     return respondWithError(res, 'BAD_REQUEST', "Old email missing");
@@ -766,14 +767,23 @@ export const updateUserData = async (req, res) => {
       }
     }
 
-    try {
-      await user.save();
-      console.log('User data updated successfully');
-      return respondWithData(res, 'SUCCESS', "User data updated successfully", user);
-    } catch (error) {
-      console.error('User data update failed: ' + error);
-      return respondWithError(res, 'INTERNAL_SERVER_ERROR', "Error updating user data");
+    if (isAdmin){
+      user.isAdmin = isAdmin;
     }
+
+    //validate if phone is taken by someone else or not
+    if (phone) {
+      const existingUser = await User.findOne({ phone: phone });
+      if (existingUser && !existingUser._id.equals(user._id)) {
+        console.log("Phone already exists");
+        return respondWithError(res, 'BAD_REQUEST', "Phone already exists");
+      }
+    }
+
+    await user.save();
+    console.log('User data updated successfully');
+    return respondWithData(res, 'SUCCESS', "User data updated successfully", user);
+
   } catch (error) {
     console.error('Error updating user data:', error);
     return respondWithError(res, 'INTERNAL_SERVER_ERROR', "Error updating user data");
