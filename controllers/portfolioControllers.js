@@ -349,33 +349,9 @@ export const renamePortfolio = async (req, res) => {
     }
   };
 
-//
-
-  //fetch portfolio //tested working
-  // export const getAllPortfoliosForUser = async (req, res) => {
-  //   try {
-  //     const useremail = req.body.email;
-
-  //     console.log("recieved email is "+useremail);
-  //     console.log(useremail);
-
-  //     const portfolios = await Portfolio.find({ userEmail: useremail });
-
-  //     if (!portfolios || portfolios.length === 0) {
-  //       return respondWithError(res, 'NOT_FOUND', 'No portfolios found');
-  //       //return res.status(404).json({success: false, message: "Portfolios not found for the user" });
-  //     }
-
-  //    return res.status(200).json(portfolios);  //no error
-  //     //return respondWithData(res, 'SUCCESS', 'Portfolios fetched successfully', portfolios); //throws error
-  //   } catch (error) {
-  //     return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'An error occurred while fetching portfolios');
-  //   }
-
   export const getAllPortfoliosForUser = async (req, res) => {
 
     console.log("Get all portfolios for user requested");
-    console.log(req.body.email);
     try {
       const useremail = req.body.email;
 
@@ -391,6 +367,10 @@ export const renamePortfolio = async (req, res) => {
 
       const formattedPortfolios = portfolios.map(portfolio => {
         const { __v, _id, ...rest } = portfolio._doc;
+        const recommendation = generateRecommendation({ portfolio });
+        const returns = (portfolio.portfoliovalue - portfolio.portfoliocost) / portfolio.portfoliocost * 100;
+        const percentage = parseFloat(returns.toFixed(1));
+
         return {
           _id,
           id: rest.id,
@@ -401,6 +381,8 @@ export const renamePortfolio = async (req, res) => {
           gainLossRecords: rest.gainLossRecords,
           portfoliocost: rest.portfoliocost,
           portfoliovalue: rest.portfoliovalue,
+          recommendation,
+          percentage
         };
       });
       return res.status(200).json({ portfolio: formattedPortfolios });
@@ -410,4 +392,30 @@ export const renamePortfolio = async (req, res) => {
   };
 
 
+  //very basic and logically flawed recommendation system //just for assingment purpose only
+  const generateRecommendation = ({ portfolio }) => {
+    const calculateReturnPercentage = () => {
+
+      if (portfolio.portfoliocost === 0) {
+        return 0;
+      }
+
+      const returns = (portfolio.portfoliovalue - portfolio.portfoliocost) / portfolio.portfoliocost * 100;
+      return returns;
+    };
+
+    const returnPercentage = calculateReturnPercentage();
+
+    if (returnPercentage > 50) {
+      return "Look for booking your profits";
+    } else if (returnPercentage >= 10 && returnPercentage <= 50) {
+      return "Strong hold and ride the trend";
+    } else if (returnPercentage >= -10 && returnPercentage < 0) {
+      return "Look for stoploss";
+    } else if (returnPercentage <= -10) {
+      return "Hold and Average";
+    } else {
+      return "Unable to provide recommendation";
+    }
+  };
 
