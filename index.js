@@ -7,6 +7,7 @@ import initializeRefreshMechanism from './controllers/refreshController.js';
 import { mainDB } from './database/db.js';
 import userRouter from './routes/appRoutes.js';
 import { startNewsServer } from './server/newsServer.js';
+import { startWebSocketServer } from './server/websocket.js';
 import { initializeStorage } from './utils/initilize_storage.js';
 
 
@@ -63,6 +64,16 @@ initializeStorage()
     console.error('Error initializing storage:', error);
   });
 
+
+// //use https
+// const forceSecure = (req, res, next) => {
+//   if (req.secure)
+//      return next();
+//   res.redirect('https://' + req.hostname + req.url)
+// }
+// app.all('*', forceSecure);
+// //
+
 //await storage.init();
 initializeRefreshMechanism();
 
@@ -84,7 +95,7 @@ app.get('/', (req, res) => {
   res.send('This API is running live🥳');
 });
 
+startWebSocketServer();
 startNewsServer(app);
-
 
 export default app;

@@ -7,7 +7,7 @@ const newsSources = [
   { url: "https://www.setopati.com/feed", source: "Setopati Nepali" }, //5
   { url: "https://rajdhanidaily.com/feed/", source: "Rajdhani Daily" }, //6
   { url: "https://nagariknews.nagariknetwork.com/feed", source: "Nagarik News" }, //7
-  { url: "https://www.osnepal.com/feed", source: "OS Nepal" }, //8
+  { url: "https://nagariknews.nagariknetwork.com/feed", source: "OS Nepal" }, //8
   { url: "https://abhiyandaily.com/abhiyanrss", source: "Abhiyan Daily" }, //9
   { url: "https://arthasarokar.com/feed", source: "Arthasarokar" }, //10
   { url: "https://www.karobardaily.com/feed", source: "Karobar Daily" }, //11

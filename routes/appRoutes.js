@@ -66,7 +66,6 @@ router.delete('/deleteUser',authGuardAdmin, deleteUserByEmail);
 router.put('/edituser',authGuardAdmin, editUserByEmail);
 
 //watchlist routes
-
 router.post('/createwatchlist', createWatchlist);
 router.post('/getwatchlist', getWatchlistsByUserEmail);
 router.post('/renamewatchlist', renameWatchlist);

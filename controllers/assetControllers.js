@@ -11,6 +11,8 @@ import { commodityprices } from '../server/commodityServer.js';
 import { metalChartExtractor, metalPriceExtractor } from '../server/metalServer.js';
 import { oilExtractor } from '../server/oilServer.js';
 await storage.init();
+import { respondWithData, respondWithError } from '../utils/response_utils.js';
+
 
 //common functions
 const fetchFromDatabase = async (collection) => {
@@ -652,12 +654,11 @@ export const SingeAssetMergedData = async (req, res) => {
 
   if (!symbol) {
     console.error('No symbol provided in the request');
-    return res.status(400).json({ error: 'No symbol provided in the request' });
+    return respondWithError(res, 'BAD_REQUEST', 'No symbol provided in the request');
   }
   const cachedData = await fetchFromCache(Asset_cached_key);
 
   const symboll = symbol.toUpperCase();
-
   try {
     if (cachedData !== null) {
       console.log('Returning cached data for symbol:', symboll);
@@ -729,10 +730,10 @@ export const SingeAssetMergedData = async (req, res) => {
       }
     } catch {
       console.log(`Everything failed for symbol: ${symbol}. Fallback failed`);
-      return res.status(500).json({ error: 'An error occurred while fetching data' });
+      return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'Internal Server Error');
     }
     console.error(error);
-    return res.status(500).json({ error: 'Internal Server Error' });
+    return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'Internal Server Error');
   }
 };
 

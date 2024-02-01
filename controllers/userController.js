@@ -1,136 +1,14 @@
 import bcrypt from 'bcrypt';
+import { v2 as cloudinary } from 'cloudinary';
 import { OAuth2Client } from 'google-auth-library';
 import jwt from 'jsonwebtoken';
 import storage from 'node-persist';
 import { forgetPassword } from '../controllers/otpControllers.js';
 import Portfolio from '../models/portfolioModel.js';
 import User from '../models/userModel.js';
+import { notifyClients } from '../server/websocket.js';
 import { validateEmail, validateName, validatePassword, validatePhoneNumber } from '../utils/dataValidation_utils.js';
 import { respondWithData, respondWithError, respondWithSuccess } from '../utils/response_utils.js';
-import { v2 as cloudinary } from 'cloudinary';
-
-// export const createUser = async (req, res) => {
-//   const name = req.body.name;
-//   const email = req.body.email;
-//   const password = req.body.password;
-//   const phone = req.body.phone;
-//   const style = req.body.style !== undefined ? req.body.style : undefined;
-//   const isAdmin = req.body.isAdmin ?? false;
-//   const userAmount = req.body.amount !== undefined ? req.body.amount : undefined;
-
-//   console.log("Create user command passed")
-//   console.log(req.body);
-//   //console.log("Name: "+name,  "Email: "+email, "Password: "+password, "phone: "+phone, "Style: "+style);
-
-
-//   if (!name || !email || !password || !phone) {
-//     return respondWithError(res, 'BAD_REQUEST', "Empty data passed. Please provide all required fields.");
-//   }
-
-//   if (!validatePhoneNumber(phone)) {
-//     //print phone along with it's data type
-//     console.log(phone, typeof phone);
-//     return respondWithError(res, 'BAD_REQUEST', "Invalid phone number. Please provide a 10-digit number.");
-//   }
-
-//   if (!validateEmail(email)) {
-//     return respondWithError(res, 'BAD_REQUEST', "Invalid email format. Please provide a valid email address.");
-//   }
-
-//   if (!validatePassword(password)) {
-//     return respondWithError(res, 'BAD_REQUEST', "Password should be at least 6 characters long.");
-//   }
-
-//   if (!validateName(name)) {
-//     return respondWithError(res, 'BAD_REQUEST', "Name should be fname and lname format.");
-//   }
-
-//   let dpImage;
-
-//   if (req.files && req.files.length > 0) {
-//     dpImage = req.files[0];
-//   }
-
-//   try {
-//     const hashedPassword = await bcrypt.hash(password, 10);
-
-//     const token = jwt.sign({email : email}, process.env.JWT_SECRET, { expiresIn: '7d' });
-
-//     const samplePortfolio = await Portfolio.create({
-//       id: 1,
-//       userEmail: email,
-//       name: "Sample Portfolio",
-//       stocks: [{ symbol: "CBBL", quantity: 1000000, wacc: 750 }],
-//     });
-
-//     User.findOne({ email }, async (err, user) => {
-//       if (err) {
-//         console.error(err);
-//         return respondWithError(res, 'INTERNAL_SERVER_ERROR', err.toString());
-//       } else {
-//         if (user === null) {
-
-//           User.findOne({ phone }, async (phoneErr, phoneUser) => {
-//             if (phoneErr) {
-//               console.error(phoneErr);
-//               return respondWithError(res, 'INTERNAL_SERVER_ERROR', phoneErr.toString());
-
-//           } else {
-//               if (phoneUser === null) {
-//           const newUser = new User({
-//             token,
-//             name,
-//             email: email.toLowerCase(),
-//             password: hashedPassword,
-//             phone,
-//             style,
-//             isAdmin,
-//             dpImage: dpImage ? dpImage.path : undefined,
-//             userAmount: userAmount !== undefined ? userAmount : undefined,
-//             portfolio: [samplePortfolio._id]
-
-//           });
-//           try {
-//             const savedUser = await newUser.save();
-//             const userData = {
-//               _id: savedUser._id,
-//               token: savedUser.token,
-//               name: savedUser.name,
-//               email: savedUser.email,
-//               pass: savedUser.password,
-//               phone: savedUser.phone,
-//               style: savedUser.style,
-//               isAdmin: savedUser.isAdmin,
-//               dpImage: savedUser.dpImage,
-//               userAmount: savedUser.userAmount,
-//               portfolio: savedUser.portfolio
-//             };
-//             console.log(userData);
-//             console.log("Singup Was Success");
-//             return respondWithData(res, 'CREATED', "User created successfully", userData);
-
-//           } catch (err) {
-//             console.log("Singup failed");
-//             return respondWithError(res, 'INTERNAL_SERVER_ERROR', err.toString());
-//           }
-//         } else {
-//           // Duplicate phone found
-//           console.log("Phone number already exists");
-//           return respondWithError(res, 'BAD_REQUEST', "Phone number already exists");
-//         }
-//       }
-//     });
-//   } else {
-//     console.log("Email already exists");
-//     return respondWithError(res, 'BAD_REQUEST', "Email already exists");
-//   }
-//   }
-//   });
-//   } catch (err) {
-//   console.error(err);
-//   return respondWithError(res, 'INTERNAL_SERVER_ERROR', err.toString());
-//   }
-//   };
 
 export const createUser = async (req, res) => {
   const name = req.body.name;
@@ -173,13 +51,13 @@ export const createUser = async (req, res) => {
 
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
-    const token = jwt.sign({ email: email }, process.env.JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign({ email: email, isAdmin: user.isAdmin }, process.env.JWT_SECRET, { expiresIn: '7d' });
 
     const samplePortfolio = await Portfolio.create({
       id: 1,
       userEmail: email,
       name: "Sample Portfolio",
-      stocks: [{ symbol: "CBBL", quantity: 1000000, wacc: 750 }],
+      stocks: [{ symbol: "CBBL", quantity: 10, wacc: 750 }],
     });
 
     const user = await User.findOne({ email });
@@ -236,18 +114,6 @@ export const createUser = async (req, res) => {
   }
 };
 
-//         } else {
-//           console.log("Email already exists");
-//           return respondWithError(res, 'BAD_REQUEST', "Email already exists");
-//         }
-//       }
-//     });
-//   } catch (err) {
-//     console.error(err);
-//     return respondWithError(res, 'INTERNAL_SERVER_ERROR', err.toString());
-//   }
-// };
-
 //
 export const loginUser = async (req, res) => {
     const email = req.body.email;
@@ -280,6 +146,7 @@ export const loginUser = async (req, res) => {
           portfolio: user.portfolio
         };
         console.log("Login Was Success");
+        notifyClients({type:'notification', title: 'Welcome 🎉', description: "Welcome to 10Paisa "+user.name+"!", image: user.dpImage, url: "https://10paisa.com"});
         return respondWithData(res, 'SUCCESS', "Login successful", userData);
       }
     } catch (error) {
@@ -489,10 +356,11 @@ export const updateUser = async (req, res) => {
 const User_token_key = 'user_token';
 
 export const verifyUser = async (req, res) => {
+
+  console.log("User verification requested")
+
   const email = req.body.email;
   let user_token;
-
-  console.log("email is: " + email);
 
   try {
     const user = await User.findOne({ email: email.toLowerCase() }).populate('portfolio');
@@ -511,11 +379,11 @@ export const verifyUser = async (req, res) => {
       } else {
         user_token = cachedtkn;
       }
-
         let userData = {
         _id: user._id,
-        username: user.name,
+        name: user.name,
         email: user.email,
+        pass: user.password,
         phone: user.phone,
         token: user_token,
         profilePicture: user.profilePicture,
@@ -525,9 +393,8 @@ export const verifyUser = async (req, res) => {
         dpImage: user.dpImage,
         userAmount: user.userAmount,
         portfolio: user.portfolio
-
       };
-      return respondWithData(res, 'SUCCESS', "User verification was successful", userData);
+      return respondWithData(res, 'SUCCESS', "User Verified", userData);
     }
   } catch (error) {
     console.log("500 An error occurred during user verification.");
