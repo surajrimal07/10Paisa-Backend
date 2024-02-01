@@ -12,11 +12,6 @@ manual_scaling:
   instances: 1
 
 handlers:
-- url: /.*
-  script: auto
-  secure: always
-
-ports:
-- 8080
-- 8081
-- 5000
+  - url: /.*
+    script: auto
+    secure: always

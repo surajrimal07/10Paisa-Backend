@@ -1,12 +1,12 @@
 import { Router } from 'express';
 import { deleteUserByEmail, editUserByEmail, getAllUsers } from '../controllers/adminController.js';
-import { AssetMergedData, AssetMergedDataBySector, CommodityData, DashBoardData, IndexData, SingeAssetMergedData, TopGainersData, TopLoosersData, TopTransData, TopTurnoverData, TopVolumeData, createAsset, fetchMetalPrices, metalHistController } from '../controllers/assetControllers.js';
+import { AssetMergedData, AssetMergedDataBySector, CombinedIndexData, CommodityData, DashBoardData, IndexData, SingeAssetMergedData, TopGainersData, TopLoosersData, TopTransData, TopTurnoverData, TopVolumeData, createAsset, fetchMetalPrices, metalHistController } from '../controllers/assetControllers.js';
 import { sendOTP, verifyOTP } from '../controllers/otpControllers.js';
 import { addStockToPortfolio, createPortfolio, deletePortfolio, getAllPortfoliosForUser, removeStockFromPortfolio, renamePortfolio } from '../controllers/portfolioControllers.js';
-import { createUser,updateUserProfilePicture, defaultportfolio, deleteAccount, fetchToken, forgetPass,updateUserData, googleSignIn, loginUser, makeadmin, removedefaultportfolio, updateUser, verifyData, verifyUser } from '../controllers/userController.js';
+import { createUser, defaultportfolio, deleteAccount, fetchToken, forgetPass, googleSignIn, loginUser, makeadmin, removedefaultportfolio, updateUser, updateUserData, updateUserProfilePicture, verifyData, verifyUser } from '../controllers/userController.js';
+import { addStockToWatchlist, createWatchlist, deleteWatchlist, getWatchlistsByUserEmail, removeStockFromWatchlist, renameWatchlist } from '../controllers/watchlistController.js';
 import { authGuard, authGuardAdmin } from '../middleware/authGuard.js';
 import { startNewsServer } from '../server/newsServer.js';
-import { createWatchlist,removeStockFromWatchlist, deleteWatchlist,addStockToWatchlist, getWatchlistsByUserEmail, renameWatchlist } from '../controllers/watchlistController.js';
 
 const router = Router();
 
@@ -59,6 +59,8 @@ router.post('/topvolume', TopVolumeData);
 router.post('/toptrans', TopTransData);
 router.get('/dashboard', DashBoardData);
 router.get('/index', IndexData);
+router.get('/combinedindex', CombinedIndexData);
+
 
 //admin routes
 router.get('/allusers', getAllUsers);

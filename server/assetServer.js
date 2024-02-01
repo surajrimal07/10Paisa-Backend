@@ -380,19 +380,19 @@ export async function FetchOldData() {
 
           const stockInfo = {
               symbol: columns[1].querySelector('a').textContent.trim(),
-              open: parseInt(columns[3].textContent.trim()),
-              high: parseInt(columns[4].textContent.trim()),
-              low: parseInt(columns[5].textContent.trim()),
-              ltp: parseInt(columns[6].textContent.trim()),
+              open: parseInt(columns[3].textContent.replace(/,/g, '')),
+              high: parseInt(columns[4].textContent.replace(/,/g, '')),
+              low: parseInt(columns[5].textContent.replace(/,/g, '')),
+              ltp: parseInt(columns[6].textContent.replace(/,/g, '')),
               vwap: parseInt(columns[7].textContent.trim()),
-              volume: parseInt(columns[8].textContent.trim()),
+              volume: parseInt(columns[8].textContent.replace(/,/g, '')),
               previousclose: parseInt(columns[9].textContent.trim()),
-              Turnover: parseInt(columns[10].textContent.trim()),
-              percentchange: parseInt(columns[14].textContent.trim()),
-              day120: parseInt(columns[17].textContent.trim()),
-              day180: parseInt(columns[18].textContent.trim()),
-              week52high: parseInt(columns[19].textContent.trim()),
-              week52low: parseInt(columns[20].textContent.trim()),
+              Turnover: parseInt(columns[10].textContent.replace(/,/g, '')),
+              percentchange: parseInt(columns[14].textContent.replace(/,/g, '')),
+              day120: parseInt(columns[17].textContent.replace(/,/g, '')),
+              day180: parseInt(columns[18].textContent.replace(/,/g, '')),
+              week52high: parseInt(columns[19].textContent.replace(/,/g, '')),
+              week52low: parseInt(columns[20].textContent.replace(/,/g, '')),
               name: symbolToNameMap[columns[1].querySelector('a').textContent.trim()] || '',
           };
 
@@ -695,13 +695,17 @@ export async function extractIndex() {
     const $ = cheerio.load(html);
 
     const nepseIndexContainer = $('h4:contains("NEPSE Index")').closest('.mu-list');
+
     const turnover = parseFloat(nepseIndexContainer.find('.mu-price').text().replace(/,/g, ''));
-    const index = nepseIndexContainer.find('.mu-value').text().trim();
-    const percentage = nepseIndexContainer.find('.mu-percent').text().trim();
+    const index = parseFloat(nepseIndexContainer.find('.mu-value').text().replace(/,/g, ''));
+    const percentageChange = parseFloat(nepseIndexContainer.find('.mu-percent').text().replace(/,/g, ''));
+    const currentDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '-');
+    const formattedDate = currentDate.split('-').reverse().join('/'); // Format as "YYYY/MM/DD"
 
     const nepseIndexData = {
+      date: formattedDate,
       index,
-      percentage,
+      percentageChange,
       turnover,
     };
 
@@ -711,6 +715,34 @@ export async function extractIndex() {
   }
 }
 
+export async function extractIndexDateWise() {
+  try {
+    const targetUrl = 'https://merolagani.com/Indices.aspx';
+    const response = await axios.get(targetUrl);
+    const html = response.data;
+    const $ = cheerio.load(html);
 
+    const tableRows = $('.table-bordered tbody tr').slice(0, 10);
 
-export default {extractIndex,fetchDataAndMapToAssetModel,fetchIndexes,fetchTopGainers, fetchturnvolume, fetchvolume, FetchSingularDataOfAsset,GetDebentures,FetchOldData, topgainersShare, topLosersShare, topTradedShares, topTurnoversShare, topTransactions};
+    const indexData = tableRows.map((indexx, element) => {
+      const $row = $(element);
+      const date = $row.find('td:nth-child(2)').text().trim();
+      const index = parseFloat($row.find('td:nth-child(3)').text().replace(/,/g, ''));
+      const pointChange = parseFloat($row.find('td:nth-child(4)').text().replace(/,/g, ''));
+      const percentageChange = parseFloat($row.find('td:nth-child(5)').text().replace(/,/g, ''));
+
+      return {
+        date,
+        index,
+        percentageChange,
+        pointChange
+      };
+    }).get();
+
+    return indexData;
+  } catch (error) {
+    console.error('Error fetching or parsing the HTML:', error.message);
+  }
+}
+
+export default {extractIndexDateWise,extractIndex,fetchDataAndMapToAssetModel,fetchIndexes,fetchTopGainers, fetchturnvolume, fetchvolume, FetchSingularDataOfAsset,GetDebentures,FetchOldData, topgainersShare, topLosersShare, topTradedShares, topTurnoversShare, topTransactions};
