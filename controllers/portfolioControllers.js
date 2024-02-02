@@ -337,7 +337,13 @@ export const renamePortfolio = async (req, res) => {
       if (quantity === existingQuantity) {
         portfolio.stocks.splice(stockIndex, 1);
       } else {
+        //remove stock completely if it's quantity becomes zero
+
         portfolio.stocks[stockIndex].quantity -= quantity;
+
+        if (portfolio.stocks[stockIndex].quantity === 0) {
+          portfolio.stocks.splice(stockIndex, 1);
+        }
       }
 
       await portfolio.save();

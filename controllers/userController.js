@@ -51,7 +51,7 @@ export const createUser = async (req, res) => {
 
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
-    const token = jwt.sign({ email: email, isAdmin: user.isAdmin }, process.env.JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign({ email: email, isAdmin: false }, process.env.JWT_SECRET, { expiresIn: '7d' });
 
     const samplePortfolio = await Portfolio.create({
       id: 1,
@@ -80,6 +80,10 @@ export const createUser = async (req, res) => {
 
         try {
           const savedUser = await newUser.save();
+          const populatedPortfolio = await Portfolio.findById(samplePortfolio._id);
+
+          const formattedPortfolio = formatPortfolioData(populatedPortfolio)
+
           const userData = {
             _id: savedUser._id,
             token: savedUser.token,
@@ -91,9 +95,8 @@ export const createUser = async (req, res) => {
             isAdmin: savedUser.isAdmin,
             dpImage: savedUser.dpImage,
             userAmount: savedUser.userAmount,
-            portfolio: savedUser.portfolio,
+            portfolio: [formattedPortfolio],
           };
-          console.log(userData);
           console.log("Signup Was Success");
           return respondWithData(res, 'CREATED', "User created successfully", userData);
         } catch (err) {
@@ -112,6 +115,22 @@ export const createUser = async (req, res) => {
     console.error(err);
     return respondWithError(res, 'INTERNAL_SERVER_ERROR', err.toString());
   }
+};
+
+const formatPortfolioData = (portfolio) => {
+  return {
+    _id: portfolio._id,
+    id: portfolio.id,
+    name: portfolio.name,
+    userEmail: portfolio.userEmail,
+    stocks: portfolio.stocks,
+    totalunits: portfolio.totalunits,
+    gainLossRecords: portfolio.gainLossRecords,
+    portfoliocost: portfolio.portfoliocost,
+    portfoliovalue: portfolio.portfoliovalue,
+    recommendation: portfolio.recommendation,
+    percentage: portfolio.percentage,
+  };
 };
 
 //
@@ -223,7 +242,7 @@ export const verifyData = async (req, res) => {
     }}
 };
 
-//uploading dp image works
+//works //for individual updates
 export const updateUser = async (req, res) => {
   const token = req.body.token;
   const email = req.body.email;
@@ -232,7 +251,6 @@ export const updateUser = async (req, res) => {
   const invStyle = req.body.style;
   const fieldToUpdate = req.body.field;
   const valueToUpdate = req.body.value;
-  //const {dpImage} = req.files;
   const userAmount = req.body.useramount;
 
   if (!email ) {
@@ -248,32 +266,6 @@ export const updateUser = async (req, res) => {
     if (!user) {
       console.log("User not found");
       return respondWithError(res, 'NOT_FOUND', "User not found");
-    }
-
-    if (fieldToUpdate === 'dp') {
-      const {dpImage} = req.files;
-      let uploadedImage;
-
-      if (dpImage && dpImage.path) {
-        try {
-          uploadedImage = await cloudinary.uploader.upload(
-            dpImage.path,
-            {
-              folder: "UserDP",
-              crop: "scale",
-              overwrite: true,
-            },
-          );
-          console.log("User DP updated, new dp is " + uploadedImage.secure_url);
-          user.dpImage = uploadedImage.secure_url;
-        } catch (e) {
-          console.log(e);
-          return respondWithError(res, 'INTERNAL_SERVER_ERROR', "Error uploading image");
-        }
-      } else {
-        console.log("No image provided for update");
-        return respondWithError(res, 'BAD_REQUEST', "No image provided for update");
-      }
     }
 
     if (fieldToUpdate === 'name') {
@@ -294,17 +286,37 @@ export const updateUser = async (req, res) => {
 
     if (fieldToUpdate === 'email') {
       try {
-        const existingUser = await User.findOne({ email: valueToUpdate });
+        const existingUser = await User.findOne({ email: valueToUpdate.toLowerCase() });
+
+        console.log(existingUser);
+
         if (!existingUser) {
           console.log("User email updated, new " + fieldToUpdate + " is " + valueToUpdate);
 
           user.email = valueToUpdate;
 
-          await user.save();
+          //await user.save();
+          const savedUser = await user.save();
 
-          return respondWithSuccess(res, 'SUCCESS', "Email updated successfully");
+          const cachedtkn = await storage.getItem(User_token_key);
+          let userData = {
+            _id: savedUser._id,
+            name: savedUser.name,
+            email: savedUser.email,
+            pass: savedUser.password,
+            phone: savedUser.phone,
+            token: cachedtkn,
+            profilePicture: savedUser.profilePicture,
+            style: savedUser.style,
+            defaultport: savedUser.defaultport,
+            isAdmin: savedUser.isAdmin,
+            dpImage: savedUser.dpImage,
+            userAmount: savedUser.userAmount,
+            portfolio: savedUser.portfolio
+          };
+
+          return respondWithData(res, 'SUCCESS', "Email updated successfully", userData);
         } else {
-          console.log("Email already exists");
           return respondWithError(res, 'BAD_REQUEST', "Email already exists");
         }
       } catch (error) {
@@ -323,7 +335,24 @@ export const updateUser = async (req, res) => {
 
           await user.save();
 
-          return respondWithSuccess(res, 'SUCCESS', "Phone updated successfully");
+          const cachedtkn = await storage.getItem(User_token_key);
+          let userData = {
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+            pass: user.password,
+            phone: user.phone,
+            token: cachedtkn,
+            profilePicture: user.profilePicture,
+            style: user.style,
+            defaultport: user.defaultport,
+            isAdmin: user.isAdmin,
+            dpImage: user.dpImage,
+            userAmount: user.userAmount,
+            portfolio: user.portfolio
+          };
+
+          return respondWithData(res, 'SUCCESS', "Phone updated successfully", userData);
         } else {
           console.log("Phone already exists");
           return respondWithError(res, 'BAD_REQUEST', "Phone already exists");
@@ -341,8 +370,25 @@ export const updateUser = async (req, res) => {
 
     try {
       await user.save();
+      const cachedtkn = await storage.getItem(User_token_key);
+      let userData = {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        pass: user.password,
+        phone: user.phone,
+        token: cachedtkn,
+        profilePicture: user.profilePicture,
+        style: user.style,
+        defaultport: user.defaultport,
+        isAdmin: user.isAdmin,
+        dpImage: user.dpImage,
+        userAmount: user.userAmount,
+        portfolio: user.portfolio
+      };
+
       console.log('User ' + fieldToUpdate + ' updated successfully');
-      return respondWithSuccess(res, 'SUCCESS', "User " + fieldToUpdate + " updated successfully");
+      return respondWithData(res, 'SUCCESS', "User " + fieldToUpdate + " updated successfully", userData);
     } catch (error) {
       console.error('User ' + fieldToUpdate + ' update failed: ' + error);
       return respondWithError(res, 'INTERNAL_SERVER_ERROR', "Error updating user " + fieldToUpdate);
@@ -421,37 +467,11 @@ export const fetchToken = async (req, res) => {
   }
 };
 
-
-//this code is not necessary remove it later
-export const saveToken = async (req, res) => {
-  const email = req.body.email;
-  const token = req.body.token;
-
-  console.log("Email: " + email, "Token: " + token);
-  try {
-    const user = await User.findOne({ email });
-
-    if (!user) {
-      console.log("401 Invalid email");
-      return res.status(401).json({success: false, message: "Invalid email"});
-    } else {
-      user.token = token;
-      await user.save();
-
-      console.log("200 Token saved");
-    }
-    res.json(user);
-  } catch (error) {
-    console.log("500 An error occurred saving token");
-    return res.status(500).json({success: false, message: "An error occurred saving token" });
-  }
-};
-
 export const deleteAccount = async (req, res) => {
-  const tokens = req.body.token;
+  const email = req.body.token;
   const passwords = req.body.password;
   try {
-    const user = await User.findOne({ token: tokens });
+    const user = await User.findOne({ email: email });
 
     if (!user) {
       return respondWithError(res, 'NOT_FOUND', "User not found");
@@ -463,7 +483,9 @@ export const deleteAccount = async (req, res) => {
       return respondWithError(res, 'UNAUTHORIZED', "Invalid password");
     }
 
-    await User.deleteOne({ token: tokens });
+    await Portfolio.deleteMany({ userEmail: email });
+    await User.deleteOne({ email: email });
+
     return respondWithSuccess(res, 'SUCCESS', "User deleted successfully");
 
   } catch (error) {
@@ -693,11 +715,27 @@ export const updateUserProfilePicture = async (req, res) => {
         return respondWithError(res, 'INTERNAL_SERVER_ERROR', "Error uploading image");
       }
     }
-
     try {
       await user.save();
+
+      const cachedtkn = await storage.getItem(User_token_key);
+      let userData = {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        pass: user.password,
+        phone: user.phone,
+        token: cachedtkn,
+        profilePicture: user.profilePicture,
+        style: user.style,
+        defaultport: user.defaultport,
+        isAdmin: user.isAdmin,
+        dpImage: user.dpImage,
+        userAmount: user.userAmount,
+        portfolio: user.portfolio
+      };
       console.log('User profile picture updated successfully');
-      return respondWithData(res, 'SUCCESS', "User profile picture updated successfully", user);
+      return respondWithData(res, 'SUCCESS', "User profile picture updated successfully", userData);
     } catch (error) {
       console.error('User profile picture update failed: ' + error);
       return respondWithError(res, 'INTERNAL_SERVER_ERROR', "Error updating profile picture");

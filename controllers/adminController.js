@@ -1,3 +1,4 @@
+import Portfolio from '../models/portfolioModel.js';
 import User from '../models/userModel.js';
 import { respondWithData, respondWithError } from '../utils/response_utils.js';
 
@@ -22,12 +23,18 @@ export const deleteUserByEmail = async (req, res) => {
     console.log("Delete User by email requested for email: " + email );
 
     try {
+
+    //also delete user portfolio
+        await Portfolio.deleteMany({ userEmail: email });
+
         const deletedUser = await User.findOneAndDelete({ email });
 
         if (!deletedUser) {
             console.log("User not found");
             return respondWithError(res, 'NOT_FOUND', 'User not found');
         }
+
+          console.log("User deleted successfully"   );
         return respondWithData(res, 'SUCCESS', 'User deleted successfully', deletedUser);
     } catch (error) {
         return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'An error occurred while deleting the user');

@@ -1439,14 +1439,13 @@ export const DashBoardData = async (req, res) => {
 
 export const IndexData = async (req, res) => {
   console.log("Index Data Requested");
+
   try {
-    const cachedData = await fetchFromCache('indexDataCachedd');
+    const cachedData = await fetchFromCache('indexDataCached');
 
     if (cachedData !== null) {
       console.log('Returning cached index data');
-      return res.status(200).json(
-cachedData
-      );
+      return respondWithData(res,'SUCCESS','Data Fetched Successfully',cachedData);
     }
     const indexData = await extractIndex();
 
@@ -1470,41 +1469,12 @@ cachedData
   }
 }
 
-export const IndexDataDateWise = async (req, res) => {
-  console.log("Index Data DateWise Requested");
-  try {
-    const cachedData = await fetchFromCache('indexDataDateWiseCached');
-
-    if (cachedData !== null) {
-      console.log('Returning cached index data');
-      return res.status(200).json(
-cachedData
-      );
-    }
-    const indexDataByDate = await extractIndexDateWise();
-
-    //indexDataByDate has
-    //date, indexValue(rename it to index), absoluteChange (rename to pointChange), percentageChange
-    //remove last data and append indexData to top, make list of 10 data only
-
-
-    if (!indexDataByDate) {
-
-      return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'Failed to fetch index data.');
-    }
-  // await storage.setItem('indexDataCached', indexData);
-    return respondWithData(res,'SUCCESS','Data Fetched Successfully',indexDataByDate);
-  } catch (error) {
-    console.error(error);
-    return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'Internal Server Error');
-  }
-}
-
 //merged index
 export const CombinedIndexData = async (req, res) => {
   console.log("Combined Index Data Requested");
   try {
-    const cachedData = await fetchFromCache('combinedIndexDataCacheds');
+
+    const cachedData = await fetchFromCache('molti');
 
     if (cachedData !== null) {
       console.log('Returning cached combined index data');
@@ -1518,8 +1488,14 @@ export const CombinedIndexData = async (req, res) => {
       return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'Failed to fetch index data.');
     }
 
-    const pointChange = calculatePointChange(indexDataByDate,indexData);
+    //if same index then skip second one
+    //Check if date is same //this is done to avoid duplicate data after 3PM
+    if (indexData.date === indexDataByDate[0].date) {
+      await storage.setItem('molti', indexDataByDate);
+      return respondWithData(res, 'SUCCESS', 'Data Fetched Successfully', indexDataByDate);
+    }
 
+    const pointChange = calculatePointChange(indexDataByDate,indexData);
     indexData.pointChange = pointChange.pointChange;
 
     const combinedData = [
@@ -1532,7 +1508,7 @@ export const CombinedIndexData = async (req, res) => {
       ...indexDataByDate.slice(0, 9),
     ];
 
-    await storage.setItem('combinedIndexDataCacheds', combinedData);
+    await storage.setItem('molti', combinedData);
 
     return respondWithData(res, 'SUCCESS', 'Data Fetched Successfully', combinedData);
   } catch (error) {
@@ -1552,9 +1528,4 @@ function calculatePointChange(indexDataByDate, indexData) {
 }
 
 
-
-
-
-
-
-export default {createAsset,CombinedIndexData,IndexDataDateWise, fetchMetalPrices,TopVolumeData,TopTransData,TopTurnoverData,topLosersShare, AssetMergedData, SingeAssetMergedData, AssetMergedDataBySector, CommodityData, TopGainersData, DashBoardData};
+export default {createAsset,CombinedIndexData, fetchMetalPrices,TopVolumeData,TopTransData,TopTurnoverData,topLosersShare, AssetMergedData, SingeAssetMergedData, AssetMergedDataBySector, CommodityData, TopGainersData, DashBoardData};

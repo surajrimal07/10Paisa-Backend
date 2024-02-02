@@ -699,8 +699,12 @@ export async function extractIndex() {
     const turnover = parseFloat(nepseIndexContainer.find('.mu-price').text().replace(/,/g, ''));
     const index = parseFloat(nepseIndexContainer.find('.mu-value').text().replace(/,/g, ''));
     const percentageChange = parseFloat(nepseIndexContainer.find('.mu-percent').text().replace(/,/g, ''));
-    const currentDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '-');
-    const formattedDate = currentDate.split('-').reverse().join('/'); // Format as "YYYY/MM/DD"
+    const currentDate = new Date();
+    const formattedDate = currentDate.getFullYear() + '/' +
+                         (currentDate.getMonth() + 1).toString().padStart(2, '0') + '/' +
+                         currentDate.getDate().toString().padStart(2, '0');
+
+    console.log("formatted date is ",formattedDate);
 
     const nepseIndexData = {
       date: formattedDate,
