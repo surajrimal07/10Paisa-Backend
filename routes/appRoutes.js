@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { deleteUserByEmail, editUserByEmail, getAllUsers } from '../controllers/adminController.js';
+import { deleteUserByEmail, editUserByEmail, getAllPortfolios, getAllUsers } from '../controllers/adminController.js';
 import { AssetMergedData, AssetMergedDataBySector, CombinedIndexData, CommodityData, DashBoardData, IndexData, SingeAssetMergedData, TopGainersData, TopLoosersData, TopTransData, TopTurnoverData, TopVolumeData, createAsset, fetchMetalPrices, metalHistController } from '../controllers/assetControllers.js';
 import { sendOTP, verifyOTP } from '../controllers/otpControllers.js';
 import { addStockToPortfolio, createPortfolio, deletePortfolio, getAllPortfoliosForUser, removeStockFromPortfolio, renamePortfolio } from '../controllers/portfolioControllers.js';
@@ -66,6 +66,7 @@ router.get('/combinedindex', CombinedIndexData);
 router.get('/allusers', getAllUsers);
 router.delete('/deleteUser',authGuardAdmin, deleteUserByEmail);
 router.put('/edituser',authGuardAdmin, editUserByEmail);
+router.get('/allportfolios', getAllPortfolios);
 
 //watchlist routes
 router.post('/createwatchlist', createWatchlist);
@@ -74,5 +75,6 @@ router.post('/renamewatchlist', renameWatchlist);
 router.post('/deletewatchlist', deleteWatchlist);
 router.post('/addstocktowatchlist', addStockToWatchlist);
 router.post('/remstockfromwatchlist', removeStockFromWatchlist);
+
 
 export default router;

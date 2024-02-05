@@ -268,6 +268,10 @@ export const updateUser = async (req, res) => {
       return respondWithError(res, 'NOT_FOUND', "User not found");
     }
 
+    const populatedPortfolio = await Portfolio.find({ userEmail: email });
+
+    const formattedPortfolio = formatPortfolioData(populatedPortfolio)
+
     if (fieldToUpdate === 'name') {
       console.log("Username updated, new "+fieldToUpdate+ " is "+valueToUpdate)
       user.name = valueToUpdate;
@@ -312,7 +316,7 @@ export const updateUser = async (req, res) => {
             isAdmin: savedUser.isAdmin,
             dpImage: savedUser.dpImage,
             userAmount: savedUser.userAmount,
-            portfolio: savedUser.portfolio
+            portfolio: [formattedPortfolio]
           };
 
           return respondWithData(res, 'SUCCESS', "Email updated successfully", userData);
@@ -349,7 +353,7 @@ export const updateUser = async (req, res) => {
             isAdmin: user.isAdmin,
             dpImage: user.dpImage,
             userAmount: user.userAmount,
-            portfolio: user.portfolio
+            portfolio: [formattedPortfolio]
           };
 
           return respondWithData(res, 'SUCCESS', "Phone updated successfully", userData);
@@ -384,7 +388,7 @@ export const updateUser = async (req, res) => {
         isAdmin: user.isAdmin,
         dpImage: user.dpImage,
         userAmount: user.userAmount,
-        portfolio: user.portfolio
+        portfolio: [formattedPortfolio]
       };
 
       console.log('User ' + fieldToUpdate + ' updated successfully');

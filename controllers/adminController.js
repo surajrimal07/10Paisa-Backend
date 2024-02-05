@@ -41,7 +41,20 @@ export const deleteUserByEmail = async (req, res) => {
     }
 };
 
+export const getAllPortfolios = async (req, res) => {
+    try {
+        const portfolios = await Portfolio.find();
 
+        if (!portfolios || portfolios.length === 0) {
+            console.log("No portfolios found");
+            return respondWithError(res, 'NOT_FOUND', 'No portfolios found');
+        }
+
+        return respondWithData(res, 'SUCCESS', 'Portfolios fetched successfully', portfolios);
+    } catch (error) {
+        return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'An error occurred while fetching portfolios');
+    }
+};
 
 export const editUserByEmail = async (req, res) => {
     const { email, newData } = req.body;
