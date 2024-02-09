@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import Asset from '../models/assetModel.js';
 import Portfolio from '../models/portfolioModel.js';
-import { respondWithData, respondWithError, respondWithSuccess } from '../utils/response_utils.js';
+import { respondWithData, respondWithError } from '../utils/response_utils.js';
 
 export const createPortfolio = async (req, res) => {
   try {
@@ -19,8 +19,12 @@ export const createPortfolio = async (req, res) => {
     const maxPortfolio = await Portfolio.findOne({ userEmail }, {}, { sort: { id: -1 } });
 
     const newPortfolioId = maxPortfolio ? maxPortfolio.id + 1 : 1;
-    const portfolio = await Portfolio.create({ userEmail, name: portfolioName, id: newPortfolioId });
-    return respondWithData(res, 'SUCCESS', 'Portfolio created successfully', portfolio);
+
+    await Portfolio.create({ userEmail, name: portfolioName, id: newPortfolioId });
+
+    const data = await  formatPortfolios(userEmail);
+
+    return respondWithData(res, 'SUCCESS', 'Portfolio created successfully', data);
 
   } catch (error) {
     console.error(error);
@@ -80,7 +84,10 @@ export const addStockToPortfolio = async (req, res) => {
       }
 
       await newPortfolio.save();
-      return respondWithData(res, 'SUCCESS', 'Stock added to portfolio successfully', newPortfolio);
+
+      const data = await  formatPortfolios(userEmail);
+      return res.status(200).json({ success: true, message: 'Stock added to portfolio successfully', data});
+
     }
 
     const isStockValid = await isStockExists(symbol);
@@ -152,7 +159,9 @@ export const addStockToPortfolio = async (req, res) => {
 
     await existingPortfolio.save();
 
-    return respondWithData(res, 'SUCCESS', 'Stock added to portfolio successfully', existingPortfolio);
+    const data = await  formatPortfolios(email);
+    return res.status(200).json({ success: true, message: 'Stock added to portfolio successfully', data});
+
   } catch (error) {
     console.error(error);
     return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'An error occurred while adding stock to portfolio');
@@ -259,7 +268,9 @@ export const deletePortfolio = async (req, res) => {
     return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'An error occurred while deleting portfolio');
     }
 
-    return respondWithData(res, 'SUCCESS', 'Portfolio deleted successfully', delectedportfolio);
+    const data = await  formatPortfolios(userEmail);
+    return res.status(200).json({ success: true, message: 'Stock removed from portfolio successfully', data});
+
   } catch (error) {
     console.error(error);
     return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'An error occurred while deleting portfolio');
@@ -292,8 +303,12 @@ export const renamePortfolio = async (req, res) => {
     }
 
     portfolio.name = newName;
-    const updatedPortfolio = await portfolio.save();
-    return respondWithData(res, 'SUCCESS', 'Portfolio renamed successfully', updatedPortfolio);
+
+    await portfolio.save();
+
+    const data = await  formatPortfolios(userEmail);
+    return res.status(200).json({ success: true, message: 'Portfolio renamed successfully', data});
+
 
   } catch (error) {
     return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'An error occurred while renaming portfolio');
@@ -337,7 +352,6 @@ export const renamePortfolio = async (req, res) => {
       if (quantity === existingQuantity) {
         portfolio.stocks.splice(stockIndex, 1);
       } else {
-        //remove stock completely if it's quantity becomes zero
 
         portfolio.stocks[stockIndex].quantity -= quantity;
 
@@ -348,7 +362,10 @@ export const renamePortfolio = async (req, res) => {
 
       await portfolio.save();
 
-      return respondWithSuccess(res, 'SUCCESS', 'Stock removed from portfolio successfully');
+      const data = await  formatPortfolios(email);
+      return res.status(200).json({ success: true, message: 'Stock removed from portfolio successfully', data});
+
+
     } catch (error) {
       console.error(error);
       res.status(500).json({ success: false, message: 'Internal Server Error' });
@@ -371,11 +388,63 @@ export const renamePortfolio = async (req, res) => {
         return respondWithError(res, 'NOT_FOUND', 'No portfolios found');
       }
 
-      const formattedPortfolios = portfolios.map(portfolio => {
+      const data = await  formatPortfolios(useremail);
+      return res.status(200).json({ success: true, message: 'Portfolios fetched successfully', data});
+
+    } catch (error) {
+      return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'An error occurred while fetching portfolios');
+    }
+  };
+
+  export const formatPortfolios = async (userEmail) => {
+    try {
+      const portfolios = await Portfolio.find({ userEmail });
+
+            //calculate totalPortfolioCost
+            const totalPortfolioCost = portfolios.reduce((total, portfolio) => total + portfolio.portfoliocost, 0);
+            //calculate totalPortfolioValue
+            const totalPortfolioValue = portfolios.reduce((total, portfolio) => total + portfolio.portfoliovalue, 0);
+            //calculate totalPortfolioReturns
+            const totalPortfolioReturns = totalPortfolioValue - totalPortfolioCost;
+            //calculate totalPortfolioReturnsPercentage
+            const totalPortfolioReturnsPercentage = parseFloat(((totalPortfolioReturns / totalPortfolioCost) * 100).toFixed(2));
+            //calculate portfolioCount
+            const portfolioCount = portfolios.length;
+            //calculate averagePortfolioReturns
+            const averagePortfolioReturns = parseFloat((totalPortfolioReturns / portfolioCount).toFixed(2));
+            //calculate averagePortfolioReturnsPercentage
+            const averagePortfolioReturnsPercentage = parseFloat((totalPortfolioReturnsPercentage / portfolioCount).toFixed(2));
+            //calculate profitable portfolio
+            const profitablePortfolios = portfolios.filter(portfolio => portfolio.portfoliovalue > portfolio.portfoliocost).length;
+            //calculate unprofitable portfolio
+            const unprofitablePortfolios = portfolios.filter(portfolio => portfolio.portfoliovalue < portfolio.portfoliocost).length;
+            //calculate recommendation
+            const recommendation = 'Look for booking your profits';
+            //total number of stocks held in all portfolios
+            const totalStocks = portfolios.reduce((total, portfolio) => total + portfolio.stocks.length, 0);
+            //total units of stocks held in all portfolios
+            const totalUnits = portfolios.reduce((total, portfolio) => total + portfolio.totalunits, 0);
+
+            const portfolioData = {
+              totalPortfolioCost,
+              totalPortfolioValue,
+              totalPortfolioReturns,
+              totalPortfolioReturnsPercentage,
+              portfolioCount,
+              averagePortfolioReturns,
+              averagePortfolioReturnsPercentage,
+              profitablePortfolios,
+              unprofitablePortfolios,
+              recommendation,
+              totalStocks,
+              totalUnits
+            };
+
+        const formattedPortfolios = portfolios.map((portfolio) => {
         const { __v, _id, ...rest } = portfolio._doc;
         const recommendation = generateRecommendation({ portfolio });
         const returns = (portfolio.portfoliovalue - portfolio.portfoliocost) / portfolio.portfoliocost * 100;
-        const percentage = parseFloat(returns.toFixed(1));
+        const percentage = returns !== null && !isNaN(returns) ? parseFloat(returns.toFixed(1)) : 0;
 
         return {
           _id,
@@ -391,12 +460,14 @@ export const renamePortfolio = async (req, res) => {
           percentage
         };
       });
-      return res.status(200).json({ portfolio: formattedPortfolios });
+
+      const formPortfolios = {portfolio: formattedPortfolios, portfolioData: portfolioData};
+
+      return formPortfolios;
     } catch (error) {
-      return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'An error occurred while fetching portfolios');
+      console.error(error);
     }
   };
-
 
   //very basic and logically flawed recommendation system //just for assingment purpose only
   const generateRecommendation = ({ portfolio }) => {
@@ -411,6 +482,10 @@ export const renamePortfolio = async (req, res) => {
     };
 
     const returnPercentage = calculateReturnPercentage();
+
+    if (returnPercentage == 0) {
+      return "Please add stocks to get recommendation";
+    }
 
     if (returnPercentage > 50) {
       return "Look for booking your profits";

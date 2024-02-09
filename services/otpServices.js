@@ -18,14 +18,21 @@ export const sendOTP = (params, callback) => {
     const data = `${params.email}.${otp}.${expires}`;
     const hash = crypto.createHmac("sha256", key).update(data).digest("hex");
     const fullhash = `${hash}.${expires}`;
-    console.log(hash);
-    console.log(fullhash);
+    // console.log(hash);
+    // console.log(fullhash);
 
-    const otpMessage = `Dear user, ${otp} is the one time password for signup`;
+    const otpMessage = `Dear User,
+        Thank you for choosing to join 10Paisa! Your One-Time Password (OTP) for registration is: ${otp}
+        Please use this OTP to complete your registration process.
+        If you did not initiate this registration or have any concerns, please contact our support team immediately.
+
+        Best Regards,
+        The 10Paisa Team`;
+
 
     const model = {
         email: params.email,
-        subject: "10Paisa Registration OTP",
+        subject: "Welcome to 10Paisa",
         body: otpMessage
     };
 
@@ -44,25 +51,25 @@ export const verifyOTP = (params, callback) => {
     }
     const [hashValue, expires] = params.hash.split('.');
     const now = Date.now();
-    console.log(params.email);
-    console.log(params.otp);
-    console.log(params.hash);
-    console.log(hashValue);
+    // console.log(params.email);
+    // console.log(params.otp);
+    // console.log(params.hash);
+    // console.log(hashValue);
 
 
     if (now > parseInt(expires)) {
-        console.log("Otp Expired")
+        //console.log("Otp Expired")
         return callback("OTP Expired");
     }
 
     const data = `${params.email}.${params.otp}.${expires}`;
-    console.log(params.email,params.hash,params.otp)
+   // console.log(params.email,params.hash,params.otp)
     const newCalculatedHash = crypto.createHmac("sha256", key).update(data).digest("hex");
-    console.log(newCalculatedHash);
-    console.log(hashValue);
+    // console.log(newCalculatedHash);
+    // console.log(hashValue);
 
     if (newCalculatedHash === hashValue) {
-        console.log("Otp Matched, Success")
+       // console.log("Otp Matched, Success")
         return callback(null, "Success");
     }
     return callback("Invalid OTP");
@@ -82,7 +89,15 @@ export const forgotpass = (emails, callback) => {
     const hash = crypto.createHmac("sha256", key).update(data).digest("hex");
     const fullhash = `${hash}.${expires}`;
 
-    const otpMessage = `Dear user, ${otp} is the one time password your password reset.`;
+    const otpMessage = `Dear User,
+
+        We've received a request to reset your password. Your One-Time Password (OTP) for password reset is: ${otp}
+        Please use this OTP to reset your password. For security reasons, please do not share this OTP with anyone.
+        If you did not request this password reset or have any concerns, please disregard this email or contact our support team immediately.
+
+        Best Regards,
+        The 10Paisa Team`;
+
 
     const model = {
         email: emails,
@@ -90,8 +105,8 @@ export const forgotpass = (emails, callback) => {
         body: otpMessage
     };
 
-    console.log("Otp generated from backend "+ otp +" hash is "+ fullhash)
-    console.log(otpMessage)
+    // console.log("Otp generated from backend "+ otp +" hash is "+ fullhash)
+    // console.log(otpMessage)
 
     emailServices.sendEmail(model, (error, result) => {
         if (error) {

@@ -118,6 +118,14 @@ export const createUser = async (req, res) => {
 };
 
 const formatPortfolioData = (portfolio) => {
+  if (Array.isArray(portfolio)) {
+    return portfolio.map((singlePortfolio) => formatSinglePortfolio(singlePortfolio));
+  } else {
+    return formatSinglePortfolio(portfolio);
+  }
+};
+
+const formatSinglePortfolio = (portfolio) => {
   return {
     _id: portfolio._id,
     id: portfolio.id,
@@ -132,6 +140,23 @@ const formatPortfolioData = (portfolio) => {
     percentage: portfolio.percentage,
   };
 };
+
+
+// const formatPortfolioData = (portfolio) => {
+//   return {
+//     _id: portfolio._id,
+//     id: portfolio.id,
+//     name: portfolio.name,
+//     userEmail: portfolio.userEmail,
+//     stocks: portfolio.stocks,
+//     totalunits: portfolio.totalunits,
+//     gainLossRecords: portfolio.gainLossRecords,
+//     portfoliocost: portfolio.portfoliocost,
+//     portfoliovalue: portfolio.portfoliovalue,
+//     recommendation: portfolio.recommendation,
+//     percentage: portfolio.percentage,
+//   };
+// };
 
 //
 export const loginUser = async (req, res) => {
@@ -176,20 +201,16 @@ export const loginUser = async (req, res) => {
 
 export const forgetPass = async (req, res) => {
   const email = req.body.email;
-  console.log("Received email: " + email);
+ // console.log("Received email: " + email);
 
   try {
       const user = await User.findOne({ email });
       if (user) {
-          console.log("Existing user found: " + email);
+          //console.log("Existing user found: " + email);
           const hash = await forgetPassword(email);
           return respondWithData(res, 'SUCCESS', "OTP Sent successfully", hash);
-          // res.status(200).json({success: true,
-          //     message: "OTP Sent successfully",
-          //     hash: hash
-          // });
       } else {
-        console.log("Existing user not found");
+        //console.log("Existing user not found");
         return respondWithError(res, 'NOT_FOUND', "Email Not found");
           // res.status(404).json({success: false,
           //     message: "Email Not found"
@@ -254,23 +275,22 @@ export const updateUser = async (req, res) => {
   const userAmount = req.body.useramount;
 
   if (!email ) {
-    return respondWithError(res, 'BAD_REQUEST', "User token missing");
+    return respondWithError(res, 'BAD_REQUEST', "User email is missing");
   }
   if (!fieldToUpdate) {
     return respondWithError(res, 'BAD_REQUEST', "Field to update missing");
   }
 
   try {
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email })
 
     if (!user) {
       console.log("User not found");
       return respondWithError(res, 'NOT_FOUND', "User not found");
     }
-
     const populatedPortfolio = await Portfolio.find({ userEmail: email });
 
-    const formattedPortfolio = formatPortfolioData(populatedPortfolio)
+    const formattedPortfolio = formatPortfolioData(populatedPortfolio);
 
     if (fieldToUpdate === 'name') {
       console.log("Username updated, new "+fieldToUpdate+ " is "+valueToUpdate)
@@ -316,7 +336,7 @@ export const updateUser = async (req, res) => {
             isAdmin: savedUser.isAdmin,
             dpImage: savedUser.dpImage,
             userAmount: savedUser.userAmount,
-            portfolio: [formattedPortfolio]
+            portfolio: formattedPortfolio
           };
 
           return respondWithData(res, 'SUCCESS', "Email updated successfully", userData);
@@ -353,7 +373,7 @@ export const updateUser = async (req, res) => {
             isAdmin: user.isAdmin,
             dpImage: user.dpImage,
             userAmount: user.userAmount,
-            portfolio: [formattedPortfolio]
+            portfolio: formattedPortfolio
           };
 
           return respondWithData(res, 'SUCCESS', "Phone updated successfully", userData);
@@ -388,7 +408,7 @@ export const updateUser = async (req, res) => {
         isAdmin: user.isAdmin,
         dpImage: user.dpImage,
         userAmount: user.userAmount,
-        portfolio: [formattedPortfolio]
+        portfolio: formattedPortfolio
       };
 
       console.log('User ' + fieldToUpdate + ' updated successfully');
@@ -472,7 +492,8 @@ export const fetchToken = async (req, res) => {
 };
 
 export const deleteAccount = async (req, res) => {
-  const email = req.body.token;
+
+  const email = req.body.email;
   const passwords = req.body.password;
   try {
     const user = await User.findOne({ email: email });

@@ -1,11 +1,32 @@
 import axios from 'axios';
 import cheerio from 'cheerio';
+import storage from 'node-persist';
 import { headers } from '../utils/headers.js';
+await storage.init();
+
+const fetchFromCache = async (cacheKey) => {
+    try {
+      const cachedData = await storage.getItem(cacheKey);
+      if (cachedData) {
+        return cachedData;
+      }
+      return null;
+    } catch (error) {
+      console.error('Error fetching data from cache:', error.message);
+      throw new Error('Error fetching data from cache');
+    }
+  };
+
 
 export async function metalPriceExtractor(asset) {
   const url = "https://www.hamropatro.com/gold";
 
   try {
+    // const cachedData = await fetchFromCache('metalPriceExtractor');
+    // if (cachedData !== null) {
+    //   return cachedData;
+    // }
+
       const response = await axios.get(url, { headers });
       const html = response.data;
       const $ = cheerio.load(html);
@@ -20,10 +41,10 @@ export async function metalPriceExtractor(asset) {
           assetPrice = await extractsilver($);
       }
 
-
       if (assetPrice) {
         const mappedAsset = mapAsset(asset);
         const formattedLtp = parseFloat(assetPrice.replace(/,/g, '')).toString();
+        //await storage.setItem('metalPriceExtractor', tableData);
         return { name: mappedAsset, category: 'Metals', sector: 'Precious Metals', ltp: formattedLtp, unit: 'Tola' };
     } else {
         console.log(`Price for ${asset} not found`);

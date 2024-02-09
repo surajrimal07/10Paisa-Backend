@@ -2,8 +2,9 @@ import axios from 'axios';
 import cheerio from 'cheerio';
 import fs from 'fs/promises';
 import { JSDOM } from 'jsdom';
+import storage from 'node-persist';
 import nepseUrls from '../middleware/nepseapiUrl.js';
-
+await storage.init();
 
 export async function fetchDataAndMapToAssetModel() {
   try {
@@ -26,6 +27,18 @@ export async function fetchDataAndMapToAssetModel() {
     throw error;
   }
 }
+const fetchFromCache = async (cacheKey) => {
+  try {
+    const cachedData = await storage.getItem(cacheKey);
+    if (cachedData) {
+      return cachedData;
+    }
+    return null;
+  } catch (error) {
+    console.error('Error fetching data from cache:', error.message);
+    throw new Error('Error fetching data from cache');
+  }
+};
 
 // export async function fetchSecurityData(indexId) {
 //   try {
@@ -73,99 +86,96 @@ export async function fetchDataAndMapToAssetModel() {
 //   }
 // }
 
-export async function fetchTopGainers() {
-  try {
-    const gainers = await axios.get(nepseUrls.Gainer_URL);
-    const loosers = await axios.get(nepseUrls.Looser_URL);
-    const gain = gainers.data;
-    const lose = loosers.data;
+// export async function fetchTopGainers() {
+//   try {
+//     const gainers = await axios.get(nepseUrls.Gainer_URL);
+//     const loosers = await axios.get(nepseUrls.Looser_URL);
+//     const gain = gainers.data;
+//     const lose = loosers.data;
 
-    const mappedGainers = gain.map(item => ({
-      symbol: item.symbol,
-      ltp: item.ltp || 0,
-      pointChange: item.pointChange || 0,
-      percentageChange: parseFloat(item.percentageChange) || 0,
-      securityId: item.securityId || 0,
-    }));
+//     const mappedGainers = gain.map(item => ({
+//       symbol: item.symbol,
+//       ltp: item.ltp || 0,
+//       pointChange: item.pointChange || 0,
+//       percentageChange: parseFloat(item.percentageChange) || 0,
+//       securityId: item.securityId || 0,
+//     }));
 
-    const mappedLosers = lose.map(item => ({
-      symbol: item.symbol,
-      ltp: item.ltp || 0,
-      pointChange: item.pointChange || 0,
-      percentageChange: parseFloat(item.percentageChange) || 0,
-      securityId: item.securityId || 0,
-    }));
+//     const mappedLosers = lose.map(item => ({
+//       symbol: item.symbol,
+//       ltp: item.ltp || 0,
+//       pointChange: item.pointChange || 0,
+//       percentageChange: parseFloat(item.percentageChange) || 0,
+//       securityId: item.securityId || 0,
+//     }));
 
-    const mergedData = [...mappedGainers, ...mappedLosers];
-    mergedData.sort((a, b) => b.percentageChange - a.percentageChange);
+//     const mergedData = [...mappedGainers, ...mappedLosers];
+//     mergedData.sort((a, b) => b.percentageChange - a.percentageChange);
 
-    return mergedData;
-  } catch (error) {
-    console.error(`Error fetching data:`, error.message);
-    throw error;
-  }
-}
+//     return mergedData;
+//   } catch (error) {
+//     console.error(`Error fetching data:`, error.message);
+//     throw error;
+//   }
+// }
 
-export async function fetchturnvolume() {
-  try {
-    const turn = await axios.get(nepseUrls.Turnover_URL);
-    const turnover = turn.data;
-    const top10Turnover = turnover.slice(0, 10);
+// export async function fetchturnvolume() {
+//   try {
+//     const turn = await axios.get(nepseUrls.Turnover_URL);
+//     const turnover = turn.data;
+//     const top10Turnover = turnover.slice(0, 10);
 
-    const mappedTurnover = top10Turnover.map(item => {
-      const symbol = item.symbol || '';
-      const turnoverValue = item.turnover || 0;
-      const ltp = item.closingPrice || 0;
-      const name = item.securityName || '';
-      const securityId = item.securityId || 0;
+//     const mappedTurnover = top10Turnover.map(item => {
+//       const symbol = item.symbol || '';
+//       const turnoverValue = item.turnover || 0;
+//       const ltp = item.closingPrice || 0;
+//       const name = item.securityName || '';
+//       const securityId = item.securityId || 0;
 
-      return {
-        symbol,
-        turnover: turnoverValue,
-        ltp,
-        name,
-        securityId,
-      };
-    });
+//       return {
+//         symbol,
+//         turnover: turnoverValue,
+//         ltp,
+//         name,
+//         securityId,
+//       };
+//     });
 
-    return mappedTurnover;
-  } catch (error) {
-    console.error(`Error fetching data:`, error.message);
-    throw error;
-  }
-}
-
-//fetch volume
-export async function fetchvolume() {
-  try {
-    const vol = await axios.get(nepseUrls.Volume_URL);
-    const volume = vol.data;
-    const top10Volume = volume.slice(0, 10);
-
-    const mappedVolume = top10Volume.map(item => {
-      const symbol = item.symbol || '';
-      const shareTraded = item.shareTraded || 0;
-      const ltp = item.closingPrice || 0;
-      const name = item.securityName || '';
-      const securityId = item.securityId || 0;
-
-      return {
-        symbol,
-        turnover: shareTraded,
-        ltp,
-        name,
-        securityId,
-      };
-    });
-    return mappedVolume;
-  } catch (error) {
-    console.error(`Error fetching data:`, error.message);
-    throw error;
-  }
-}
+//     return mappedTurnover;
+//   } catch (error) {
+//     console.error(`Error fetching data:`, error.message);
+//     throw error;
+//   }
+// }
 
 
+// export async function fetchvolume() {
+//   try {
+//     const vol = await axios.get(nepseUrls.Volume_URL);
+//     const volume = vol.data;
+//     const top10Volume = volume.slice(0, 10);
 
+//     const mappedVolume = top10Volume.map(item => {
+//       const symbol = item.symbol || '';
+//       const shareTraded = item.shareTraded || 0;
+//       const ltp = item.closingPrice || 0;
+//       const name = item.securityName || '';
+//       const securityId = item.securityId || 0;
+
+//       return {
+//         symbol,
+//         turnover: shareTraded,
+//         ltp,
+//         name,
+//         securityId,
+//       };
+//     });
+//     return mappedVolume;
+//   } catch (error) {
+//     console.error(`Error fetching data:`, error.message);
+//     throw error;
+//   }
+// }
 
 //preparing to switch to sharesansar as data provider
 export async function FetchSingularDataOfAsset() {
@@ -173,6 +183,10 @@ export async function FetchSingularDataOfAsset() {
   const todaySharePriceUrl = 'https://www.sharesansar.com/today-share-price';
 
   try {
+    const cachedData = await fetchFromCache('FetchSingularDataOfAsset');
+    if (cachedData !== null) {
+      return cachedData;
+    }
       const responseLiveTrading = await axios.get(liveTradingUrl);
 
       if (!responseLiveTrading.data) {
@@ -249,6 +263,8 @@ export async function FetchSingularDataOfAsset() {
               stock.category = 'stock';
           }
       });
+
+      await storage.setItem('FetchSingularDataOfAsset', stockDataWithName);
 
       return stockDataWithName;
 
@@ -342,6 +358,10 @@ export async function FetchOldData() {
   const hardcodedUrl = 'https://www.sharesansar.com/today-share-price';
 
   try {
+    const cachedData = await fetchFromCache('FetchOldData');
+    if (cachedData !== null) {
+      return cachedData;
+    }
       const response = await axios.get(hardcodedUrl);
 
       if (!response.data) {
@@ -400,6 +420,9 @@ export async function FetchOldData() {
       });
 
       const enrichedData = await AddCategoryAndSector(stockDataWithoutName);
+
+      await storage.setItem('FetchOldData', enrichedData);
+
       return enrichedData;
 
   } catch (error) {
@@ -412,6 +435,11 @@ export const topgainersShare = async () => {
   const url = "https://www.sharesansar.com/top-gainers?draw=1&columns%5B0%5D%5Bdata%5D=DT_Row_Index&columns%5B0%5D%5Bname%5D=&columns%5B0%5D%5Bsearchable%5D=false&columns%5B0%5D%5Borderable%5D=false&columns%5B0%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B0%5D%5Bsearch%5D%5Bregex%5D=false&columns%5B1%5D%5Bdata%5D=symbol&columns%5B1%5D%5Bname%5D=&columns%5B1%5D%5Bsearchable%5D=false&columns%5B1%5D%5Borderable%5D=false&columns%5B1%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B1%5D%5Bsearch%5D%5Bregex%5D=false&columns%5B2%5D%5Bdata%5D=companyname&columns%5B2%5D%5Bname%5D=&columns%5B2%5D%5Bsearchable%5D=false&columns%5B2%5D%5Borderable%5D=false&columns%5B2%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B2%5D%5Bsearch%5D%5Bregex%5D=false&columns%5B3%5D%5Bdata%5D=close&columns%5B3%5D%5Bname%5D=&columns%5B3%5D%5Bsearchable%5D=false&columns%5B3%5D%5Borderable%5D=false&columns%5B3%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B3%5D%5Bsearch%5D%5Bregex%5D=false&columns%5B4%5D%5Bdata%5D=change_pts&columns%5B4%5D%5Bname%5D=&columns%5B4%5D%5Bsearchable%5D=false&columns%5B4%5D%5Borderable%5D=false&columns%5B4%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B4%5D%5Bsearch%5D%5Bregex%5D=false&columns%5B5%5D%5Bdata%5D=diff_per&columns%5B5%5D%5Bname%5D=&columns%5B5%5D%5Bsearchable%5D=false&columns%5B5%5D%5Borderable%5D=false&columns%5B5%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B5%5D%5Bsearch%5D%5Bregex%5D=false&start=0&length=50&search%5Bvalue%5D=&search%5Bregex%5D=false&_=1702613311864";
 
   try {
+    const cachedData = await fetchFromCache('topgainersShare');
+    if (cachedData !== null) {
+      return cachedData;
+    }
+
     const response = await axios.get(url, {
       headers: {
         "accept": "application/json, text/javascript, */*; q=0.01",
@@ -435,9 +463,6 @@ export const topgainersShare = async () => {
       throw new Error('Data is not an array.');
     }
 
-   // console.log('Data:', data);
-
-    // Process the data
     const processedData = data.map(item => ({
       symbol: item.symbol.replace(/<[^>]*>/g, ''),
       name: item.companyname.replace(/<[^>]*>/g, ''),
@@ -446,8 +471,7 @@ export const topgainersShare = async () => {
       percentchange: parseFloat(item.diff_per),
     }));
 
-    //console.log('Processed Data:', processedData);
-
+    await storage.setItem('topgainersShare', processedData);
     return processedData;
   } catch (error) {
     console.error(error);
@@ -460,6 +484,11 @@ export const topLosersShare = async () => {
   const url = "https://www.sharesansar.com/top-losers?draw=1&columns%5B0%5D%5Bdata%5D=DT_Row_Index&columns%5B0%5D%5Bname%5D=&columns%5B0%5D%5Bsearchable%5D=false&columns%5B0%5D%5Borderable%5D=false&columns%5B0%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B0%5D%5Bsearch%5D%5Bregex%5D=false&columns%5B1%5D%5Bdata%5D=symbol&columns%5B1%5D%5Bname%5D=&columns%5B1%5D%5Bsearchable%5D=false&columns%5B1%5D%5Borderable%5D=false&columns%5B1%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B1%5D%5Bsearch%5D%5Bregex%5D=false&columns%5B2%5D%5Bdata%5D=companyname&columns%5B2%5D%5Bname%5D=&columns%5B2%5D%5Bsearchable%5D=false&columns%5B2%5D%5Borderable%5D=false&columns%5B2%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B2%5D%5Bsearch%5D%5Bregex%5D=false&columns%5B3%5D%5Bdata%5D=close&columns%5B3%5D%5Bname%5D=&columns%5B3%5D%5Bsearchable%5D=false&columns%5B3%5D%5Borderable%5D=false&columns%5B3%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B3%5D%5Bsearch%5D%5Bregex%5D=false&columns%5B4%5D%5Bdata%5D=change_pts&columns%5B4%5D%5Bname%5D=&columns%5B4%5D%5Bsearchable%5D=false&columns%5B4%5D%5Borderable%5D=false&columns%5B4%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B4%5D%5Bsearch%5D%5Bregex%5D=false&columns%5B5%5D%5Bdata%5D=diff_per&columns%5B5%5D%5Bname%5D=&columns%5B5%5D%5Bsearchable%5D=false&columns%5B5%5D%5Borderable%5D=false&columns%5B5%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B5%5D%5Bsearch%5D%5Bregex%5D=false&start=0&length=50&search%5Bvalue%5D=&search%5Bregex%5D=false&_=1702614671747";
 
   try {
+    const cachedData = await fetchFromCache('topLosersShare');
+    if (cachedData !== null) {
+      return cachedData;
+    }
+
     const response = await axios.get(url, {
       headers: {
         "accept": "application/json, text/javascript, */*; q=0.01",
@@ -491,7 +520,7 @@ export const topLosersShare = async () => {
       percentchange: parseFloat(item.diff_per),
     }));
 
-    //console.log('Processed Data:', processedData);
+    await storage.setItem('topLosersShare', processedData);
 
     return processedData;
   } catch (error) {
@@ -504,6 +533,12 @@ export const topTurnoversShare = async () => {
   const url = "https://www.sharesansar.com/top-turnovers?draw=1&columns%5B0%5D%5Bdata%5D=DT_Row_Index&columns%5B0%5D%5Bname%5D=&columns%5B0%5D%5Bsearchable%5D=false&columns%5B0%5D%5Borderable%5D=false&columns%5B0%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B0%5D%5Bsearch%5D%5Bregex%5D=false&columns%5B1%5D%5Bdata%5D=symbol&columns%5B1%5D%5Bname%5D=&columns%5B1%5D%5Bsearchable%5D=false&columns%5B1%5D%5Borderable%5D=false&columns%5B1%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B1%5D%5Bsearch%5D%5Bregex%5D=false&columns%5B2%5D%5Bdata%5D=companyname&columns%5B2%5D%5Bname%5D=&columns%5B2%5D%5Bsearchable%5D=false&columns%5B2%5D%5Borderable%5D=false&columns%5B2%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B2%5D%5Bsearch%5D%5Bregex%5D=false&columns%5B3%5D%5Bdata%5D=traded_amount&columns%5B3%5D%5Bname%5D=&columns%5B3%5D%5Bsearchable%5D=false&columns%5B3%5D%5Borderable%5D=false&columns%5B3%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B3%5D%5Bsearch%5D%5Bregex%5D=false&columns%5B4%5D%5Bdata%5D=close&columns%5B4%5D%5Bname%5D=&columns%5B4%5D%5Bsearchable%5D=false&columns%5B4%5D%5Borderable%5D=false&columns%5B4%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B4%5D%5Bsearch%5D%5Bregex%5D=false&start=0&length=50&search%5Bvalue%5D=&search%5Bregex%5D=false&_=1702618064106";
 
   try {
+    const cachedData = await fetchFromCache('topTurnoversShare');
+
+    if (cachedData !== null) {
+      return cachedData;
+    }
+
     const response = await axios.get(url, {
       headers: {
         "accept": "application/json, text/javascript, */*; q=0.01",
@@ -534,7 +569,7 @@ export const topTurnoversShare = async () => {
       ltp: parseFloat(item.close),
     }));
 
-   // console.log('Processed Data:', processedData);
+    await storage.setItem('topTurnoversShare', processedData);
 
     return processedData;
   } catch (error) {
@@ -548,6 +583,12 @@ export const topTradedShares = async () => {
   const url = "https://www.sharesansar.com/top-tradedshares?draw=1&columns%5B0%5D%5Bdata%5D=DT_Row_Index&columns%5B0%5D%5Bname%5D=&columns%5B0%5D%5Bsearchable%5D=false&columns%5B0%5D%5Borderable%5D=false&columns%5B0%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B0%5D%5Bsearch%5D%5Bregex%5D=false&columns%5B1%5D%5Bdata%5D=symbol&columns%5B1%5D%5Bname%5D=&columns%5B1%5D%5Bsearchable%5D=false&columns%5B1%5D%5Borderable%5D=false&columns%5B1%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B1%5D%5Bsearch%5D%5Bregex%5D=false&columns%5B2%5D%5Bdata%5D=companyname&columns%5B2%5D%5Bname%5D=&columns%5B2%5D%5Bsearchable%5D=false&columns%5B2%5D%5Borderable%5D=false&columns%5B2%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B2%5D%5Bsearch%5D%5Bregex%5D=false&columns%5B3%5D%5Bdata%5D=traded_quantity&columns%5B3%5D%5Bname%5D=&columns%5B3%5D%5Bsearchable%5D=false&columns%5B3%5D%5Borderable%5D=false&columns%5B3%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B3%5D%5Bsearch%5D%5Bregex%5D=false&columns%5B4%5D%5Bdata%5D=close&columns%5B4%5D%5Bname%5D=&columns%5B4%5D%5Bsearchable%5D=false&columns%5B4%5D%5Borderable%5D=false&columns%5B4%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B4%5D%5Bsearch%5D%5Bregex%5D=false&start=0&length=50&search%5Bvalue%5D=&search%5Bregex%5D=false&_=1702618649178";
 
   try {
+    const cachedData = await fetchFromCache('topTradedShares');
+
+    if (cachedData !== null) {
+      return cachedData;
+    }
+
     const response = await axios.get(url, {
       headers: {
         "accept": "application/json, text/javascript, */*; q=0.01",
@@ -580,7 +621,7 @@ export const topTradedShares = async () => {
       ltp: parseFloat(item.close),
     }));
 
-    //console.log('Processed Data:', processedData);
+    await storage.setItem('topTradedShares', processedData);
 
     return processedData;
   } catch (error) {
@@ -594,6 +635,13 @@ export const topTransactions = async () => {
   const url = "https://www.sharesansar.com/top-transactions?draw=1&columns%5B0%5D%5Bdata%5D=DT_Row_Index&columns%5B0%5D%5Bname%5D=&columns%5B0%5D%5Bsearchable%5D=false&columns%5B0%5D%5Borderable%5D=false&columns%5B0%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B0%5D%5Bsearch%5D%5Bregex%5D=false&columns%5B1%5D%5Bdata%5D=symbol&columns%5B1%5D%5Bname%5D=&columns%5B1%5D%5Bsearchable%5D=false&columns%5B1%5D%5Borderable%5D=false&columns%5B1%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B1%5D%5Bsearch%5D%5Bregex%5D=false&columns%5B2%5D%5Bdata%5D=companyname&columns%5B2%5D%5Bname%5D=&columns%5B2%5D%5Bsearchable%5D=false&columns%5B2%5D%5Borderable%5D=false&columns%5B2%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B2%5D%5Bsearch%5D%5Bregex%5D=false&columns%5B3%5D%5Bdata%5D=no_trade&columns%5B3%5D%5Bname%5D=&columns%5B3%5D%5Bsearchable%5D=false&columns%5B3%5D%5Borderable%5D=false&columns%5B3%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B3%5D%5Bsearch%5D%5Bregex%5D=false&columns%5B4%5D%5Bdata%5D=close&columns%5B4%5D%5Bname%5D=&columns%5B4%5D%5Bsearchable%5D=false&columns%5B4%5D%5Borderable%5D=false&columns%5B4%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B4%5D%5Bsearch%5D%5Bregex%5D=false&start=0&length=50&search%5Bvalue%5D=&search%5Bregex%5D=false&_=1702618782413";
 
   try {
+
+    const cachedData = await fetchFromCache('topTransactions');
+
+    if (cachedData !== null) {
+      return cachedData;
+    }
+
     const response = await axios.get(url, {
       headers: {
         "accept": "application/json, text/javascript, */*; q=0.01",
@@ -626,7 +674,7 @@ export const topTransactions = async () => {
       ltp: parseFloat(item.close),
     }));
 
-    //console.log('Processed Data:', processedData);
+    await storage.setItem('topTransactions', processedData);
 
     return processedData;
   } catch (error) {
@@ -635,6 +683,7 @@ export const topTransactions = async () => {
   }
 };
 
+//not used yet
 export async function fetchIndexes() {
   try {
     const url = 'https://www.sharesansar.com/live-trading'
@@ -689,6 +738,12 @@ export async function fetchIndexes() {
 
 export async function extractIndex() {
   try {
+    const cachedData = await fetchFromCache('extractIndex');
+
+    if (cachedData !== null) {
+      return cachedData;
+    }
+
     const targetUrl = 'https://www.sharesansar.com/live-trading';
     const response = await axios.get(targetUrl);
     const html = response.data;
@@ -713,6 +768,8 @@ export async function extractIndex() {
       turnover,
     };
 
+    await storage.setItem('extractIndex', nepseIndexData);
+
     return nepseIndexData;
   } catch (error) {
     console.error('Error fetching or parsing the HTML:', error.message);
@@ -721,6 +778,12 @@ export async function extractIndex() {
 
 export async function extractIndexDateWise() {
   try {
+
+    const indexDataByDateCached = await fetchFromCache('extractIndexDateWise');
+
+    if (indexDataByDateCached !== null) {
+      return indexDataByDateCached }
+
     const targetUrl = 'https://merolagani.com/Indices.aspx';
     const response = await axios.get(targetUrl);
     const html = response.data;
@@ -743,10 +806,12 @@ export async function extractIndexDateWise() {
       };
     }).get();
 
+    await storage.setItem('extractIndexDateWise', indexData);
+
     return indexData;
   } catch (error) {
     console.error('Error fetching or parsing the HTML:', error.message);
   }
 }
 
-export default {extractIndexDateWise,extractIndex,fetchDataAndMapToAssetModel,fetchIndexes,fetchTopGainers, fetchturnvolume, fetchvolume, FetchSingularDataOfAsset,GetDebentures,FetchOldData, topgainersShare, topLosersShare, topTradedShares, topTurnoversShare, topTransactions};
+export default {extractIndexDateWise,extractIndex,fetchDataAndMapToAssetModel,fetchIndexes, FetchSingularDataOfAsset,GetDebentures,FetchOldData, topgainersShare, topLosersShare, topTradedShares, topTurnoversShare, topTransactions};

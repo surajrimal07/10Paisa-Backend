@@ -1,19 +1,36 @@
 import storage from 'node-persist';
-import { AssetMergedData } from '../controllers/assetControllers.js';
+import { extractIndex, extractIndexDateWise } from '../server/assetServer.js';
 
 const CACHE_KEYS = [
-  'allAssetNames',
-  'singleAsset',
-  'cacheKey',
-  'topGainers',
-  'commodity_cached',
-  'topTurnover',
-  'dashboardDataCached',
-  'topVolume',
-  'metal_cached', //ss
-  'atomic_asset_data', //ss
-  'topGainersCached', //ss
-  'indexDataCached'
+  // 'allAssetNames',
+  // 'singleAsset',
+  // 'cacheKey',
+  // 'topGainers',
+  // 'commodity_cached',
+  // 'topTurnover',
+  // 'dashboardDataCached',
+  // 'topVolume',
+  // 'metal_cached', //ss
+  // 'atomic_asset_data', //ss
+  // 'topGainersCached', //ss
+  // 'CombinedIndexData', //combined
+
+  //new keys //index
+  'extractIndex',  //server function
+  'extractIndexDateWise', //server function
+  //'CombinedIndexData',   //api function
+  //'indexData' //api function
+  'topTransactions', //server function
+  'topTradedShares', //server function
+  'topTurnoversShare', //server function
+  'topLosersShare', //server function
+  'topgainersShare',
+  'FetchOldData',
+  'FetchSingularDataOfAsset',
+  'tableData',
+  'fetchMetalPrices' //for now only this is used
+  //metalPriceExtractor
+
 ];
 
 const oneDayInMilliseconds = 24 * 60 * 60 * 1000;
@@ -58,7 +75,9 @@ async function wipeCachesAndRefreshData() {
       await Promise.all(CACHE_KEYS.map(key => storage.removeItem(key)));
 
       try {
-        await AssetMergedData();
+        await extractIndex();
+        await extractIndexDateWise();
+        //await AssetMergedData();
       } catch (error) {
         console.error('Error refreshing data:', error.message);
       }

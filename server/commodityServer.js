@@ -1,10 +1,30 @@
 import axios from 'axios';
 import cheerio from 'cheerio';
+import storage from 'node-persist';
+await storage.init();
+
+const fetchFromCache = async (cacheKey) => {
+    try {
+      const cachedData = await storage.getItem(cacheKey);
+      if (cachedData) {
+        return cachedData;
+      }
+      return null;
+    } catch (error) {
+      console.error('Error fetching data from cache:', error.message);
+      throw new Error('Error fetching data from cache');
+    }
+  };
 
 export async function commodityprices() {
     const url = 'https://ramropatro.com/vegetable';
 
     try {
+        const cachedData = await fetchFromCache('commodityprices');
+        if (cachedData !== null) {
+          return cachedData;
+        }
+
         const response = await axios.get(url);
         const html = response.data;
 
@@ -31,7 +51,8 @@ export async function commodityprices() {
             tableData.push(rowData);
         });
 
-        //console.log('Processed Data:', tableData);
+        await storage.setItem('commodityprices', tableData);
+
         return tableData;
     } catch (error) {
         console.error('Error:', error.message || error);

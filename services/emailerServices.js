@@ -32,8 +32,8 @@ const sendEmail = (params, callback) => {
         if (error) {
             return callback(error);
         } else {
-            console.log("line 24 of emailer service, email sent successfully");
-            console.log(info.response);
+            // console.log("line 24 of emailer service, email sent successfully");
+            // console.log(info.response);
             return callback(null, info.response);
         }
     });
