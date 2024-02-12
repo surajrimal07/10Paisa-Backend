@@ -8,6 +8,7 @@ export const createPortfolio = async (req, res) => {
     console.log('Create Portfolio Requested');
     const userEmail = req.body.email;
     const portfolioName = req.body.name;
+    const portfolioGoal = req.body.goal || 'Not Set';
 
     console.log(userEmail, portfolioName);
 
@@ -20,7 +21,7 @@ export const createPortfolio = async (req, res) => {
 
     const newPortfolioId = maxPortfolio ? maxPortfolio.id + 1 : 1;
 
-    await Portfolio.create({ userEmail, name: portfolioName, id: newPortfolioId });
+    await Portfolio.create({ userEmail, name: portfolioName, id: newPortfolioId, portfolioGoal: portfolioGoal});
 
     const data = await  formatPortfolios(userEmail);
 
@@ -456,6 +457,7 @@ export const renamePortfolio = async (req, res) => {
           gainLossRecords: rest.gainLossRecords,
           portfoliocost: rest.portfoliocost,
           portfoliovalue: rest.portfoliovalue,
+          portfolioGoal: rest.portfolioGoal,
           recommendation,
           percentage
         };

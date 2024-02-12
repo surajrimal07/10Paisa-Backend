@@ -13,8 +13,6 @@ export const createWatchlist = async (req, res) => {
     try {
       const user = await User.findOne({ email });
 
-      console.log("User found");
-
       if (!user) {
         console.log("User not found");
         return respondWithError(res, 'NOT_FOUND', 'User not found');
@@ -30,17 +28,18 @@ export const createWatchlist = async (req, res) => {
         user: user.email,
         name
       });
+      await newWatchlist.save();
 
-      console.log(" watchlist to be created is " + newWatchlist);
-
-      const savedWatchlist = await newWatchlist.save();
+      const userWatchlists = await Watchlist.find({ user: email });
 
      console.log("Watchlist created successfully");
-      return respondWithData(res, 'SUCCESS', 'Watchlist created successfully', savedWatchlist);
+
+      return respondWithData(res, 'SUCCESS', 'Watchlist created successfully', userWatchlists);
     } catch (error) {
       return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'An error occurred while creating the watchlist');
     }
   };
+
 
   //fetch watchlist //working
   export const getWatchlistsByUserEmail = async (req, res) => {
@@ -80,6 +79,8 @@ export const renameWatchlist = async (req, res) => {
     if (watchlist.user !== email) {
         return respondWithError(res, 'FORBIDDEN', 'You do not have permission to access this watchlist');}
 
+        console.log("Watchlist found");
+
     const existingWatchlistWithNewName = await Watchlist.findOne({
     user: email,
     name: newName,
@@ -92,8 +93,12 @@ export const renameWatchlist = async (req, res) => {
 
     watchlist.name = newName;
 
-    const updatedWatchlist = await watchlist.save();
-   return respondWithData(res, 'SUCCESS', 'Watchlist renamed successfully', updatedWatchlist);
+    await watchlist.save();
+
+    console.log("Watchlist renamed successfully");
+
+    const userWatchlists = await Watchlist.find({ user: email });
+   return respondWithData(res, 'SUCCESS', 'Watchlist renamed successfully', userWatchlists);
   } catch (error) {
     return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'An error occurred while renaming the watchlist');
   }
@@ -126,7 +131,9 @@ export const deleteWatchlist = async (req, res) => {
         return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'An error occurred while deleting the watchlist');
       }
 
-      return respondWithData(res, 'SUCCESS', 'Watchlist deleted successfully', deletedWatchlist);
+      const userWatchlists = await Watchlist.find({ user: email });
+
+      return respondWithData(res, 'SUCCESS', 'Watchlist deleted successfully', userWatchlists);
     } catch (error) {
       console.error('Error deleting watchlist:', error);
       return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'An error occurred while deleting the watchlist');
@@ -169,9 +176,13 @@ export const addStockToWatchlist = async (req, res) => {
     watchlist.stocks.push(stock.symbol);
 
     // Save the updated watchlist
-    const updatedWatchlist = await watchlist.save();
+    await watchlist.save();
 
-    return respondWithData(res, 'SUCCESS', 'Stock added to watchlist successfully', updatedWatchlist);
+    console.log("Stock added to watchlist successfully");
+
+    const userWatchlists = await Watchlist.find({ user: email });
+
+    return respondWithData(res, 'SUCCESS', 'Stock added to watchlist successfully', userWatchlists);
   } catch (error) {
     return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'Wrong Watchlist ID');
   }
@@ -194,7 +205,6 @@ export const removeStockFromWatchlist = async (req, res) => {
         return respondWithError(res, 'FORBIDDEN', 'You do not have permission to modify this watchlist');
       }
 
-
       // Check if the stock symbol exists in the watchlist
       const stocksUpper = stockSymbol ? stockSymbol.toString().toUpperCase() : '';
 
@@ -206,9 +216,11 @@ export const removeStockFromWatchlist = async (req, res) => {
       watchlist.stocks = watchlist.stocks.filter(symbol => symbol !== stocksUpper);
 
       // Save the updated watchlist
-      const updatedWatchlist = await watchlist.save();
+      await watchlist.save();
 
-      return respondWithData(res, 'SUCCESS', 'Stock removed from watchlist successfully', updatedWatchlist);
+      const userWatchlists = await Watchlist.find({ user: email });
+
+      return respondWithData(res, 'SUCCESS', 'Stock removed from watchlist successfully', userWatchlists);
     } catch (error) {
       return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'Wrong Watchlist ID');
     }

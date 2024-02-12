@@ -750,6 +750,7 @@ export async function extractIndex() {
     const $ = cheerio.load(html);
 
     const nepseIndexContainer = $('h4:contains("NEPSE Index")').closest('.mu-list');
+    let marketStatus = $('.btn.btn-success').text().trim(); //added new code
 
     const turnover = parseFloat(nepseIndexContainer.find('.mu-price').text().replace(/,/g, ''));
     const index = parseFloat(nepseIndexContainer.find('.mu-value').text().replace(/,/g, ''));
@@ -761,11 +762,16 @@ export async function extractIndex() {
 
     console.log("formatted date is ",formattedDate);
 
+    if (marketStatus === "") {
+      marketStatus = "Market Closed";
+  }
+
     const nepseIndexData = {
       date: formattedDate,
       index,
       percentageChange,
       turnover,
+      marketStatus
     };
 
     await storage.setItem('extractIndex', nepseIndexData);

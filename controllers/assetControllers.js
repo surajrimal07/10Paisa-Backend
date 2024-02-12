@@ -5,7 +5,6 @@ import { fileURLToPath } from 'url';
 import saveDataToJson from '../controllers/jsonControllers.js';
 import Asset from '../models/assetModel.js';
 import Commodity from '../models/commodityModel.js';
-//import HistoricPrice from '../models/historicModel.js';
 import { FetchOldData, FetchSingularDataOfAsset, extractIndex, extractIndexDateWise, topLosersShare, topTradedShares, topTransactions, topTurnoversShare, topgainersShare } from '../server/assetServer.js';
 import { commodityprices } from '../server/commodityServer.js';
 import { metalPriceExtractor } from '../server/metalServer.js';
@@ -13,17 +12,6 @@ import { oilExtractor } from '../server/oilServer.js';
 import { respondWithData, respondWithError } from '../utils/response_utils.js';
 await storage.init();
 
-
-//common functions
-// const fetchFromDatabase = async (collection) => {
-//   try {
-//     const dataFromDatabase = await collection.find();
-//     return dataFromDatabase;
-//   } catch (error) {
-//     console.error(`Error fetching data from the database for collection ${collection}:`, error.message);
-//     throw new Error(`Error fetching data from the database for collection ${collection}`);
-//   }
-// };
 
 const fetchFromCache = async (cacheKey) => {
   try {
@@ -1359,13 +1347,17 @@ export const CombinedIndexData = async (req, res) => {
       return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'Failed to fetch index data.');
     }
 
-    if (indexData.date === indexDataByDate[0].date || indexData.percentageChange === indexDataByDate[0].percentageChange) {
-      await storage.setItem('CombinedIndexData', indexDataByDate);
-      return respondWithData(res, 'SUCCESS', 'Data Fetched Successfully', indexDataByDate);
-    }
+    // if (indexData.date === indexDataByDate[0].date || indexData.percentageChange === indexDataByDate[0].percentageChange) {
+    //   await storage.setItem('CombinedIndexData', indexDataByDate);
+    //   return respondWithData(res, 'SUCCESS', 'Data Fetched Successfully', indexDataByDate);
+    // }
 
     const pointChange = calculatePointChange(indexDataByDate,indexData);
     indexData.pointChange = pointChange.pointChange;
+
+    //instead of removing data of sharesansar we are removing data from merolagani
+    //because data from sharesansar has more information than merolagani for today
+    const startSliceIndex = (indexData.date === indexDataByDate[0].date || indexData.percentageChange === indexDataByDate[0].percentageChange) ? 1 : 0;
 
     const combinedData = [
       {
@@ -1373,8 +1365,12 @@ export const CombinedIndexData = async (req, res) => {
         index: indexData.index,
         percentageChange: indexData.percentageChange,
         pointChange: indexData.pointChange,
+        //
+        turnover: indexData.turnover,
+        marketStatus: indexData.marketStatus,
+
       },
-      ...indexDataByDate.slice(0, 9),
+      ...indexDataByDate.slice(startSliceIndex, 9),
     ];
 
     await storage.setItem('CombinedIndexData', combinedData);
@@ -1387,8 +1383,30 @@ export const CombinedIndexData = async (req, res) => {
 };
 
 function calculatePointChange(indexDataByDate, indexData) {
-  const olderIndexValue = indexDataByDate[0].index;
+
+  let olderIndexValue = 0;
+
+  //if after 3 pm today live and merolagani data becomes same then we don't calculate
+  //point change of today from 1st index of indexDataByDate because both data is same, instead
+  //we calculate point change of today from 2nd index of indexDataByDate.
+  //but if we are in a live market when below condition is fase then we calculate point change of today
+  // from 1st index of indexDataByDate (last trading day)
+
+  if (indexData.date === indexDataByDate[0].date || indexData.percentageChange === indexDataByDate[0].percentageChange) {
+    let olderIndexValuee = indexDataByDate[1].index;
+
+
+  //const olderIndexValue = indexDataByDate[0].index;
   const todayIndexValue = indexData.index;
+  olderIndexValue = indexDataByDate[0].index //today added
+
+      //added code below today
+  const pointChange = parseFloat((todayIndexValue - olderIndexValuee).toFixed(2));
+      return {
+        pointChange
+      };
+    }
+
   const pointChange = parseFloat((todayIndexValue - olderIndexValue).toFixed(2));
 
   return {

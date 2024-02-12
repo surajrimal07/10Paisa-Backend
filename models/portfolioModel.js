@@ -54,6 +54,10 @@ const portfolioSchema = new mongoose.Schema({
         type: Number,
     },
 
+    portfolioGoal: {
+        type : String
+    },
+
     totalunits: {
         type: Number,
         default: function () {

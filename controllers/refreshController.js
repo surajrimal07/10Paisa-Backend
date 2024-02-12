@@ -77,6 +77,7 @@ async function wipeCachesAndRefreshData() {
       try {
         await extractIndex();
         await extractIndexDateWise();
+        
         //await AssetMergedData();
       } catch (error) {
         console.error('Error refreshing data:', error.message);
