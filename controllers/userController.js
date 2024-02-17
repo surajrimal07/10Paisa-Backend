@@ -17,6 +17,7 @@ export const createUser = async (req, res) => {
   const phone = req.body.phone;
   const style = req.body.style !== undefined ? req.body.style : undefined;
   const isAdmin = req.body.isAdmin ?? false;
+  const premium = req.body.premium ?? false;
   const userAmount = req.body.amount !== undefined ? req.body.amount : undefined;
 
   console.log("Create user command passed");
@@ -73,6 +74,7 @@ export const createUser = async (req, res) => {
           phone,
           style,
           isAdmin,
+          premium,
           dpImage: dpImage ? dpImage.path : undefined,
           userAmount: userAmount !== undefined ? userAmount : undefined,
           portfolio: [samplePortfolio._id],
@@ -182,6 +184,7 @@ export const loginUser = async (req, res) => {
           email: user.email,
           pass: user.password,
           phone: user.phone,
+          premium: user.premium,
           style: user.style,
           isAdmin: user.isAdmin,
           dpImage: user.dpImage,
@@ -274,6 +277,7 @@ export const updateUser = async (req, res) => {
   const valueToUpdate = req.body.value;
   const userAmount = req.body.useramount;
 
+
   if (!email ) {
     return respondWithError(res, 'BAD_REQUEST', "User email is missing");
   }
@@ -330,6 +334,7 @@ export const updateUser = async (req, res) => {
             pass: savedUser.password,
             phone: savedUser.phone,
             token: cachedtkn,
+            premium: savedUser.premium,
             profilePicture: savedUser.profilePicture,
             style: savedUser.style,
             defaultport: savedUser.defaultport,
@@ -367,6 +372,7 @@ export const updateUser = async (req, res) => {
             pass: user.password,
             phone: user.phone,
             token: cachedtkn,
+            premium: user.premium,
             profilePicture: user.profilePicture,
             style: user.style,
             defaultport: user.defaultport,
@@ -404,6 +410,7 @@ export const updateUser = async (req, res) => {
         token: cachedtkn,
         profilePicture: user.profilePicture,
         style: user.style,
+        premium: user.premium,
         defaultport: user.defaultport,
         isAdmin: user.isAdmin,
         dpImage: user.dpImage,
@@ -458,6 +465,7 @@ export const verifyUser = async (req, res) => {
         token: user_token,
         profilePicture: user.profilePicture,
         style: user.style,
+        premium: user.premium,
         defaultport: user.defaultport,
         isAdmin: user.isAdmin,
         dpImage: user.dpImage,
@@ -626,6 +634,7 @@ export const googleSignIn = async (req, res) => {
       style: user.style,
       isAdmin: user.isAdmin,
       dpImage: user.dpImage,
+      premium: user.premium,
       userAmount: user.userAmount,
       defaultport: user.defaultport,
       portfolio: user.portfolio
@@ -649,6 +658,7 @@ export const updateUserData = async (req, res) => {
   const userName = req.body.name;
   const userAmount = req.body.useramount;
   const isAdmin = req.body.isAdmin;
+  const premium = req.body.premium;
 
   if (!oldEmail) {
     return respondWithError(res, 'BAD_REQUEST', "Old email missing");
@@ -672,6 +682,7 @@ export const updateUserData = async (req, res) => {
     user.phone = phone || user.phone;
     user.style = invStyle || user.style;
     user.userAmount = userAmount || user.userAmount;
+    user.premium = premium || user.premium;
 
     if (newEmail && newEmail !== oldEmail) {
       const existingUser = await User.findOne({ email: newEmail });
@@ -753,6 +764,7 @@ export const updateUserProfilePicture = async (req, res) => {
         token: cachedtkn,
         profilePicture: user.profilePicture,
         style: user.style,
+        premium: user.premium,
         defaultport: user.defaultport,
         isAdmin: user.isAdmin,
         dpImage: user.dpImage,

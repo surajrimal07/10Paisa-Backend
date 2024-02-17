@@ -738,11 +738,12 @@ export async function fetchIndexes() {
 
 export async function extractIndex() {
   try {
-    const cachedData = await fetchFromCache('extractIndex');
 
-    if (cachedData !== null) {
-      return cachedData;
-    }
+    // const cachedData = await fetchFromCache('extractIndex');
+
+    // if (cachedData !== null) {
+    //   return cachedData;
+    // }
 
     const targetUrl = 'https://www.sharesansar.com/live-trading';
     const response = await axios.get(targetUrl);
@@ -759,8 +760,6 @@ export async function extractIndex() {
     const formattedDate = currentDate.getFullYear() + '/' +
                          (currentDate.getMonth() + 1).toString().padStart(2, '0') + '/' +
                          currentDate.getDate().toString().padStart(2, '0');
-
-    console.log("formatted date is ",formattedDate);
 
     if (marketStatus === "") {
       marketStatus = "Market Closed";
@@ -818,6 +817,11 @@ export async function extractIndexDateWise() {
   } catch (error) {
     console.error('Error fetching or parsing the HTML:', error.message);
   }
+}
+
+
+export async function liveIndexPrices() {
+
 }
 
 export default {extractIndexDateWise,extractIndex,fetchDataAndMapToAssetModel,fetchIndexes, FetchSingularDataOfAsset,GetDebentures,FetchOldData, topgainersShare, topLosersShare, topTradedShares, topTurnoversShare, topTransactions};

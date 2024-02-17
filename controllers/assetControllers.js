@@ -499,11 +499,9 @@ export const updateAssetData = async (symbol, newData) => {
 // // single stopmic data from sharesansar
 export const AssetMergedData = async (req, res) => {
   console.log('Sharesansar Asset Data Requested');
-  //const cachedData = await fetchFromCache(Asset_cached_key)
-  const isRefresh = req.body.refresh ?? true;
 
   try {
-    if (isRefresh == 'false') {
+    if (req.body.refresh=="false") {
       const cachedData = await fetchFromCache('AssetMergedData');
 
       if (cachedData !== null) {
@@ -683,14 +681,13 @@ export const AssetMergedDataBySector = async (req, res) => {
 
   const sector = req.body.sector;
   const assettype = req.body.category;
-  const isRefresh = req.body.refresh ?? true;
 
   if (!sector && !assettype) {
     return res.status(400).json({ error: 'No sector or asset type provided in the request' });
   }
 
   try {
-    if (isRefresh == 'false') {
+    if (req.body.refresh=="false") {
       const cachedData = await fetchFromCache('AssetMergedDataBySector');
 
       if (cachedData !== null) {
@@ -772,9 +769,8 @@ const assetToCategoryMap = {
 
 export const fetchMetalPrices = async (req, res) => {
   console.log('Metal data requested');
-  const isRefresh = req.body.refresh ?? true;
   try {
-    if (isRefresh == 'false') {
+    if (req.body.refresh=="false") {
       const cachedData = await fetchFromCache('fetchMetalPrices');
 
       if (cachedData !== null) {
@@ -916,9 +912,9 @@ export const fetchMetalPrices = async (req, res) => {
 
 //commodity
 export const CommodityData = async (req, res) => {
-  const isRefresh = req.body.refresh ?? true;
+
   try {
-    if (isRefresh == 'false') {
+    if (req.body.refresh=="false") {
       const cachedData = await fetchFromCache('CommodityData');
 
       if (cachedData !== null) {
@@ -997,10 +993,9 @@ export const CommodityData = async (req, res) => {
 //top gainers //share sansar
 export const TopGainersData = async (req, res) => {
   console.log('Top gainers data requested');
-  const isRefresh = req.body.refresh ?? true;
 
   try {
-    if (isRefresh == 'false') {
+    if (req.body.refresh=="false") {
       const cachedData = await fetchFromCache('TopGainersData');
 
       if (cachedData !== null) {
@@ -1040,9 +1035,7 @@ export const TopLoosersData = async (req, res) => {
   console.log('Top loosers data requested');
 
   try {
-    const isRefresh = req.body.refresh ?? true;
-
-    if (isRefresh == 'false') {
+    if (req.body.refresh=="false") {
       const cachedData = await fetchFromCache('TopLoosersData');
 
       if (cachedData !== null) {
@@ -1082,9 +1075,7 @@ export const TopTurnoverData = async (req, res) => {
   console.log('Top turnover data requested');
 
   try {
-    const isRefresh = req.body.refresh ?? true;
-
-    if (isRefresh == 'false') {
+    if (req.body.refresh=="false") {
       const cachedData = await fetchFromCache('TopTurnoverData');
 
       if (cachedData !== null) {
@@ -1124,9 +1115,7 @@ export const TopVolumeData = async (req, res) => {
   console.log('Top volume data requested');
 
   try {
-    const isRefresh = req.body.refresh ?? true;
-
-    if (isRefresh == 'false') {
+    if (req.body.refresh=="false") {
       const cachedData = await fetchFromCache('TopVolumeData');
 
       if (cachedData !== null) {
@@ -1165,9 +1154,8 @@ export const TopTransData = async (req, res) => {
   console.log('Top Transaction data requested');
 
   try {
-    const isRefresh = req.body.refresh ?? true;
 
-    if (isRefresh == 'false') {
+    if (req.body.refresh=="false") {
       const cachedData = await fetchFromCache('TopTransData');
 
       if (cachedData !== null) {
@@ -1220,9 +1208,7 @@ export const DashBoardData = async (req, res) => {
 
   console.log('Dashboard data requested');
   try {
-    const isRefresh = req.body.refresh ?? true;
-
-    if (isRefresh == 'false') {
+    if (req.query.refresh === "false") {
       const cachedData = await fetchFromCache('DashBoardData');
 
       if (cachedData !== null) {
@@ -1294,10 +1280,7 @@ export const IndexData = async (req, res) => {
   console.log("Index Data Requested");
 
   try {
-
-    const isRefresh = req.body.refresh ?? true;
-
-    if (isRefresh == 'false') {
+    if (req.query.refresh === "false") {
       const cachedData = await fetchFromCache('indexData');
 
       if (cachedData !== null) {
@@ -1328,15 +1311,13 @@ export const CombinedIndexData = async (req, res) => {
   console.log("Combined Index Data Requested");
   try {
 
-    const isRefresh = req.body.refresh ?? false;
-
-    if (isRefresh == 'true') {
+    if (req.query.refresh === "false") {
       const cachedData = await fetchFromCache('CombinedIndexData');
 
       if (cachedData !== null) {
 
         console.log('Returning cached combined index data');
-        return respondWithData(res,'SUCCESS','Data refreshed Successfully',cachedData);
+        return respondWithData(res,'SUCCESS','Data Success',cachedData);
       }
     };
 
@@ -1375,7 +1356,7 @@ export const CombinedIndexData = async (req, res) => {
 
     await storage.setItem('CombinedIndexData', combinedData);
 
-    return respondWithData(res, 'SUCCESS', 'Data Fetched Successfully', combinedData);
+    return respondWithData(res, 'SUCCESS', 'Data refreshed Successfully', combinedData);
   } catch (error) {
     console.error(error);
     return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'Internal Server Error');
@@ -1383,8 +1364,6 @@ export const CombinedIndexData = async (req, res) => {
 };
 
 function calculatePointChange(indexDataByDate, indexData) {
-
-  let olderIndexValue = 0;
 
   //if after 3 pm today live and merolagani data becomes same then we don't calculate
   //point change of today from 1st index of indexDataByDate because both data is same, instead
@@ -1398,7 +1377,7 @@ function calculatePointChange(indexDataByDate, indexData) {
 
   //const olderIndexValue = indexDataByDate[0].index;
   const todayIndexValue = indexData.index;
-  olderIndexValue = indexDataByDate[0].index //today added
+  const olderIndexValue = indexDataByDate[0].index //today added
 
       //added code below today
   const pointChange = parseFloat((todayIndexValue - olderIndexValuee).toFixed(2));
@@ -1407,7 +1386,7 @@ function calculatePointChange(indexDataByDate, indexData) {
       };
     }
 
-  const pointChange = parseFloat((todayIndexValue - olderIndexValue).toFixed(2));
+  const pointChange = parseFloat((indexData.index - indexDataByDate[0].index).toFixed(2));
 
   return {
     pointChange

@@ -37,6 +37,10 @@ const newSchema = new Schema({
       type: Boolean,
       default: false,
   },
+    premium: {
+      type: Boolean,
+      default: false,
+    },
     dpImage : {
     type: String,
     default: "https://res.cloudinary.com/dio3qwd9q/image/upload/v1703030558/ktsqwgc2zpeiynaekfct.png"
@@ -46,6 +50,8 @@ const newSchema = new Schema({
       default: 100000,
     },
     portfolio: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Portfolio' }],
+
+    
 });
 
 const User = mongoose.model('User',newSchema);

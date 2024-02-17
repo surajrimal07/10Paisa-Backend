@@ -1,17 +1,20 @@
-runtime: nodejs
-#runtime: nodejs20
-env: flex
+runtime: nodejs20
+# runtime: nodejs
+# env: flex
 
-runtime_config:
-  operating_system: "ubuntu22"
+# runtime_config:
+#   operating_system: "ubuntu22"
 
-network:
-  session_affinity: true
+# network:
+#   session_affinity: true
 
-manual_scaling:
-  instances: 1
+# manual_scaling:
+#   instances: 1
 
-handlers:
-  - url: /.*
-    script: auto
-    secure: always
+# handlers:
+#   - url: /.*
+#     script: auto
+#     secure: always
+
+# resources:
+#   memory_gb: 4

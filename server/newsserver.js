@@ -1,11 +1,11 @@
 import axios from 'axios';
 import crypto from 'crypto';
-import {notifyClients } from './websocket.js';
 import xml2js from 'xml2js';
 import newsSources from '../middleware/newsUrl.js';
 import newsModel from '../models/newsModel.js';
 import { headers } from '../utils/headers.js';
 import extractFeaturedImage from './imageServer.js';
+import { notifyClients } from './websocket.js';
 
 export async function startNewsServer(app) {
   const processedTitles = new Set();
@@ -103,11 +103,11 @@ export async function startNewsServer(app) {
             }
           }
         } else {
-          console.error('Required XML structure not found for', url);
+         // console.error('Required XML structure not found for', url);
         }
       }
     } catch (error) {
-      console.error('Error fetching or parsing data:', error);
+      //console.error('Error fetching or parsing data:', error);
     }
   }
 
@@ -116,7 +116,7 @@ export async function startNewsServer(app) {
     try {
       const page = parseInt(req.query._page) || 1;
       const limit = parseInt(req.query.limit) || 100;
-      console.log('page and limit requested is ', page, limit);
+     // console.log('page and limit requested is ', page, limit);
 
       const options = {
         page: page,
@@ -127,7 +127,7 @@ export async function startNewsServer(app) {
       const result = await newsModel.paginate({}, options);
       res.json(result.docs);
     } catch (error) {
-      console.error('Error retrieving items:', error);
+     // console.error('Error retrieving items:', error);
       res.status(500).json({ error: 'Internal Server Error' });
     }
   });
