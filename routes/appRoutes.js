@@ -7,6 +7,7 @@ import { createUser, defaultportfolio, deleteAccount, fetchToken, forgetPass, go
 import { addStockToWatchlist, createWatchlist, deleteWatchlist, getWatchlistsByUserEmail, removeStockFromWatchlist, renameWatchlist } from '../controllers/watchlistController.js';
 import { authGuard, authGuardAdmin } from '../middleware/authGuard.js';
 import { startNewsServer } from '../server/newsServer.js';
+import {NrbBankingData,nrbForexData,combinedNrbData } from '../controllers/extraDataControllers.js';
 
 const router = Router();
 
@@ -75,6 +76,12 @@ router.post('/renamewatchlist', renameWatchlist);
 router.post('/deletewatchlist', deleteWatchlist);
 router.post('/addstocktowatchlist', addStockToWatchlist);
 router.post('/remstockfromwatchlist', removeStockFromWatchlist);
+
+//nrb datas
+router.get('/nrbbankdata', NrbBankingData);
+router.get('/nrbforexdata', nrbForexData);
+router.get('/combinednrbdata', combinedNrbData);
+
 
 
 export default router;

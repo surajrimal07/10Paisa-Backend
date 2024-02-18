@@ -794,7 +794,7 @@ export async function extractIndexDateWise() {
     const html = response.data;
     const $ = cheerio.load(html);
 
-    const tableRows = $('.table-bordered tbody tr').slice(0, 10);
+    const tableRows = $('.table-bordered tbody tr').slice(0, 15);
 
     const indexData = tableRows.map((indexx, element) => {
       const $row = $(element);

@@ -78,6 +78,7 @@ export const createUser = async (req, res) => {
           dpImage: dpImage ? dpImage.path : undefined,
           userAmount: userAmount !== undefined ? userAmount : undefined,
           portfolio: [samplePortfolio._id],
+
         });
 
         try {
@@ -98,6 +99,7 @@ export const createUser = async (req, res) => {
             dpImage: savedUser.dpImage,
             userAmount: savedUser.userAmount,
             portfolio: [formattedPortfolio],
+            wallets: savedUser.wallets
           };
           console.log("Signup Was Success");
           return respondWithData(res, 'CREATED', "User created successfully", userData);
@@ -190,7 +192,8 @@ export const loginUser = async (req, res) => {
           dpImage: user.dpImage,
           userAmount: user.userAmount,
           defaultport: user.defaultport,
-          portfolio: user.portfolio
+          portfolio: user.portfolio,
+          wallets: user.wallets
         };
         console.log("Login Was Success");
         notifyClients({type:'notification', title: 'Welcome 🎉', description: "Welcome to 10Paisa "+user.name+"!", image: user.dpImage, url: "https://10paisa.com"});
@@ -341,7 +344,8 @@ export const updateUser = async (req, res) => {
             isAdmin: savedUser.isAdmin,
             dpImage: savedUser.dpImage,
             userAmount: savedUser.userAmount,
-            portfolio: formattedPortfolio
+            portfolio: formattedPortfolio,
+            wallets: savedUser.wallets
           };
 
           return respondWithData(res, 'SUCCESS', "Email updated successfully", userData);
@@ -379,7 +383,8 @@ export const updateUser = async (req, res) => {
             isAdmin: user.isAdmin,
             dpImage: user.dpImage,
             userAmount: user.userAmount,
-            portfolio: formattedPortfolio
+            portfolio: formattedPortfolio,
+            wallets: user.wallets
           };
 
           return respondWithData(res, 'SUCCESS', "Phone updated successfully", userData);
@@ -398,6 +403,20 @@ export const updateUser = async (req, res) => {
       console.log("User Style updated, new "+fieldToUpdate+ " is " +valueToUpdate)
     }
 
+    //
+    else if (fieldToUpdate === 'premium') {
+      user.premium = valueToUpdate;
+      console.log("User Premium updated, new "+fieldToUpdate+ " is " +valueToUpdate)
+    }
+
+    else if (fieldToUpdate === 'wallets') {
+
+     user.wallets = valueToUpdate;
+     //user.wallets = int.parse(valueToUpdate);
+      console.log("User Wallets updated, new "+fieldToUpdate+ " is " +valueToUpdate)
+    }
+    //
+
     try {
       await user.save();
       const cachedtkn = await storage.getItem(User_token_key);
@@ -415,11 +434,12 @@ export const updateUser = async (req, res) => {
         isAdmin: user.isAdmin,
         dpImage: user.dpImage,
         userAmount: user.userAmount,
-        portfolio: formattedPortfolio
+        portfolio: formattedPortfolio,
+        wallets: user.wallets
       };
 
       console.log('User ' + fieldToUpdate + ' updated successfully');
-      return respondWithData(res, 'SUCCESS', "User " + fieldToUpdate + " updated successfully", userData);
+      return respondWithData(res, 'SUCCESS',  fieldToUpdate + " updated successfully", userData);
     } catch (error) {
       console.error('User ' + fieldToUpdate + ' update failed: ' + error);
       return respondWithError(res, 'INTERNAL_SERVER_ERROR', "Error updating user " + fieldToUpdate);
@@ -470,7 +490,8 @@ export const verifyUser = async (req, res) => {
         isAdmin: user.isAdmin,
         dpImage: user.dpImage,
         userAmount: user.userAmount,
-        portfolio: user.portfolio
+        portfolio: user.portfolio,
+        wallets: user.wallets
       };
       return respondWithData(res, 'SUCCESS', "User Verified", userData);
     }
@@ -637,7 +658,9 @@ export const googleSignIn = async (req, res) => {
       premium: user.premium,
       userAmount: user.userAmount,
       defaultport: user.defaultport,
-      portfolio: user.portfolio
+      portfolio: user.portfolio,
+      wallets: user.wallets
+
     };
 
     return respondWithData(res, 'SUCCESS', 'Google Sign-In successful', userData);

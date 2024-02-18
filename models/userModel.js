@@ -51,7 +51,15 @@ const newSchema = new Schema({
     },
     portfolio: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Portfolio' }],
 
-    
+    //new code
+    wallets: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 3, // 0: No wallet,
+      //1: Khalti, 2: Esewa,
+      //3: Both (Khalti and Esewa)
+  }
 });
 
 const User = mongoose.model('User',newSchema);

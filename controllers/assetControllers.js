@@ -1351,7 +1351,7 @@ export const CombinedIndexData = async (req, res) => {
         marketStatus: indexData.marketStatus,
 
       },
-      ...indexDataByDate.slice(startSliceIndex, 9),
+      ...indexDataByDate.slice(startSliceIndex, 15),
     ];
 
     await storage.setItem('CombinedIndexData', combinedData);

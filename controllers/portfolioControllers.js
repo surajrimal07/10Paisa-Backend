@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import Asset from '../models/assetModel.js';
 import Portfolio from '../models/portfolioModel.js';
+import User from '../models/userModel.js';
 import { respondWithData, respondWithError } from '../utils/response_utils.js';
 
 export const createPortfolio = async (req, res) => {
@@ -96,6 +97,13 @@ export const addStockToPortfolio = async (req, res) => {
       return respondWithError(res, 'BAD_REQUEST', 'Stock not found');
     }
 
+    //new code
+    const hasBalance = await hasEnoughBalance(email, quantity, req.body.price, 'check');
+    if (!hasBalance) {
+      return respondWithError(res, 'BAD_REQUEST', 'Insufficient balance');
+    }
+    //
+
     let wacc = req.body.price;
 
     const existingStockIndex = existingPortfolio.stocks.findIndex(
@@ -160,6 +168,14 @@ export const addStockToPortfolio = async (req, res) => {
 
     await existingPortfolio.save();
 
+    // //now we need to update the user's balance
+
+    // const updateUserBlance = await hasEnoughBalance(email, quantity, req.body.price, 'update');
+    // if (!updateUserBlance) {
+    //   return respondWithError(res, 'BAD_REQUEST', 'Error updating user balance');
+    // }
+    // //end of new code
+
     const data = await  formatPortfolios(email);
     return res.status(200).json({ success: true, message: 'Stock added to portfolio successfully', data});
 
@@ -179,6 +195,46 @@ const isStockExists = async (symbol) => {
     return false;
   }
 };
+
+//function to check if user has enougn balance to purchase this asset
+const hasEnoughBalance = async (email, quantity, price, checkOrUpdate) => {
+  const user = await User.findOne({ email: email.toLowerCase()})
+  const costprice = quantity * price;
+
+  if (checkOrUpdate === 'check') {
+  try {
+    if (costprice > user.userAmount) {
+      console.log('User dont have enough balance');
+      return false;
+    }
+    return costprice < user.userAmount;
+  } catch (error) {
+    console.error('Error cheking user balance ', error.message);
+    return false;
+  }}
+  else {
+    try {
+      user.userAmount -= costprice;
+      await user.save();
+      return true;
+    }
+    catch (error) {
+      console.error('Error updating user balance ', error.message);
+      return false;
+    }
+
+  }
+};
+
+//function to update user balance
+// const updateUserBalance = async (email, amount) => {
+//   try {
+//     const user
+//   } catch (error) {
+//     console.error('Error updating user balance ', error.message);
+//     return false;
+//   }
+// };
 
 // Function to update gainLossRecords
 const updateGainLossRecords = (portfolio) => {
