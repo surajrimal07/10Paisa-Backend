@@ -9,6 +9,7 @@ import { FetchOldData, FetchSingularDataOfAsset, extractIndex, extractIndexDateW
 import { commodityprices } from '../server/commodityServer.js';
 import { metalPriceExtractor } from '../server/metalServer.js';
 import { oilExtractor } from '../server/oilServer.js';
+import { extractWorldMarketData } from '../server/worldmarketServer.js';
 import { respondWithData, respondWithError } from '../utils/response_utils.js';
 await storage.init();
 
@@ -1392,6 +1393,38 @@ function calculatePointChange(indexDataByDate, indexData) {
     pointChange
   };
 }
+
+export const WorldMarketData = async (req, res) => {
+  console.log("World Index Data Requested");
+  try {
+
+    if (req.query.refresh === "false") {
+      const cachedData = await fetchFromCache('WorldMarketData');
+
+      if (cachedData !== null) {
+
+        console.log('Returning cached world data');
+        return respondWithData(res,'SUCCESS','Data Success',cachedData);
+      }
+    };
+
+    const worlddata = await extractWorldMarketData();
+
+
+    if (!worlddata) {
+      return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'Failed to fetch world data.');
+    }
+
+    await storage.setItem('WorldMarketData', worlddata);
+
+    return respondWithData(res, 'SUCCESS', 'Data refreshed Successfully', worlddata);
+
+  } catch (error) {
+    console.error(error);
+    return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'Internal Server Error');
+  }
+};
+
 
 
 export default {createAsset,CombinedIndexData, fetchMetalPrices,TopVolumeData,TopTransData,TopTurnoverData,topLosersShare, AssetMergedData, SingeAssetMergedData, AssetMergedDataBySector, CommodityData, TopGainersData, DashBoardData};

@@ -10,6 +10,7 @@ import { notifyClients } from '../server/websocket.js';
 import { validateEmail, validateName, validatePassword, validatePhoneNumber } from '../utils/dataValidation_utils.js';
 import { respondWithData, respondWithError, respondWithSuccess } from '../utils/response_utils.js';
 
+
 export const createUser = async (req, res) => {
   const name = req.body.name;
   const email = req.body.email;
@@ -53,6 +54,7 @@ export const createUser = async (req, res) => {
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
     const token = jwt.sign({ email: email, isAdmin: false }, process.env.JWT_SECRET, { expiresIn: '7d' });
+    await storage.setItem(email + '_token', token);
 
     const samplePortfolio = await Portfolio.create({
       id: 1,
@@ -145,6 +147,38 @@ const formatSinglePortfolio = (portfolio) => {
   };
 };
 
+// const getUserDataWithToken = async (user, email, storage) => {
+//   const User_token_key = email + '_token';
+//   let token = '';
+
+//   const cachedtkn = await storage.getItem(User_token_key);
+
+//   if (cachedtkn == null) {
+//     token = jwt.sign({ email: user.email, isAdmin: user.isAdmin }, process.env.JWT_SECRET, { expiresIn: '7d' });
+//     await storage.setItem(User_token_key, token);
+//   } else {
+//     token = cachedtkn;
+//   }
+
+//   return {
+//     _id: user._id,
+//     name: user.name,
+//     email: user.email,
+//     pass: user.password,
+//     phone: user.phone,
+//     token: token,
+//     profilePicture: user.profilePicture,
+//     style: user.style,
+//     premium: user.premium,
+//     defaultport: user.defaultport,
+//     isAdmin: user.isAdmin,
+//     dpImage: user.dpImage,
+//     userAmount: user.userAmount,
+//     portfolio: formatPortfolioData(user.portfolio),
+//     wallets: user.wallets
+//   };
+// };
+
 
 // const formatPortfolioData = (portfolio) => {
 //   return {
@@ -176,8 +210,7 @@ export const loginUser = async (req, res) => {
       } else {
         console.log("user found");
         const token = jwt.sign({email : email, isAdmin: user.isAdmin},process.env.JWT_SECRET,{expiresIn: '7d'});
-        //save this token
-        await storage.setItem('user_token', token);
+        await storage.setItem(email + '_token', token);
 
         let userData = {
           _id: user._id,
@@ -195,7 +228,7 @@ export const loginUser = async (req, res) => {
           portfolio: user.portfolio,
           wallets: user.wallets
         };
-        console.log("Login Was Success");
+       // console.log("Login Was Success");
         notifyClients({type:'notification', title: 'Welcome 🎉', description: "Welcome to 10Paisa "+user.name+"!", image: user.dpImage, url: "https://10paisa.com"});
         return respondWithData(res, 'SUCCESS', "Login successful", userData);
       }
@@ -207,26 +240,17 @@ export const loginUser = async (req, res) => {
 
 export const forgetPass = async (req, res) => {
   const email = req.body.email;
- // console.log("Received email: " + email);
-
   try {
       const user = await User.findOne({ email });
       if (user) {
-          //console.log("Existing user found: " + email);
           const hash = await forgetPassword(email);
           return respondWithData(res, 'SUCCESS', "OTP Sent successfully", hash);
       } else {
-        //console.log("Existing user not found");
         return respondWithError(res, 'NOT_FOUND', "Email Not found");
-          // res.status(404).json({success: false,
-          //     message: "Email Not found"
-          // });
-          // console.log("Existing user not found");
       }
   } catch (err) {
       console.error(err);
       return respondWithError(res, 'INTERNAL_SERVER_ERROR', err.toString());
-      //res.status(500).json(err);
   }
 };
 
@@ -269,188 +293,303 @@ export const verifyData = async (req, res) => {
     }}
 };
 
-//works //for individual updates
+const User_token_key = 'user_token';
+
 export const updateUser = async (req, res) => {
-  const token = req.body.token;
-  const email = req.body.email;
-  const newPassword  = req.body.password;
-  const phone = req.body.phone;
-  const invStyle = req.body.style;
-  const fieldToUpdate = req.body.field;
-  const valueToUpdate = req.body.value;
-  const userAmount = req.body.useramount;
+  const { email, password, phone, style, field: fieldToUpdate, value: valueToUpdate, useramount: userAmount } = req.body;
+  let token = '';
 
-
-  if (!email ) {
+  if (!email) {
     return respondWithError(res, 'BAD_REQUEST', "User email is missing");
   }
+
   if (!fieldToUpdate) {
     return respondWithError(res, 'BAD_REQUEST', "Field to update missing");
   }
 
   try {
-    const user = await User.findOne({ email })
+    let user = await User.findOne({ email });
 
     if (!user) {
       console.log("User not found");
       return respondWithError(res, 'NOT_FOUND', "User not found");
     }
-    const populatedPortfolio = await Portfolio.find({ userEmail: email });
 
+    const populatedPortfolio = await Portfolio.find({ userEmail: email });
     const formattedPortfolio = formatPortfolioData(populatedPortfolio);
 
-    if (fieldToUpdate === 'name') {
-      console.log("Username updated, new "+fieldToUpdate+ " is "+valueToUpdate)
-      user.name = valueToUpdate;
-    }
-
-    if (fieldToUpdate == 'useramount') {
-    console.log("User updated, new "+fieldToUpdate+ " is "+valueToUpdate)
-    user.userAmount = valueToUpdate;
-    }
-
-    if (fieldToUpdate === 'password') {
-      const newPassword = await bcrypt.hash(valueToUpdate, 10);
-      console.log("User password updated, new "+fieldToUpdate+ " is "+valueToUpdate)
-      user.password = newPassword;
-    }
-
-    if (fieldToUpdate === 'email') {
-      try {
-        const existingUser = await User.findOne({ email: valueToUpdate.toLowerCase() });
-
-        console.log(existingUser);
-
-        if (!existingUser) {
-          console.log("User email updated, new " + fieldToUpdate + " is " + valueToUpdate);
-
-          user.email = valueToUpdate;
-
-          //await user.save();
-          const savedUser = await user.save();
-
-          const cachedtkn = await storage.getItem(User_token_key);
-          let userData = {
-            _id: savedUser._id,
-            name: savedUser.name,
-            email: savedUser.email,
-            pass: savedUser.password,
-            phone: savedUser.phone,
-            token: cachedtkn,
-            premium: savedUser.premium,
-            profilePicture: savedUser.profilePicture,
-            style: savedUser.style,
-            defaultport: savedUser.defaultport,
-            isAdmin: savedUser.isAdmin,
-            dpImage: savedUser.dpImage,
-            userAmount: savedUser.userAmount,
-            portfolio: formattedPortfolio,
-            wallets: savedUser.wallets
-          };
-
-          return respondWithData(res, 'SUCCESS', "Email updated successfully", userData);
-        } else {
-          return respondWithError(res, 'BAD_REQUEST', "Email already exists");
+    switch (fieldToUpdate) {
+      case 'name':
+        console.log("Username updated, new " + fieldToUpdate + " is " + valueToUpdate)
+        user.name = valueToUpdate;
+        break;
+      case 'useramount':
+        console.log("User updated, new " + fieldToUpdate + " is " + valueToUpdate)
+        user.userAmount = valueToUpdate;
+        break;
+      case 'password':
+        const newPasswordHash = await bcrypt.hash(valueToUpdate, 10);
+        console.log("User password updated, new " + fieldToUpdate + " is " + valueToUpdate)
+        user.password = newPasswordHash;
+        break;
+      case 'email':
+        try {
+          const existingUser = await User.findOne({ email: valueToUpdate.toLowerCase() });
+          if (!existingUser) {
+            console.log("User email updated, new " + fieldToUpdate + " is " + valueToUpdate);
+            user.email = valueToUpdate;
+          } else {
+            return respondWithError(res, 'BAD_REQUEST', "Email already exists");
+          }
+        } catch (error) {
+          console.error("Error updating user email:", error);
+          return respondWithError(res, 'INTERNAL_SERVER_ERROR', "Error updating email");
         }
-      } catch (error) {
-        console.error("Error updating user email:", error);
-        return respondWithError(res, 'INTERNAL_SERVER_ERROR', "Error updating email");
-      }
-    }
-
-    if (fieldToUpdate === 'phone') {
-      try {
-        const existingUser = await User.findOne({ phone: valueToUpdate });
-        if (!existingUser) {
-          console.log("User phone updated, new " + fieldToUpdate + " is " + valueToUpdate);
-
-          user.phone = valueToUpdate;
-
-          await user.save();
-
-          const cachedtkn = await storage.getItem(User_token_key);
-          let userData = {
-            _id: user._id,
-            name: user.name,
-            email: user.email,
-            pass: user.password,
-            phone: user.phone,
-            token: cachedtkn,
-            premium: user.premium,
-            profilePicture: user.profilePicture,
-            style: user.style,
-            defaultport: user.defaultport,
-            isAdmin: user.isAdmin,
-            dpImage: user.dpImage,
-            userAmount: user.userAmount,
-            portfolio: formattedPortfolio,
-            wallets: user.wallets
-          };
-
-          return respondWithData(res, 'SUCCESS', "Phone updated successfully", userData);
-        } else {
-          console.log("Phone already exists");
-          return respondWithError(res, 'BAD_REQUEST', "Phone already exists");
+        break;
+      case 'phone':
+        try {
+          const existingUser = await User.findOne({ phone: valueToUpdate });
+          if (!existingUser) {
+            console.log("User phone updated, new " + fieldToUpdate + " is " + valueToUpdate);
+            user.phone = valueToUpdate;
+          } else {
+            console.log("Phone already exists");
+            return respondWithError(res, 'BAD_REQUEST', "Phone already exists");
+          }
+        } catch (error) {
+          console.error("Error updating user Phone:", error);
+          return respondWithError(res, 'INTERNAL_SERVER_ERROR', "Error updating phone");
         }
-      } catch (error) {
-        console.error("Error updating user Phone:", error);
-        return respondWithError(res, 'INTERNAL_SERVER_ERROR', "Error updating phone");
-      }
+        break;
+      case 'style':
+      case 'premium':
+      case 'wallets':
+        user[fieldToUpdate] = valueToUpdate;
+        console.log("User " + fieldToUpdate + " updated, new value is " + valueToUpdate);
+        break;
+      default:
+        return respondWithError(res, 'BAD_REQUEST', "Invalid field to update");
     }
 
-    else if (fieldToUpdate === 'style') {
-      user.style = valueToUpdate;
-      console.log("User Style updated, new "+fieldToUpdate+ " is " +valueToUpdate)
+    await user.save();
+
+    const cachedtkn = await storage.getItem(email + '_token');
+
+    if (cachedtkn == null) {
+      token = jwt.sign({ email: user.email, isAdmin: user.isAdmin }, process.env.JWT_SECRET, { expiresIn: '7d' });
+      await storage.setItem(email + '_token', token);
+    } else {
+      token = cachedtkn;
     }
+    const userData = {
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      pass: user.password,
+      phone: user.phone,
+      token: token,
+      profilePicture: user.profilePicture,
+      style: user.style,
+      premium: user.premium,
+      defaultport: user.defaultport,
+      isAdmin: user.isAdmin,
+      dpImage: user.dpImage,
+      userAmount: user.userAmount,
+      portfolio: formattedPortfolio,
+      wallets: user.wallets
+    };
 
-    //
-    else if (fieldToUpdate === 'premium') {
-      user.premium = valueToUpdate;
-      console.log("User Premium updated, new "+fieldToUpdate+ " is " +valueToUpdate)
-    }
+    console.log('User ' + fieldToUpdate + ' updated successfully');
+    return respondWithData(res, 'SUCCESS', fieldToUpdate + " updated successfully", userData);
 
-    else if (fieldToUpdate === 'wallets') {
-
-     user.wallets = valueToUpdate;
-     //user.wallets = int.parse(valueToUpdate);
-      console.log("User Wallets updated, new "+fieldToUpdate+ " is " +valueToUpdate)
-    }
-    //
-
-    try {
-      await user.save();
-      const cachedtkn = await storage.getItem(User_token_key);
-      let userData = {
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        pass: user.password,
-        phone: user.phone,
-        token: cachedtkn,
-        profilePicture: user.profilePicture,
-        style: user.style,
-        premium: user.premium,
-        defaultport: user.defaultport,
-        isAdmin: user.isAdmin,
-        dpImage: user.dpImage,
-        userAmount: user.userAmount,
-        portfolio: formattedPortfolio,
-        wallets: user.wallets
-      };
-
-      console.log('User ' + fieldToUpdate + ' updated successfully');
-      return respondWithData(res, 'SUCCESS',  fieldToUpdate + " updated successfully", userData);
-    } catch (error) {
-      console.error('User ' + fieldToUpdate + ' update failed: ' + error);
-      return respondWithError(res, 'INTERNAL_SERVER_ERROR', "Error updating user " + fieldToUpdate);
-    }
   } catch (error) {
     console.error('Error updating user data:', error);
     return respondWithError(res, 'INTERNAL_SERVER_ERROR', "Error updating user data");
   }
 };
 
-const User_token_key = 'user_token';
+
+// //works //for individual updates //
+// export const updateUser = async (req, res) => {
+//   const token = req.body.token;
+//   const email = req.body.email;
+//   const newPassword  = req.body.password;
+//   const phone = req.body.phone;
+//   const invStyle = req.body.style;
+//   const fieldToUpdate = req.body.field;
+//   const valueToUpdate = req.body.value;
+//   const userAmount = req.body.useramount;
+
+//   const User_token_key = email + '_token';
+
+
+//   if (!email ) {
+//     return respondWithError(res, 'BAD_REQUEST', "User email is missing");
+//   }
+//   if (!fieldToUpdate) {
+//     return respondWithError(res, 'BAD_REQUEST', "Field to update missing");
+//   }
+
+//   try {
+//     const user = await User.findOne({ email })
+
+//     if (!user) {
+//       console.log("User not found");
+//       return respondWithError(res, 'NOT_FOUND', "User not found");
+//     }
+//     const populatedPortfolio = await Portfolio.find({ userEmail: email });
+
+//     const formattedPortfolio = formatPortfolioData(populatedPortfolio);
+
+//     if (fieldToUpdate === 'name') {
+//       console.log("Username updated, new "+fieldToUpdate+ " is "+valueToUpdate)
+//       user.name = valueToUpdate;
+//     }
+
+//     if (fieldToUpdate == 'useramount') {
+//     console.log("User updated, new "+fieldToUpdate+ " is "+valueToUpdate)
+//     user.userAmount = valueToUpdate;
+//     }
+
+//     if (fieldToUpdate === 'password') {
+//       const newPassword = await bcrypt.hash(valueToUpdate, 10);
+//       console.log("User password updated, new "+fieldToUpdate+ " is "+valueToUpdate)
+//       user.password = newPassword;
+//     }
+
+//     if (fieldToUpdate === 'email') {
+//       try {
+//         const existingUser = await User.findOne({ email: valueToUpdate.toLowerCase() });
+
+//         console.log(existingUser);
+
+//         if (!existingUser) {
+//           console.log("User email updated, new " + fieldToUpdate + " is " + valueToUpdate);
+
+//           user.email = valueToUpdate;
+
+//           const savedUser = await user.save();
+
+//           const cachedtkn = await storage.getItem(User_token_key);
+//           let userData = {
+//             _id: savedUser._id,
+//             name: savedUser.name,
+//             email: savedUser.email,
+//             pass: savedUser.password,
+//             phone: savedUser.phone,
+//             token: cachedtkn,
+//             premium: savedUser.premium,
+//             profilePicture: savedUser.profilePicture,
+//             style: savedUser.style,
+//             defaultport: savedUser.defaultport,
+//             isAdmin: savedUser.isAdmin,
+//             dpImage: savedUser.dpImage,
+//             userAmount: savedUser.userAmount,
+//             portfolio: formattedPortfolio,
+//             wallets: savedUser.wallets
+//           };
+
+//           return respondWithData(res, 'SUCCESS', "Email updated successfully", userData);
+//         } else {
+//           return respondWithError(res, 'BAD_REQUEST', "Email already exists");
+//         }
+//       } catch (error) {
+//         console.error("Error updating user email:", error);
+//         return respondWithError(res, 'INTERNAL_SERVER_ERROR', "Error updating email");
+//       }
+//     }
+
+//     if (fieldToUpdate === 'phone') {
+//       try {
+//         const existingUser = await User.findOne({ phone: valueToUpdate });
+//         if (!existingUser) {
+//           console.log("User phone updated, new " + fieldToUpdate + " is " + valueToUpdate);
+
+//           user.phone = valueToUpdate;
+
+//           await user.save();
+
+//           const cachedtkn = await storage.getItem(User_token_key);
+//           let userData = {
+//             _id: user._id,
+//             name: user.name,
+//             email: user.email,
+//             pass: user.password,
+//             phone: user.phone,
+//             token: cachedtkn,
+//             premium: user.premium,
+//             profilePicture: user.profilePicture,
+//             style: user.style,
+//             defaultport: user.defaultport,
+//             isAdmin: user.isAdmin,
+//             dpImage: user.dpImage,
+//             userAmount: user.userAmount,
+//             portfolio: formattedPortfolio,
+//             wallets: user.wallets
+//           };
+
+//           return respondWithData(res, 'SUCCESS', "Phone updated successfully", userData);
+//         } else {
+//           console.log("Phone already exists");
+//           return respondWithError(res, 'BAD_REQUEST', "Phone already exists");
+//         }
+//       } catch (error) {
+//         console.error("Error updating user Phone:", error);
+//         return respondWithError(res, 'INTERNAL_SERVER_ERROR', "Error updating phone");
+//       }
+//     }
+
+//     else if (fieldToUpdate === 'style') {
+//       user.style = valueToUpdate;
+//       console.log("User Style updated, new "+fieldToUpdate+ " is " +valueToUpdate)
+//     }
+
+//     //
+//     else if (fieldToUpdate === 'premium') {
+//       user.premium = valueToUpdate;
+//       console.log("User Premium updated, new "+fieldToUpdate+ " is " +valueToUpdate)
+//     }
+
+//     else if (fieldToUpdate === 'wallets') {
+
+//      user.wallets = valueToUpdate;
+//       console.log("User Wallets updated, new "+fieldToUpdate+ " is " +valueToUpdate)
+//     }
+
+//     try {
+//       await user.save();
+//       const cachedtkn = await storage.getItem(User_token_key);
+//       let userData = {
+//         _id: user._id,
+//         name: user.name,
+//         email: user.email,
+//         pass: user.password,
+//         phone: user.phone,
+//         token: cachedtkn,
+//         profilePicture: user.profilePicture,
+//         style: user.style,
+//         premium: user.premium,
+//         defaultport: user.defaultport,
+//         isAdmin: user.isAdmin,
+//         dpImage: user.dpImage,
+//         userAmount: user.userAmount,
+//         portfolio: formattedPortfolio,
+//         wallets: user.wallets
+//       };
+
+//       console.log('User ' + fieldToUpdate + ' updated successfully');
+//       return respondWithData(res, 'SUCCESS',  fieldToUpdate + " updated successfully", userData);
+//     } catch (error) {
+//       console.error('User ' + fieldToUpdate + ' update failed: ' + error);
+//       return respondWithError(res, 'INTERNAL_SERVER_ERROR', "Error updating user " + fieldToUpdate);
+//     }
+//   } catch (error) {
+//     console.error('Error updating user data:', error);
+//     return respondWithError(res, 'INTERNAL_SERVER_ERROR', "Error updating user data");
+//   }
+// };
+
+//
 
 export const verifyUser = async (req, res) => {
 
@@ -501,24 +640,24 @@ export const verifyUser = async (req, res) => {
   }
 };
 
-export const fetchToken = async (req, res) => {
-  const email = req.body.email;
+// export const fetchToken = async (req, res) => {
+//   const email = req.body.email;
 
-  try {
-    const user = await User.findOne({ email });
+//   try {
+//     const user = await User.findOne({ email });
 
-    if (!user) {
-      console.log("401 Invalid email");
-      return respondWithError(res, 'UNAUTHORIZED', "Invalid email");
-    } else {
-      return respondWithData(res, 'SUCCESS', "Token fetched successfully", user.token);
+//     if (!user) {
+//       console.log("401 Invalid email");
+//       return respondWithError(res, 'UNAUTHORIZED', "Invalid email");
+//     } else {
+//       return respondWithData(res, 'SUCCESS', "Token fetched successfully", user.token);
 
-    }
-  } catch (error){
-    console.log(error.toString());
-    return respondWithError(res, 'INTERNAL_SERVER_ERROR', error.toString());
-  }
-};
+//     }
+//   } catch (error){
+//     console.log(error.toString());
+//     return respondWithError(res, 'INTERNAL_SERVER_ERROR', error.toString());
+//   }
+// };
 
 export const deleteAccount = async (req, res) => {
 
@@ -547,55 +686,55 @@ export const deleteAccount = async (req, res) => {
   }
 };
 
-//works
-export const defaultportfolio = async (req, res) => {
-  console.log("Change default portfolio requested")
-  const email = req.body.email;
-  const portfolioId = req.body.id;
+// //works
+// export const defaultportfolio = async (req, res) => {
+//   console.log("Change default portfolio requested")
+//   const email = req.body.email;
+//   const portfolioId = req.body.id;
 
-  try {
-    const user = await User.findOne({ email });
+//   try {
+//     const user = await User.findOne({ email });
 
-    if (!user) {
-      return respondWithError(res, 'NOT_FOUND', "User not found");
-    }
-    if (user.defaultport === portfolioId) {
-      console.log('Portfolio is already set as default');
-      return respondWithError(res, 'BAD_REQUEST', "Portfolio is already set as default");
-    }
+//     if (!user) {
+//       return respondWithError(res, 'NOT_FOUND', "User not found");
+//     }
+//     if (user.defaultport === portfolioId) {
+//       console.log('Portfolio is already set as default');
+//       return respondWithError(res, 'BAD_REQUEST', "Portfolio is already set as default");
+//     }
 
-    user.defaultport = portfolioId;
-    await user.save();
+//     user.defaultport = portfolioId;
+//     await user.save();
 
-    console.log("200 Portfolio ID updated");
-    return respondWithSuccess(res, 'SUCCESS', "Portfolio ID updated");
+//     console.log("200 Portfolio ID updated");
+//     return respondWithSuccess(res, 'SUCCESS', "Portfolio ID updated");
 
-  } catch (error) {
-    console.error(error);
+//   } catch (error) {
+//     console.error(error);
 
-    return respondWithError(res, 'INTERNAL_SERVER_ERROR', error.toString());
-  }
-};
+//     return respondWithError(res, 'INTERNAL_SERVER_ERROR', error.toString());
+//   }
+// };
 
 
-export const removedefaultportfolio = async (req, res) => {
-  const token = req.body.token;
+// export const removedefaultportfolio = async (req, res) => {
+//   const token = req.body.token;
 
-  try {
-    const user = await User.findOne({ token });
+//   try {
+//     const user = await User.findOne({ token });
 
-    if (!user) {
-      return respondWithError(res, 'NOT_FOUND', "User not found");
-    }
+//     if (!user) {
+//       return respondWithError(res, 'NOT_FOUND', "User not found");
+//     }
 
-    user.defaultport = 1;
+//     user.defaultport = 1;
 
-  } catch (error) {
-    console.error(error);
-    return respondWithError(res, 'INTERNAL_SERVER_ERROR', error.toString());
-  }
+//   } catch (error) {
+//     console.error(error);
+//     return respondWithError(res, 'INTERNAL_SERVER_ERROR', error.toString());
+//   }
 
-};
+// };
 
 export const makeadmin = async (req, res) => {
   const token = req.body.token;
@@ -718,8 +857,6 @@ export const updateUserData = async (req, res) => {
     if (isAdmin){
       user.isAdmin = isAdmin;
     }
-
-    //validate if phone is taken by someone else or not
     if (phone) {
       const existingUser = await User.findOne({ phone: phone });
       if (existingUser && !existingUser._id.equals(user._id)) {
@@ -727,7 +864,6 @@ export const updateUserData = async (req, res) => {
         return respondWithError(res, 'BAD_REQUEST', "Phone already exists");
       }
     }
-
     await user.save();
     console.log('User data updated successfully');
     return respondWithData(res, 'SUCCESS', "User data updated successfully", user);
@@ -755,7 +891,6 @@ export const updateUserProfilePicture = async (req, res) => {
       return respondWithError(res, 'NOT_FOUND', "User not found");
     }
 
-    // Update profile image if provided
     if (dpImage && dpImage.path) {
       let uploadedImage;
       try {
@@ -775,16 +910,25 @@ export const updateUserProfilePicture = async (req, res) => {
       }
     }
     try {
+
       await user.save();
 
-      const cachedtkn = await storage.getItem(User_token_key);
+      let token = '';
+      const cachedtkn = await storage.getItem(oldEmail + '_token');
+      if (cachedtkn == null) {
+        const token = jwt.sign({ email: user.email, isAdmin: user.isAdmin }, process.env.JWT_SECRET, { expiresIn: '7d' });
+        await storage.setItem(oldEmail + '_token', token);
+      } else {
+        token = cachedtkn;
+      }
+
       let userData = {
         _id: user._id,
         name: user.name,
         email: user.email,
         pass: user.password,
         phone: user.phone,
-        token: cachedtkn,
+        token: token,
         profilePicture: user.profilePicture,
         style: user.style,
         premium: user.premium,

@@ -1,13 +1,13 @@
 import { Router } from 'express';
 import { deleteUserByEmail, editUserByEmail, getAllPortfolios, getAllUsers } from '../controllers/adminController.js';
-import { AssetMergedData, AssetMergedDataBySector, CombinedIndexData, CommodityData, DashBoardData, IndexData, SingeAssetMergedData, TopGainersData, TopLoosersData, TopTransData, TopTurnoverData, TopVolumeData, createAsset, fetchMetalPrices } from '../controllers/assetControllers.js';
+import { AssetMergedData, AssetMergedDataBySector, CombinedIndexData, CommodityData, DashBoardData, IndexData, SingeAssetMergedData, TopGainersData, TopLoosersData, TopTransData, TopTurnoverData, TopVolumeData, WorldMarketData, createAsset, fetchMetalPrices } from '../controllers/assetControllers.js';
+import { NrbBankingData, combinedNrbData, nrbForexData } from '../controllers/extraDataControllers.js';
 import { sendOTP, verifyOTP } from '../controllers/otpControllers.js';
 import { addStockToPortfolio, createPortfolio, deletePortfolio, getAllPortfoliosForUser, removeStockFromPortfolio, renamePortfolio } from '../controllers/portfolioControllers.js';
-import { createUser, defaultportfolio, deleteAccount, fetchToken, forgetPass, googleSignIn, loginUser, makeadmin, removedefaultportfolio, updateUser, updateUserData, updateUserProfilePicture, verifyData, verifyUser } from '../controllers/userController.js';
+import { createUser, deleteAccount, forgetPass, googleSignIn, loginUser, makeadmin, updateUser, updateUserData, updateUserProfilePicture, verifyData, verifyUser } from '../controllers/userController.js';
 import { addStockToWatchlist, createWatchlist, deleteWatchlist, getWatchlistsByUserEmail, removeStockFromWatchlist, renameWatchlist } from '../controllers/watchlistController.js';
 import { authGuard, authGuardAdmin } from '../middleware/authGuard.js';
 import { startNewsServer } from '../server/newsServer.js';
-import {NrbBankingData,nrbForexData,combinedNrbData } from '../controllers/extraDataControllers.js';
 
 const router = Router();
 
@@ -24,7 +24,7 @@ router.post('/updateprofilepic', updateUserProfilePicture);
 
 router.post('/news', startNewsServer);
 router.post('/verify', verifyUser);
-router.post('/whattoken', fetchToken);
+//router.post('/whattoken', fetchToken);
 router.post('/delete-acc',deleteAccount);
 router.post('/pre-verify',verifyData);
 //portfolio
@@ -45,8 +45,8 @@ router.get('/metal', fetchMetalPrices);
 //router.post('/turnover', getTopTurnover);
 //router.post('/volume', getTopVolume);
 
-router.post('/adddefaultport',authGuard, defaultportfolio);
-router.post('/removedefaultport',authGuard, removedefaultportfolio);
+// router.post('/adddefaultport',authGuard, defaultportfolio);
+// router.post('/removedefaultport',authGuard, removedefaultportfolio);
 router.post('/makeadmin',authGuard, makeadmin);
 router.get('/sharesansardata', AssetMergedData);
 router.post('/singlesharesansardata', SingeAssetMergedData);
@@ -81,6 +81,9 @@ router.post('/remstockfromwatchlist', removeStockFromWatchlist);
 router.get('/nrbbankdata', NrbBankingData);
 router.get('/nrbforexdata', nrbForexData);
 router.get('/combinednrbdata', combinedNrbData);
+
+//world indices
+router.get('/worldmarketdata', WorldMarketData);
 
 
 
