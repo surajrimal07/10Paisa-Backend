@@ -154,6 +154,7 @@ const CACHE_KEYS = [
 const refreshInterval = 30 * 1000; // 30 seconds
 const marketClosingHour = 15;
 const oneDayInMilliseconds = 24 * 60 * 60 * 1000;
+export let isMarketOpen = false;
 
 async function getLastDataRefreshTime() {
   const lastDataRefreshTimeStr = await storage.getItem('lastDataRefreshTime');

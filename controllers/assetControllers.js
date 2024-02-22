@@ -11,6 +11,7 @@ import { metalPriceExtractor } from '../server/metalServer.js';
 import { oilExtractor } from '../server/oilServer.js';
 import { extractWorldMarketData } from '../server/worldmarketServer.js';
 import { respondWithData, respondWithError } from '../utils/response_utils.js';
+import { isMarketOpen } from './refreshController.js';
 await storage.init();
 
 
@@ -502,7 +503,7 @@ export const AssetMergedData = async (req, res) => {
   console.log('Sharesansar Asset Data Requested');
 
   try {
-    if (req.body.refresh=="false") {
+    if (req.body.refresh=="false"|| isMarketOpen === false) {
       const cachedData = await fetchFromCache('AssetMergedData');
 
       if (cachedData !== null) {
@@ -516,15 +517,6 @@ export const AssetMergedData = async (req, res) => {
         });
       }
     };
-    // if (cachedData !== null) {
-    //   console.log('Returning cached data');
-    //   return res.status(200).json({
-    //     data: cachedData,
-    //     isFallback: false,
-    //     isCached: true,
-    //     dataversion: cachedDataVersion,
-    //   });
-    // }
 
     const [todayData, liveData] = await Promise.all([FetchSingularDataOfAsset(), FetchOldData()]);
 
@@ -554,15 +546,15 @@ export const AssetMergedData = async (req, res) => {
       assetDataFolderPath
     );
 
-    try {
-      await Promise.all(
-        mergedData.map(async (item) => {
-          await Asset.updateOne({ symbol: item.symbol }, { $set: item }, { upsert: true });
-        })
-      );
-    } catch (error) {
-      console.error('DB Update Error:', error);
-    }
+    // try {
+    //   await Promise.all(
+    //     mergedData.map(async (item) => {
+    //       await Asset.updateOne({ symbol: item.symbol }, { $set: item }, { upsert: true });
+    //     })
+    //   );
+    // } catch (error) {
+    //   console.error('DB Update Error:', error);
+    // }
 
     // Update cache and counter
     await Promise.all([
@@ -571,26 +563,26 @@ export const AssetMergedData = async (req, res) => {
       storage.setItem('AssetMergedData', mergedData)
     ]);
 
-    await Promise.all(
-      mergedData.map(async (item) => {
-        try {
-          await Asset.updateOne(
-            { symbol: item.symbol },
-            {
-              $set: {
-                ...item,
-                isFallback: false,
-                isCached: false,
-                dataversion: { versionCode: dataVersionCounter, timestamp: DateTime.now().toISO() },
-              },
-            },
-            { upsert: true }
-          );
-        } catch (error) {
-          console.error('DB Update Error:', error);
-        }
-      })
-    );
+    // await Promise.all(
+    //   mergedData.map(async (item) => {
+    //     try {
+    //       await Asset.updateOne(
+    //         { symbol: item.symbol },
+    //         {
+    //           $set: {
+    //             ...item,
+    //             isFallback: false,
+    //             isCached: false,
+    //             dataversion: { versionCode: dataVersionCounter, timestamp: DateTime.now().toISO() },
+    //           },
+    //         },
+    //         { upsert: true }
+    //       );
+    //     } catch (error) {
+    //       console.error('DB Update Error:', error);
+    //     }
+    //   })
+    // );
 
     return res.status(200).json({
       data: mergedData,
@@ -771,7 +763,7 @@ const assetToCategoryMap = {
 export const fetchMetalPrices = async (req, res) => {
   console.log('Metal data requested');
   try {
-    if (req.body.refresh=="false") {
+    if (req.body.refresh=="false" || isMarketOpen === false ) {
       const cachedData = await fetchFromCache('fetchMetalPrices');
 
       if (cachedData !== null) {
@@ -912,14 +904,12 @@ export const fetchMetalPrices = async (req, res) => {
 // }
 
 //commodity
+
 export const CommodityData = async (req, res) => {
-
   try {
-    if (req.body.refresh=="false") {
+    if (req.body.refresh === "false"  || isMarketOpen === false) {
       const cachedData = await fetchFromCache('CommodityData');
-
       if (cachedData !== null) {
-
         console.log('Returning cached commodity data');
         return res.status(200).json({
           data: cachedData,
@@ -928,68 +918,105 @@ export const CommodityData = async (req, res) => {
           dataversion: cachedDataVersion,
         });
       }
-    };
-      const commodityTableData = await commodityprices();
+    }
 
-      if (!commodityTableData) {
-          return res.status(500).json({ error: 'Failed to fetch commodity data.' });
-      }
+    const commodityTableData = await commodityprices();
+    const oilData = await oilExtractor();
+    if (!commodityTableData || !oilData) {
+      return res.status(500).json({ error: 'Failed to fetch commodity data.' });
+    }
 
-      const commodityData = commodityTableData
-          .filter((rowData) => rowData[0].trim() !== '')
-          .map((rowData) => new Asset({
-              symbol: rowData[0],
-              name: rowData[0],
-              category: "Vegetables",
-              unit: rowData[1],
-              ltp: parseFloat(rowData[4])
-          }));
+    const commodityData = commodityTableData
+      .filter((rowData) => rowData[0].trim() !== '')
+      .map((rowData) => ({
+        symbol: rowData[0],
+        name: rowData[0],
+        category: "Vegetables",
+        unit: rowData[1],
+        ltp: parseFloat(rowData[4])
+      }));
 
-      let oilData;
-      try {
-        oilData = await oilExtractor();
-      } catch (oilError) {
-        console.error('Failed to fetch oil data:', oilError.message);
-        oilData = null;
-      }
+    const oilAssetData = oilData.slice(6).map((oilItem) => ({ ...oilItem }));
 
-      let oilAssetData = [];
-      if (oilData) {
-        oilAssetData = oilData.map((oilItem) => new Asset(oilItem));
-      }
+    console.log("oil data is ", oilAssetData);
 
-      const mergedData = [...commodityData, ...oilAssetData];
+    const mergedData = [...commodityData, ...oilAssetData];
 
-      await storage.setItem('CommodityData', mergedData);
+    await storage.setItem('CommodityData', mergedData);
 
-      await Promise.all(
-        mergedData.map(async (item) => {
-          try {
-            const query = { name: item.name };
-            const update = {
-              $set: {
-                ltp: item.ltp,
-              },
-            };
-
-            const options = { upsert: true, new: true };
-            await Commodity.findOneAndUpdate(query, update, options);
-          } catch (error) {
-            console.error('DB Update Error:', error);
-          }
-        })
-      )
-      return res.status(200).json({
-          data: mergedData,
-          isFallback: false,
-          isCached: false,
-          dataversion: { versionCode: dataVersion, timestamp: DateTime.now().toISO() },
-      });
+    return res.status(200).json({
+      data: mergedData,
+      isFallback: false,
+      isCached: false,
+      dataversion: { versionCode: dataVersion, timestamp: DateTime.now().toISO() },
+    });
   } catch (error) {
-      console.error(error);
-      return res.status(500).json({ error: 'Internal Server Error' });
+    console.error(error);
+    return res.status(500).json({ error: 'Internal Server Error' });
   }
 };
+// export const CommodityData = async (req, res) => {
+
+//   try {
+//     if (req.body.refresh=="false") { //|| isMarketOpen === false) {
+//       const cachedData = await fetchFromCache('CommodityData');
+
+//       if (cachedData !== null) {
+
+//         console.log('Returning cached commodity data');
+//         return res.status(200).json({
+//           data: cachedData,
+//           isFallback: false,
+//           isCached: true,
+//           dataversion: cachedDataVersion,
+//         });
+//       }
+//     };
+//       const commodityTableData = await commodityprices();
+
+//       if (!commodityTableData) {
+//           return res.status(500).json({ error: 'Failed to fetch commodity data.' });
+//       }
+
+//       const commodityData = commodityTableData
+//           .filter((rowData) => rowData[0].trim() !== '')
+//           .map((rowData) => new Asset({
+//               symbol: rowData[0],
+//               name: rowData[0],
+//               category: "Vegetables",
+//               unit: rowData[1],
+//               ltp: parseFloat(rowData[4])
+//           }));
+
+//       let oilData;
+
+//       try {
+//         oilData = await oilExtractor();
+//       } catch (oilError) {
+//         console.error('Failed to fetch oil data:', oilError.message);
+//         oilData = null;
+//       }
+
+//       let oilAssetData = [];
+//       if (oilData) {
+//         oilAssetData = oilData.map((oilItem) => new Asset(oilItem));
+//       }
+
+//       const mergedData = [...commodityData, ...oilAssetData];
+
+//       await storage.setItem('CommodityData', mergedData);
+
+//       return res.status(200).json({
+//           data: mergedData,
+//           isFallback: false,
+//           isCached: false,
+//           dataversion: { versionCode: dataVersion, timestamp: DateTime.now().toISO() },
+//       });
+//   } catch (error) {
+//       console.error(error);
+//       return res.status(500).json({ error: 'Internal Server Error' });
+//   }
+// };
 
 //top gainers //share sansar
 export const TopGainersData = async (req, res) => {
@@ -1208,8 +1235,9 @@ export const TopTransData = async (req, res) => {
 export const DashBoardData = async (req, res) => {
 
   console.log('Dashboard data requested');
+  console.log(isMarketOpen);
   try {
-    if (req.query.refresh === "false") {
+    if (req.query.refresh === "false" || isMarketOpen === false) {
       const cachedData = await fetchFromCache('DashBoardData');
 
       if (cachedData !== null) {
@@ -1225,17 +1253,6 @@ export const DashBoardData = async (req, res) => {
 
       }
     };
-    // const cachedData = await fetchFromCache('DashBoardData');
-
-    // if (cachedData !== null) {
-    //   console.log('Returning cached dashboard data');
-    //   return res.status(200).json({
-    //     data: cachedData,
-    //     isFallback: false,
-    //     isCached: true,
-    //     dataversion: cachedDataVersion,
-    //   });
-    // }
 
     const topGainersData = await topgainersShare();
     const topLoosersData = await topLosersShare();
@@ -1262,6 +1279,7 @@ export const DashBoardData = async (req, res) => {
     };
 
     await storage.setItem('DashBoardData', dashboardData);
+    console.log('Returning live dashboard data');
 
     return res.status(200).json({
       data: dashboardData,
@@ -1312,7 +1330,7 @@ export const CombinedIndexData = async (req, res) => {
   console.log("Combined Index Data Requested");
   try {
 
-    if (req.query.refresh === "false") {
+    if (req.query.refresh === "false" || isMarketOpen === false) {
       const cachedData = await fetchFromCache('CombinedIndexData');
 
       if (cachedData !== null) {
@@ -1398,7 +1416,7 @@ export const WorldMarketData = async (req, res) => {
   console.log("World Index Data Requested");
   try {
 
-    if (req.query.refresh === "false") {
+    if (req.query.refresh === "false" || isMarketOpen === false) {
       const cachedData = await fetchFromCache('WorldMarketData');
 
       if (cachedData !== null) {
