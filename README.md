@@ -5,6 +5,8 @@
 </p>
 
 
+Try live at [Live](https://tenpaisa.tech/)
+
 A Smart Investment backend made for Softwarica College of IT & E-Commerce, Coventry University
 
 ## Overview
