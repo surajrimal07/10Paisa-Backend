@@ -1,5 +1,5 @@
 import storage from 'node-persist';
-import { extractNrbBankingData, extractNrbForexData } from '../server/nrbServer.js';
+import { extractNrbBankingData, extractNrbBankingDataAll, extractNrbForexData } from '../server/nrbServer.js';
 import { respondWithData, respondWithError } from '../utils/response_utils.js';
 await storage.init();
 
@@ -33,6 +33,39 @@ export const NrbBankingData = async (req, res) => {
       };
 
       const nrbData = await extractNrbBankingData();
+
+      if (!nrbData) {
+        return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'Failed to fetch nrb data');
+      }
+
+      await storage.setItem('NrbBankingData', nrbData);
+
+        return respondWithData(res, 'SUCCESS', 'Nrb Data refreshed successfully', nrbData);
+
+    } catch (error) {
+      console.error(error);
+        return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'Internal Server Error');
+    }
+  };
+
+  //with more data
+  export const NrbBankingDataAll = async (req, res) => {
+    console.log('NRB Banking data requested');
+
+    const { refresh } = req.query;
+
+    try {
+      // if (refresh=="false") {
+      //   const cachedData = await fetchFromCache('NrbBankingData');
+
+      //   if (cachedData !== null) {
+
+      //     console.log('Returning cached nrb banking data');
+      //     return respondWithData(res, 'SUCCESS', 'Nrb Data fetched successfully', cachedData);
+      //   }
+      // };
+
+      const nrbData = await extractNrbBankingDataAll();
 
       if (!nrbData) {
         return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'Failed to fetch nrb data');
@@ -95,7 +128,8 @@ export const NrbBankingData = async (req, res) => {
         return respondWithData(res, 'SUCCESS', 'Nrb Data fetched successfully', cachedData);
         }
 
-        const bankingData = await extractNrbBankingData();
+        //const bankingData = await extractNrbBankingData();
+        const bankingData = await extractNrbBankingDataAll();
         const forexData = await extractNrbForexData();
 
         if (!bankingData || !forexData) {

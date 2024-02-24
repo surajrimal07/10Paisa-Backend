@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { deleteUserByEmail, editUserByEmail, getAllPortfolios, getAllUsers } from '../controllers/adminController.js';
 import { AssetMergedData, AssetMergedDataBySector, CombinedIndexData, CommodityData, DashBoardData, IndexData, SingeAssetMergedData, TopGainersData, TopLoosersData, TopTransData, TopTurnoverData, TopVolumeData, WorldMarketData, createAsset, fetchMetalPrices } from '../controllers/assetControllers.js';
-import { NrbBankingData, combinedNrbData, nrbForexData } from '../controllers/extraDataControllers.js';
+import { NrbBankingData, NrbBankingDataAll, combinedNrbData, nrbForexData } from '../controllers/extraDataControllers.js';
 import { sendOTP, verifyOTP } from '../controllers/otpControllers.js';
 import { addStockToPortfolio, createPortfolio, deletePortfolio, getAllPortfoliosForUser, removeStockFromPortfolio, renamePortfolio } from '../controllers/portfolioControllers.js';
 import { createUser, deleteAccount, forgetPass, googleSignIn, loginUser, makeadmin, updateUser, updateUserData, updateUserProfilePicture, verifyData, verifyUser } from '../controllers/userController.js';
@@ -79,6 +79,9 @@ router.post('/remstockfromwatchlist', removeStockFromWatchlist);
 
 //nrb datas
 router.get('/nrbbankdata', NrbBankingData);
+router.get('/nrbbankingdataAll', NrbBankingDataAll);
+
+
 router.get('/nrbforexdata', nrbForexData);
 router.get('/combinednrbdata', combinedNrbData);
 

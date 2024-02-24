@@ -4,7 +4,6 @@ import path, { dirname } from 'path';
 import { fileURLToPath } from 'url';
 import saveDataToJson from '../controllers/jsonControllers.js';
 import Asset from '../models/assetModel.js';
-import Commodity from '../models/commodityModel.js';
 import { FetchOldData, FetchSingularDataOfAsset, extractIndex, extractIndexDateWise, topLosersShare, topTradedShares, topTransactions, topTurnoversShare, topgainersShare } from '../server/assetServer.js';
 import { commodityprices } from '../server/commodityServer.js';
 import { metalPriceExtractor } from '../server/metalServer.js';
@@ -503,7 +502,7 @@ export const AssetMergedData = async (req, res) => {
   console.log('Sharesansar Asset Data Requested');
 
   try {
-    if (req.body.refresh=="false"|| isMarketOpen === false) {
+    if (req.body.refresh=="false") {
       const cachedData = await fetchFromCache('AssetMergedData');
 
       if (cachedData !== null) {
@@ -763,7 +762,7 @@ const assetToCategoryMap = {
 export const fetchMetalPrices = async (req, res) => {
   console.log('Metal data requested');
   try {
-    if (req.body.refresh=="false" || isMarketOpen === false ) {
+    if (req.body.refresh=="false") {
       const cachedData = await fetchFromCache('fetchMetalPrices');
 
       if (cachedData !== null) {
@@ -808,28 +807,28 @@ export const fetchMetalPrices = async (req, res) => {
 
     await storage.setItem('fetchMetalPrices', { metalPrices });
 
-    await Promise.all(
-      metalPrices.map(async (item) => {
-        try {
-          await Commodity.updateOne(
-            { name : item.name},
-            {
-              $set: {
-                category: item.category,
-                unit: item.unit,
-                ltp: item.ltp,
-                isFallback: false,
-                isCached: false,
-                dataversion: { versionCode: dataVersion, timestamp: DateTime.now().toISO() },
-              },
-            },
-            { upsert: true }
-          );
-        } catch (error) {
-          console.error('DB Update Error:', error);
-        }
-      })
-        );
+    // await Promise.all(
+    //   metalPrices.map(async (item) => {
+    //     try {
+    //       await Commodity.updateOne(
+    //         { name : item.name},
+    //         {
+    //           $set: {
+    //             category: item.category,
+    //             unit: item.unit,
+    //             ltp: item.ltp,
+    //             isFallback: false,
+    //             isCached: false,
+    //             dataversion: { versionCode: dataVersion, timestamp: DateTime.now().toISO() },
+    //           },
+    //         },
+    //         { upsert: true }
+    //       );
+    //     } catch (error) {
+    //       console.error('DB Update Error:', error);
+    //     }
+    //   })
+    //     );
 
     console.log('Returning live Metal prices');
     return res.status(200).json({metalPrices
@@ -907,7 +906,7 @@ export const fetchMetalPrices = async (req, res) => {
 
 export const CommodityData = async (req, res) => {
   try {
-    if (req.body.refresh === "false"  || isMarketOpen === false) {
+    if (req.body.refresh === "false") {
       const cachedData = await fetchFromCache('CommodityData');
       if (cachedData !== null) {
         console.log('Returning cached commodity data');
@@ -922,8 +921,8 @@ export const CommodityData = async (req, res) => {
 
     const commodityTableData = await commodityprices();
     const oilData = await oilExtractor();
-    if (!commodityTableData || !oilData) {
-      return res.status(500).json({ error: 'Failed to fetch commodity data.' });
+    if (!commodityTableData) { // || !oilData
+       return res.status(500).json({ error: 'Failed to fetch commodity data.' });
     }
 
     const commodityData = commodityTableData
@@ -936,11 +935,10 @@ export const CommodityData = async (req, res) => {
         ltp: parseFloat(rowData[4])
       }));
 
-    const oilAssetData = oilData.slice(6).map((oilItem) => ({ ...oilItem }));
+    const oilAssetData = oilData.slice(6).map((oilItem) => ({ ...oilItem })); //this is because
+    //i need to switch oil extraction site, on server the site bans scarping resulting in whole request failing
 
-    console.log("oil data is ", oilAssetData);
-
-    const mergedData = [...commodityData, ...oilAssetData];
+    const mergedData = oilData ? [...commodityData, ...oilAssetData] : [...commodityData];
 
     await storage.setItem('CommodityData', mergedData);
 
@@ -1237,7 +1235,7 @@ export const DashBoardData = async (req, res) => {
   console.log('Dashboard data requested');
   console.log(isMarketOpen);
   try {
-    if (req.query.refresh === "false" || isMarketOpen === false) {
+    if (req.query.refresh === "false") {
       const cachedData = await fetchFromCache('DashBoardData');
 
       if (cachedData !== null) {
@@ -1330,7 +1328,7 @@ export const CombinedIndexData = async (req, res) => {
   console.log("Combined Index Data Requested");
   try {
 
-    if (req.query.refresh === "false" || isMarketOpen === false) {
+    if (req.query.refresh === "false") {
       const cachedData = await fetchFromCache('CombinedIndexData');
 
       if (cachedData !== null) {
@@ -1416,7 +1414,7 @@ export const WorldMarketData = async (req, res) => {
   console.log("World Index Data Requested");
   try {
 
-    if (req.query.refresh === "false" || isMarketOpen === false) {
+    if (req.query.refresh === "false") {
       const cachedData = await fetchFromCache('WorldMarketData');
 
       if (cachedData !== null) {
