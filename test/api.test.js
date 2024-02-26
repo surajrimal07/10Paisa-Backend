@@ -1,64 +1,189 @@
-// import request from 'supertest';
-// import app from '../index';
-
-// describe('API Testing', () => {
-
-//     //Making test for route '/test'
-//     it('GET /test | Response with valid text', async () => {
-
-
-//         const res = await request(app).get('/test');
-//         expect(res.statusCode).toBe(200);
-//         expect(res.text).toBe('Testing API is running live🥳');
-//     });
-
-
-
-
-
-// });
-
-
 import request from 'supertest';
-import app from '../index';
+import app from '../index.js';
 
-describe('API Testing', () => {
-  let server;
-
-  beforeAll((done) => {
-    // Start the server with a delay of 2 seconds (adjust as needed)
-    setTimeout(() => {
-      try {
-        server = app.listen(8000);
-        console.log('Server started successfully.');
-        done();
-      } catch (error) {
-        console.error('Error starting the server:', error);
-        done(error);
-      }
-    }, 4000);
+describe('GET /test', () => {
+  it('responds with text "Testing API is running live🥳"', (done) => {
+    request(app)
+      .get('/test')
+      .expect(200)
+      .expect('Testing API is running live🥳', done);
   });
-
-  afterAll((done) => {
-    try {
-      if (server) {
-        server.close(() => {
-          console.log('Server closed successfully.');
-          done();
-        });
-      } else {
-        console.warn('Server is undefined. Unable to close.');
-        done();
-      }
-    } catch (error) {
-      console.error('Error closing the server:', error);
-      done(error);
-    }
-  });
-
-  it('GET /test | Response with valid text', async () => {
-    const res = await request(app).get('/test');
-    expect(res.statusCode).toBe(200);
-    expect(res.text).toBe('Testing API is running live🥳');
-  }, 20000); // Increase timeout to 10000 ms (10 seconds)
 });
+
+describe('GET /', () => {
+  it('responds with text "This API is running live🥳"', (done) => {
+    request(app)
+      .get('/')
+      .expect(200)
+      .expect('This API is running live🥳', done);
+  });
+});
+
+describe('GET /api/dashboard', () => {
+  it('responds with 200 OK and returns some data', (done) => {
+    request(app)
+      .get('/api/dashboard')
+      .set('Accept', 'application/json')
+      .expect(200)
+      .end((err, res) => {
+        if (err) return done(err);
+        done();
+      });
+  });
+});
+
+describe('GET /api/commodity', () => {
+  it('responds with 200 OK', (done) => {
+    request(app)
+      .get('/api/commodity')
+      .expect(200)
+      .end(done);
+  });
+});
+
+describe('GET /api/metal', () => {
+  it('responds with 200 OK', (done) => {
+    request(app)
+      .get('/api/metal')
+      .expect(200)
+      .end(done);
+  });
+});
+
+describe('GET /api/sharesansardata', () => {
+  it('responds with 200 OK', (done) => {
+    request(app)
+      .get('/api/sharesansardata')
+      .expect(200)
+      .end(done);
+  });
+});
+
+describe('GET /api/dashboard', () => {
+  it('responds with 200 OK', (done) => {
+    request(app)
+      .get('/api/dashboard')
+      .expect(200)
+      .end(done);
+  });
+});
+
+describe('GET /api/index', () => {
+  it('responds with 200 OK', (done) => {
+    request(app)
+      .get('/api/index')
+      .expect(200)
+      .end(done);
+  });
+});
+
+describe('GET /api/combinedindex', () => {
+  it('responds with 200 OK', (done) => {
+    request(app)
+      .get('/api/combinedindex')
+      .expect(200)
+      .end(done);
+  });
+});
+
+describe('GET /api/allusers', () => {
+  it('responds with 200 OK', (done) => {
+    request(app)
+      .get('/api/allusers')
+      .expect(200)
+      .end(done);
+  });
+});
+
+describe('GET /api/allportfolios', () => {
+  it('responds with 200 OK', (done) => {
+    request(app)
+      .get('/api/allportfolios')
+      .expect(200)
+      .end(done);
+  });
+});
+
+describe('GET /api/nrbbankdata', () => {
+  it('responds with 200 OK', (done) => {
+    request(app)
+      .get('/api/nrbbankdata')
+      .expect(200)
+      .end(done);
+  });
+});
+
+describe('GET /api/nrbbankingdataAll', () => {
+  it('responds with 200 OK', (done) => {
+    request(app)
+      .get('/api/nrbbankingdataAll')
+      .expect(200)
+      .end(done);
+  });
+});
+
+describe('GET /api/nrbforexdata', () => {
+  it('responds with 200 OK', (done) => {
+    request(app)
+      .get('/api/nrbforexdata')
+      .expect(200)
+      .end(done);
+  });
+});
+
+describe('GET /api/combinednrbdata', () => {
+  it('responds with 200 OK', (done) => {
+    request(app)
+      .get('/api/combinednrbdata')
+      .expect(200)
+      .end(done);
+  });
+});
+
+describe('GET /api/worldmarketdata', () => {
+  it('responds with 200 OK', (done) => {
+    request(app)
+      .get('/api/worldmarketdata')
+      .expect(200)
+      .end(done);
+  });
+});
+describe('Forget Password Function', () => {
+  it('should return an error if the email is not found', (done) => {
+    const randomEmail = 'nonexistent@example.com';
+
+    request(app)
+      .post('/api/forget')
+      .send({ email: randomEmail })
+      .expect(404)
+      .expect('Content-Type', /json/)
+      .end(done);
+    })});
+
+
+    describe('Get Watchlists by User Email Function', () => {
+      it('should return an error if no watchlists found for the user', (done) => {
+        const randomEmail = 'nonexistent@example.com';
+
+        request(app)
+          .post('/api/getwatchlist')
+          .send({ email: randomEmail })
+          .expect(404)
+          .expect('Content-Type', /json/)
+          .end(done);
+      });
+    });
+
+
+describe('Login Function', () => {
+  it('should return an error for invalid credentials', (done) => {
+    const randomEmail = 'random@example.com';
+    const randomPassword = 'randompassword123';
+
+    request(app)
+      .post('/api/login')
+      .send({ email: randomEmail, password: randomPassword })
+      .expect(401)
+      .end(done);
+    },10000);
+  })

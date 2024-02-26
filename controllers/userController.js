@@ -228,7 +228,6 @@ export const loginUser = async (req, res) => {
           portfolio: user.portfolio,
           wallets: user.wallets
         };
-       // console.log("Login Was Success");
         notifyClients({type:'notification', title: 'Welcome 🎉', description: "Welcome to 10Paisa "+user.name+"!", image: user.dpImage, url: "https://10paisa.com"});
         return respondWithData(res, 'SUCCESS', "Login successful", userData);
       }
