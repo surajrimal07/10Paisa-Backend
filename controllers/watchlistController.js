@@ -111,20 +111,14 @@ export const deleteWatchlist = async (req, res) => {
     const ObjectId = mongoose.Types.ObjectId;
 
     try {
-
-      // Find the watchlist by its _id
       const watchlist = await Watchlist.findOne({ _id: new ObjectId(watchlistId) });
 
       if (!watchlist) {
         return respondWithError(res, 'NOT_FOUND', 'Watchlist not found');
       }
-
-      // Check if the watchlist belongs to the user
       if (watchlist.user !== email) {
         return respondWithError(res, 'FORBIDDEN', 'You do not have permission to delete this watchlist');
       }
-
-      // Delete the watchlist
       const deletedWatchlist = await Watchlist.findByIdAndDelete(watchlistId);
 
       if (!deletedWatchlist) {
@@ -155,27 +149,20 @@ export const addStockToWatchlist = async (req, res) => {
       return respondWithError(res, 'NOT_FOUND', 'Watchlist not found');
     }
 
-    // Check if the watchlist belongs to the user
     if (watchlist.user !== email) {
     return respondWithError(res, 'FORBIDDEN', 'You do not have permission to delete this watchlist');
     }
-
-    // Check if the stock exists
     const stocksUpper = stockSymbol ? stockSymbol.toString().toUpperCase() : '';
 
     const stock = await Asset.findOne({ symbol: stocksUpper });
     if (!stock) {
         return respondWithError(res, 'NOT_FOUND', 'Stock not found');
     }
-
-    //check if same stock already exists in same watchlist
     if (watchlist.stocks.includes(stock.symbol)) {
         return respondWithError(res, 'BAD_REQUEST', 'Stock already exists in the watchlist');
         }
 
     watchlist.stocks.push(stock.symbol);
-
-    // Save the updated watchlist
     await watchlist.save();
 
     console.log("Stock added to watchlist successfully");
@@ -199,23 +186,15 @@ export const removeStockFromWatchlist = async (req, res) => {
       if (!watchlist) {
         return respondWithError(res, 'NOT_FOUND', 'Watchlist not found');
       }
-
-      // Check if the watchlist belongs to the user
       if (watchlist.user !== email) {
         return respondWithError(res, 'FORBIDDEN', 'You do not have permission to modify this watchlist');
       }
-
-      // Check if the stock symbol exists in the watchlist
       const stocksUpper = stockSymbol ? stockSymbol.toString().toUpperCase() : '';
 
       if (!watchlist.stocks.includes(stocksUpper)) {
         return respondWithError(res, 'BAD_REQUEST', 'Stock not found in the watchlist');
       }
-
-      // Remove the stock symbol from the watchlist's stocks array
       watchlist.stocks = watchlist.stocks.filter(symbol => symbol !== stocksUpper);
-
-      // Save the updated watchlist
       await watchlist.save();
 
       const userWatchlists = await Watchlist.find({ user: email });

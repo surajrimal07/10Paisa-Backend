@@ -148,7 +148,8 @@ const CACHE_KEYS = [
   'FetchOldData',
   'FetchSingularDataOfAsset',
   'tableData',
-  'fetchMetalPrices'
+  'fetchMetalPrices',
+  'allindices_data'
 ];
 
 const refreshInterval = 30 * 1000; // 30 seconds

@@ -40,142 +40,6 @@ const fetchFromCache = async (cacheKey) => {
   }
 };
 
-// export async function fetchSecurityData(indexId) {
-//   try {
-//     const response = await axios.get(`${nepseUrls.API_URL}/${indexId}`);
-//     const mappedData = response.data
-//       .filter(security => security.symbol && security.securityName && security.symbol && security.indexId)
-//       .map(security => ({
-//         symbol: security.symbol,
-//         name: security.securityName,
-//         ltp: security.lastTradedPrice.toString(),
-//         totaltradedquantity: security.totalTradeQuantity.toString(),
-//         percentchange: security.percentageChange.toString(),
-//         previousclose: security.previousClose.toString(),
-//       }));
-//     return mappedData;
-//   } catch (error) {
-//     console.error(`Error fetching security data for indexId ${indexId}:`, error.message);
-//     throw error;
-//   }
-// }
-
-// export async function fetchSingleSecurityData( requestedSymbol) {
-//   try {
-//     const response = await axios.get(`${nepseUrls.API_URL}/58`);
-//     const filteredData = response.data.filter(security => security.symbol === requestedSymbol);
-
-//     if (filteredData.length === 0) {
-//       console.error(`Security with symbol ${requestedSymbol} not found`);
-//       return [];
-//     }
-
-//     const mappedData = filteredData.map(security => ({
-//       symbol: security.symbol,
-//       name: security.securityName,
-//       ltp: security.lastTradedPrice.toString(),
-//       totaltradedquantity: security.totalTradeQuantity.toString(),
-//       percentchange: security.percentageChange.toString(),
-//       previousclose: security.previousClose.toString(),
-//     }));
-
-//     return mappedData;
-//   } catch (error) {
-//     console.error(`Error fetching security data :`, error.message);
-//     throw error;
-//   }
-// }
-
-// export async function fetchTopGainers() {
-//   try {
-//     const gainers = await axios.get(nepseUrls.Gainer_URL);
-//     const loosers = await axios.get(nepseUrls.Looser_URL);
-//     const gain = gainers.data;
-//     const lose = loosers.data;
-
-//     const mappedGainers = gain.map(item => ({
-//       symbol: item.symbol,
-//       ltp: item.ltp || 0,
-//       pointChange: item.pointChange || 0,
-//       percentageChange: parseFloat(item.percentageChange) || 0,
-//       securityId: item.securityId || 0,
-//     }));
-
-//     const mappedLosers = lose.map(item => ({
-//       symbol: item.symbol,
-//       ltp: item.ltp || 0,
-//       pointChange: item.pointChange || 0,
-//       percentageChange: parseFloat(item.percentageChange) || 0,
-//       securityId: item.securityId || 0,
-//     }));
-
-//     const mergedData = [...mappedGainers, ...mappedLosers];
-//     mergedData.sort((a, b) => b.percentageChange - a.percentageChange);
-
-//     return mergedData;
-//   } catch (error) {
-//     console.error(`Error fetching data:`, error.message);
-//     throw error;
-//   }
-// }
-
-// export async function fetchturnvolume() {
-//   try {
-//     const turn = await axios.get(nepseUrls.Turnover_URL);
-//     const turnover = turn.data;
-//     const top10Turnover = turnover.slice(0, 10);
-
-//     const mappedTurnover = top10Turnover.map(item => {
-//       const symbol = item.symbol || '';
-//       const turnoverValue = item.turnover || 0;
-//       const ltp = item.closingPrice || 0;
-//       const name = item.securityName || '';
-//       const securityId = item.securityId || 0;
-
-//       return {
-//         symbol,
-//         turnover: turnoverValue,
-//         ltp,
-//         name,
-//         securityId,
-//       };
-//     });
-
-//     return mappedTurnover;
-//   } catch (error) {
-//     console.error(`Error fetching data:`, error.message);
-//     throw error;
-//   }
-// }
-
-
-// export async function fetchvolume() {
-//   try {
-//     const vol = await axios.get(nepseUrls.Volume_URL);
-//     const volume = vol.data;
-//     const top10Volume = volume.slice(0, 10);
-
-//     const mappedVolume = top10Volume.map(item => {
-//       const symbol = item.symbol || '';
-//       const shareTraded = item.shareTraded || 0;
-//       const ltp = item.closingPrice || 0;
-//       const name = item.securityName || '';
-//       const securityId = item.securityId || 0;
-
-//       return {
-//         symbol,
-//         turnover: shareTraded,
-//         ltp,
-//         name,
-//         securityId,
-//       };
-//     });
-//     return mappedVolume;
-//   } catch (error) {
-//     console.error(`Error fetching data:`, error.message);
-//     throw error;
-//   }
-// }
 
 //preparing to switch to sharesansar as data provider
 export async function FetchSingularDataOfAsset() {
@@ -683,9 +547,16 @@ export const topTransactions = async () => {
   }
 };
 
-//not used yet
+//used for machine learning model
 export async function fetchIndexes() {
   try {
+
+    const cachedData = await fetchFromCache('allindices_data');
+
+    if (cachedData !== null) {
+      return cachedData;
+    }
+
     const url = 'https://www.sharesansar.com/live-trading'
       const response = await axios.get(url);
       const html = response.data;
@@ -729,13 +600,16 @@ export async function fetchIndexes() {
         };
       });
 
-      console.log(extractedData);
+      await storage.setItem('allindices_data', extractedData);
+
       return extractedData;
     } catch (error) {
       console.error('Error fetching or parsing the HTML:', error.message);
     }
   }
 
+
+///extract single index
 export async function extractIndex() {
   try {
 
@@ -751,7 +625,7 @@ export async function extractIndex() {
     const $ = cheerio.load(html);
 
     const nepseIndexContainer = $('h4:contains("NEPSE Index")').closest('.mu-list');
-    let marketStatus = $('.btn.btn-success').text().trim(); //added new code
+    let marketStatus = $('.btn.btn-success').text().trim();
 
     const turnover = parseFloat(nepseIndexContainer.find('.mu-price').text().replace(/,/g, ''));
     const index = parseFloat(nepseIndexContainer.find('.mu-value').text().replace(/,/g, ''));

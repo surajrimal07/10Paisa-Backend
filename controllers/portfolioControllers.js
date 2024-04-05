@@ -249,8 +249,8 @@ const updateGainLossRecords = (portfolio) => {
       portfolio.gainLossRecords.push(createNewGainLossRecord(portfolio.portfoliovalue, portfolio.portfoliocost));
     } else {
       const latestGainLossRecord = portfolio.gainLossRecords[portfolio.gainLossRecords.length - 1];
-      latestGainLossRecord.value = portfolio.portfoliovalue.toFixed(2);
-      latestGainLossRecord.portgainloss = (portfolio.portfoliovalue - portfolio.portfoliocost).toFixed(2);
+      latestGainLossRecord.value = portfolio.portfoliovalue.toFixed(1);
+      latestGainLossRecord.portgainloss = (portfolio.portfoliovalue - portfolio.portfoliocost).toFixed(1);
     }
   }
 };
@@ -482,6 +482,7 @@ export const renamePortfolio = async (req, res) => {
             //total units of stocks held in all portfolios
             const totalUnits = portfolios.reduce((total, portfolio) => total + portfolio.totalunits, 0);
 
+
             const portfolioData = {
               totalPortfolioCost,
               totalPortfolioValue,
@@ -500,6 +501,7 @@ export const renamePortfolio = async (req, res) => {
         const formattedPortfolios = portfolios.map((portfolio) => {
         const { __v, _id, ...rest } = portfolio._doc;
         const recommendation = generateRecommendation({ portfolio });
+        const totalStocks = portfolio.stocks.length;
         const returns = (portfolio.portfoliovalue - portfolio.portfoliocost) / portfolio.portfoliocost * 100;
         const percentage = returns !== null && !isNaN(returns) ? parseFloat(returns.toFixed(1)) : 0;
 
@@ -509,6 +511,7 @@ export const renamePortfolio = async (req, res) => {
           name: rest.name,
           userEmail: rest.userEmail,
           stocks: rest.stocks,
+          totalStocks: totalStocks,
           totalunits: rest.totalunits,
           gainLossRecords: rest.gainLossRecords,
           portfoliocost: rest.portfoliocost,
@@ -544,7 +547,6 @@ export const renamePortfolio = async (req, res) => {
     if (returnPercentage == 0) {
       return "Please add stocks to get recommendation";
     }
-
     if (returnPercentage > 50) {
       return "Look for booking your profits";
     } else if (returnPercentage >= 10 && returnPercentage <= 50) {

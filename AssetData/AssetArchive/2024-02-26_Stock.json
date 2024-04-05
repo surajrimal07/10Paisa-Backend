@@ -3,7 +3,7 @@
     {
       "symbol": "ACLBSL",
       "ltp": 607,
-      "pointchange": -6.9,
+      "pointchange": -2,
       "percentchange": -1,
       "open": 606,
       "high": 616,
@@ -23,7 +23,7 @@
     {
       "symbol": "ADBL",
       "ltp": 227,
-      "pointchange": 0.5,
+      "pointchange": 0.9,
       "percentchange": 0,
       "open": 230,
       "high": 230,
@@ -63,7 +63,7 @@
     {
       "symbol": "AHL",
       "ltp": 429,
-      "pointchange": -1,
+      "pointchange": 6,
       "percentchange": -1,
       "open": 431,
       "high": 435,
@@ -83,7 +83,7 @@
     {
       "symbol": "AHPC",
       "ltp": 184,
-      "pointchange": -1,
+      "pointchange": 1,
       "percentchange": -3,
       "open": 193,
       "high": 193,
@@ -103,7 +103,7 @@
     {
       "symbol": "AKJCL",
       "ltp": 220,
-      "pointchange": 2.4,
+      "pointchange": 3.9,
       "percentchange": -2,
       "open": 229,
       "high": 229,
@@ -123,7 +123,7 @@
     {
       "symbol": "AKPL",
       "ltp": 175,
-      "pointchange": 2,
+      "pointchange": 2.7,
       "percentchange": -2,
       "open": 181,
       "high": 181,
@@ -143,7 +143,7 @@
     {
       "symbol": "ALBSL",
       "ltp": 650,
-      "pointchange": -8.9,
+      "pointchange": -10.7,
       "percentchange": -1,
       "open": 648,
       "high": 650,
@@ -163,7 +163,7 @@
     {
       "symbol": "ALICL",
       "ltp": 578,
-      "pointchange": -6,
+      "pointchange": -3,
       "percentchange": -2,
       "open": 605,
       "high": 606,
@@ -183,7 +183,7 @@
     {
       "symbol": "ANLB",
       "ltp": 1940,
-      "pointchange": -40,
+      "pointchange": 8,
       "percentchange": -3,
       "open": 2043,
       "high": 2043,
@@ -203,7 +203,7 @@
     {
       "symbol": "API",
       "ltp": 178,
-      "pointchange": 0.5,
+      "pointchange": 2.4,
       "percentchange": -2,
       "open": 183,
       "high": 184,
@@ -223,7 +223,7 @@
     {
       "symbol": "AVYAN",
       "ltp": 590,
-      "pointchange": -3.4,
+      "pointchange": 2.5,
       "percentchange": -1,
       "open": 592,
       "high": 604,
@@ -243,7 +243,7 @@
     {
       "symbol": "BARUN",
       "ltp": 257,
-      "pointchange": -2,
+      "pointchange": 1.8,
       "percentchange": 1,
       "open": 255,
       "high": 268,
@@ -263,7 +263,7 @@
     {
       "symbol": "BBC",
       "ltp": 3621,
-      "pointchange": 12,
+      "pointchange": -31,
       "percentchange": 0,
       "open": 3660,
       "high": 3699,
@@ -283,7 +283,7 @@
     {
       "symbol": "BEDC",
       "ltp": 348,
-      "pointchange": -8,
+      "pointchange": 2,
       "percentchange": -3,
       "open": 360,
       "high": 360,
@@ -303,7 +303,7 @@
     {
       "symbol": "BFC",
       "ltp": 331,
-      "pointchange": 1,
+      "pointchange": -1.6,
       "percentchange": 0,
       "open": 339,
       "high": 343,
@@ -323,7 +323,7 @@
     {
       "symbol": "BGWT",
       "ltp": 592,
-      "pointchange": -16.4,
+      "pointchange": -2,
       "percentchange": 0,
       "open": 595,
       "high": 595,
@@ -343,7 +343,7 @@
     {
       "symbol": "BHDC",
       "ltp": 473,
-      "pointchange": -7.9,
+      "pointchange": 6.9,
       "percentchange": -3,
       "open": 479,
       "high": 479,
@@ -363,7 +363,7 @@
     {
       "symbol": "BHL",
       "ltp": 335,
-      "pointchange": 3.1,
+      "pointchange": 8,
       "percentchange": -9,
       "open": 362,
       "high": 362,
@@ -383,7 +383,7 @@
     {
       "symbol": "BHPL",
       "ltp": 484,
-      "pointchange": -4.9,
+      "pointchange": 0.1,
       "percentchange": 1,
       "open": 485,
       "high": 494,
@@ -403,7 +403,7 @@
     {
       "symbol": "BNHC",
       "ltp": 440,
-      "pointchange": -9.4,
+      "pointchange": -5,
       "percentchange": -2,
       "open": 458,
       "high": 467,
@@ -443,7 +443,7 @@
     {
       "symbol": "BNT",
       "ltp": 13600,
-      "pointchange": 0,
+      "pointchange": -100,
       "percentchange": -2,
       "open": 14229,
       "high": 14229,
@@ -483,7 +483,7 @@
     {
       "symbol": "BPCL",
       "ltp": 300,
-      "pointchange": 2.3,
+      "pointchange": 1.5,
       "percentchange": -1,
       "open": 310,
       "high": 316,
@@ -503,7 +503,7 @@
     {
       "symbol": "BPW",
       "ltp": 1149,
-      "pointchange": -105.9,
+      "pointchange": -100.9,
       "percentchange": -5,
       "open": 1220,
       "high": 1220,
@@ -521,9 +521,29 @@
       "week52low": 233
     },
     {
+      "symbol": "C30MF",
+      "ltp": 8,
+      "pointchange": -0.11,
+      "percentchange": 0,
+      "open": 8,
+      "high": 8,
+      "low": 8,
+      "volume": 8780,
+      "previousclose": 8,
+      "name": "Citizens Super 30 Mutual Fund",
+      "category": "Mutual Fund",
+      "sector": "Mutual Fund",
+      "vwap": 8,
+      "Turnover": 76009,
+      "day120": 0,
+      "day180": 0,
+      "week52high": 10,
+      "week52low": 7
+    },
+    {
       "symbol": "CBBL",
       "ltp": 831,
-      "pointchange": 0,
+      "pointchange": 2,
       "percentchange": -1,
       "open": 824,
       "high": 846,
@@ -539,6 +559,26 @@
       "day180": 915,
       "week52high": 1115,
       "week52low": 727
+    },
+    {
+      "symbol": "CBLD88",
+      "ltp": 1001,
+      "pointchange": 0.4,
+      "percentchange": 0,
+      "open": 1001,
+      "high": 1001,
+      "low": 1001,
+      "volume": 118,
+      "previousclose": 1,
+      "name": "10.25% Civil Bank Debenture 2088",
+      "category": "Debenture",
+      "sector": "Debenture",
+      "vwap": 1,
+      "Turnover": 118176,
+      "day120": 944,
+      "day180": 915,
+      "week52high": 1024,
+      "week52low": 813
     },
     {
       "symbol": "CCBD88",
@@ -563,7 +603,7 @@
     {
       "symbol": "CFCL",
       "ltp": 340,
-      "pointchange": -5,
+      "pointchange": 0.8,
       "percentchange": 2,
       "open": 339,
       "high": 345,
@@ -603,7 +643,7 @@
     {
       "symbol": "CHCL",
       "ltp": 462,
-      "pointchange": -2,
+      "pointchange": -1,
       "percentchange": -1,
       "open": 478,
       "high": 478,
@@ -623,7 +663,7 @@
     {
       "symbol": "CHDC",
       "ltp": 945,
-      "pointchange": 6,
+      "pointchange": 24.9,
       "percentchange": -3,
       "open": 966,
       "high": 971,
@@ -643,7 +683,7 @@
     {
       "symbol": "CHL",
       "ltp": 288,
-      "pointchange": 6,
+      "pointchange": 7,
       "percentchange": -5,
       "open": 309,
       "high": 309,
@@ -663,7 +703,7 @@
     {
       "symbol": "CIT",
       "ltp": 2051,
-      "pointchange": -2,
+      "pointchange": 9,
       "percentchange": 0,
       "open": 2085,
       "high": 2089,
@@ -683,7 +723,7 @@
     {
       "symbol": "CITY",
       "ltp": 582,
-      "pointchange": -8,
+      "pointchange": 4.9,
       "percentchange": -2,
       "open": 590,
       "high": 610,
@@ -703,7 +743,7 @@
     {
       "symbol": "CKHL",
       "ltp": 622,
-      "pointchange": -0.9,
+      "pointchange": 13,
       "percentchange": 8,
       "open": 574,
       "high": 624,
@@ -723,7 +763,7 @@
     {
       "symbol": "CLI",
       "ltp": 427,
-      "pointchange": 0.4,
+      "pointchange": 4.4,
       "percentchange": 0,
       "open": 428,
       "high": 436,
@@ -743,7 +783,7 @@
     {
       "symbol": "CMF1",
       "ltp": 8,
-      "pointchange": -0.03,
+      "pointchange": -0.1,
       "percentchange": 0,
       "open": 8,
       "high": 8,
@@ -761,9 +801,29 @@
       "week52low": 6
     },
     {
+      "symbol": "CMF2",
+      "ltp": 7,
+      "pointchange": -0.04,
+      "percentchange": 0,
+      "open": 7,
+      "high": 7,
+      "low": 7,
+      "volume": 325,
+      "previousclose": 7,
+      "name": "Citizens Mutual Fund - 2",
+      "category": "Mutual Fund",
+      "sector": "Mutual Fund",
+      "vwap": 7,
+      "Turnover": 2518,
+      "day120": 7,
+      "day180": 8,
+      "week52high": 10,
+      "week52low": 6
+    },
+    {
       "symbol": "CORBL",
       "ltp": 426,
-      "pointchange": -4.9,
+      "pointchange": 2.5,
       "percentchange": 1,
       "open": 425,
       "high": 430,
@@ -783,7 +843,7 @@
     {
       "symbol": "CYCL",
       "ltp": 1102,
-      "pointchange": 18,
+      "pointchange": 74.1,
       "percentchange": -3,
       "open": 1119,
       "high": 1125,
@@ -803,7 +863,7 @@
     {
       "symbol": "CZBIL",
       "ltp": 162,
-      "pointchange": -0.4,
+      "pointchange": 1.4,
       "percentchange": 0,
       "open": 163,
       "high": 165,
@@ -823,7 +883,7 @@
     {
       "symbol": "DDBL",
       "ltp": 738,
-      "pointchange": -3,
+      "pointchange": -4.1,
       "percentchange": -1,
       "open": 738,
       "high": 745,
@@ -843,7 +903,7 @@
     {
       "symbol": "DHPL",
       "ltp": 192,
-      "pointchange": 2.6,
+      "pointchange": 6.6,
       "percentchange": -4,
       "open": 200,
       "high": 204,
@@ -883,7 +943,7 @@
     {
       "symbol": "DOLTI",
       "ltp": 386,
-      "pointchange": -4.1,
+      "pointchange": 3.6,
       "percentchange": 0,
       "open": 381,
       "high": 392,
@@ -903,7 +963,7 @@
     {
       "symbol": "DORDI",
       "ltp": 469,
-      "pointchange": -3.9,
+      "pointchange": -4,
       "percentchange": -4,
       "open": 481,
       "high": 499,
@@ -923,7 +983,7 @@
     {
       "symbol": "EBL",
       "ltp": 499,
-      "pointchange": 3.1,
+      "pointchange": 3,
       "percentchange": -2,
       "open": 512,
       "high": 512,
@@ -943,7 +1003,7 @@
     {
       "symbol": "EBLD85",
       "ltp": 1008,
-      "pointchange": 7,
+      "pointchange": 27,
       "percentchange": 0,
       "open": 1008,
       "high": 1008,
@@ -983,7 +1043,7 @@
     {
       "symbol": "EDBL",
       "ltp": 345,
-      "pointchange": 0.1,
+      "pointchange": 3.1,
       "percentchange": 0,
       "open": 345,
       "high": 354,
@@ -1023,7 +1083,7 @@
     {
       "symbol": "ENL",
       "ltp": 733,
-      "pointchange": 2.5,
+      "pointchange": 7,
       "percentchange": 0,
       "open": 750,
       "high": 750,
@@ -1043,7 +1103,7 @@
     {
       "symbol": "FMDBL",
       "ltp": 588,
-      "pointchange": -11.4,
+      "pointchange": -7,
       "percentchange": 0,
       "open": 585,
       "high": 591,
@@ -1063,7 +1123,7 @@
     {
       "symbol": "FOWAD",
       "ltp": 1029,
-      "pointchange": -13.1,
+      "pointchange": -17.1,
       "percentchange": -2,
       "open": 1050,
       "high": 1053,
@@ -1103,7 +1163,7 @@
     {
       "symbol": "GBBL",
       "ltp": 360,
-      "pointchange": -0.4,
+      "pointchange": 4.4,
       "percentchange": 0,
       "open": 362,
       "high": 367,
@@ -1123,12 +1183,12 @@
     {
       "symbol": "GBD80/81",
       "ltp": 1,
-      "pointchange": 0,
-      "percentchange": 0,
+      "pointchange": 7.4,
+      "percentchange": 0.73,
       "open": 1,
       "high": 1,
       "low": 1,
-      "volume": 50,
+      "volume": 80,
       "previousclose": 1,
       "name": "",
       "category": "stock",
@@ -1157,7 +1217,7 @@
     {
       "symbol": "GBIME",
       "ltp": 181,
-      "pointchange": -0.7,
+      "pointchange": 1.2,
       "percentchange": -2,
       "open": 188,
       "high": 188,
@@ -1177,7 +1237,7 @@
     {
       "symbol": "GBLBS",
       "ltp": 530,
-      "pointchange": 9,
+      "pointchange": 7,
       "percentchange": -5,
       "open": 551,
       "high": 551,
@@ -1197,7 +1257,7 @@
     {
       "symbol": "GCIL",
       "ltp": 455,
-      "pointchange": 5,
+      "pointchange": 17,
       "percentchange": -1,
       "open": 460,
       "high": 463,
@@ -1217,7 +1277,7 @@
     {
       "symbol": "GFCL",
       "ltp": 443,
-      "pointchange": -3.8,
+      "pointchange": -4.9,
       "percentchange": 1,
       "open": 434,
       "high": 452,
@@ -1237,7 +1297,7 @@
     {
       "symbol": "GHL",
       "ltp": 153,
-      "pointchange": -0.6,
+      "pointchange": 0,
       "percentchange": -7,
       "open": 167,
       "high": 167,
@@ -1257,7 +1317,7 @@
     {
       "symbol": "GIBF1",
       "ltp": 8,
-      "pointchange": -0.16,
+      "pointchange": -0.31,
       "percentchange": -1,
       "open": 8,
       "high": 8,
@@ -1277,7 +1337,7 @@
     {
       "symbol": "GILB",
       "ltp": 805,
-      "pointchange": 10,
+      "pointchange": 8,
       "percentchange": 0,
       "open": 796,
       "high": 808,
@@ -1297,7 +1357,7 @@
     {
       "symbol": "GLBSL",
       "ltp": 900,
-      "pointchange": 10.6,
+      "pointchange": 0,
       "percentchange": 0,
       "open": 897,
       "high": 913,
@@ -1317,7 +1377,7 @@
     {
       "symbol": "GLH",
       "ltp": 212,
-      "pointchange": 0,
+      "pointchange": -2,
       "percentchange": -3,
       "open": 219,
       "high": 219,
@@ -1357,7 +1417,7 @@
     {
       "symbol": "GMFIL",
       "ltp": 355,
-      "pointchange": -5,
+      "pointchange": 1.8,
       "percentchange": 1,
       "open": 348,
       "high": 368,
@@ -1377,7 +1437,7 @@
     {
       "symbol": "GRDBL",
       "ltp": 359,
-      "pointchange": -4.9,
+      "pointchange": 0.1,
       "percentchange": 0,
       "open": 352,
       "high": 365,
@@ -1397,7 +1457,7 @@
     {
       "symbol": "GUFL",
       "ltp": 651,
-      "pointchange": -28.8,
+      "pointchange": -34.9,
       "percentchange": 5,
       "open": 620,
       "high": 668,
@@ -1417,7 +1477,7 @@
     {
       "symbol": "GVL",
       "ltp": 418,
-      "pointchange": 6.6,
+      "pointchange": 12.1,
       "percentchange": -2,
       "open": 423,
       "high": 431,
@@ -1437,7 +1497,7 @@
     {
       "symbol": "GWFD83",
       "ltp": 1099,
-      "pointchange": 0,
+      "pointchange": 21.9,
       "percentchange": -1,
       "open": 1100,
       "high": 1100,
@@ -1477,7 +1537,7 @@
     {
       "symbol": "HATHY",
       "ltp": 814,
-      "pointchange": -4,
+      "pointchange": 20,
       "percentchange": -4,
       "open": 864,
       "high": 866,
@@ -1497,7 +1557,7 @@
     {
       "symbol": "HBL",
       "ltp": 186,
-      "pointchange": -0.1,
+      "pointchange": 1.8,
       "percentchange": 0,
       "open": 187,
       "high": 187,
@@ -1517,7 +1577,7 @@
     {
       "symbol": "HDHPC",
       "ltp": 137,
-      "pointchange": 1.7,
+      "pointchange": 0.2,
       "percentchange": -1,
       "open": 140,
       "high": 142,
@@ -1537,7 +1597,7 @@
     {
       "symbol": "HDL",
       "ltp": 1451,
-      "pointchange": 7.8,
+      "pointchange": -1,
       "percentchange": -1,
       "open": 1475,
       "high": 1488,
@@ -1557,7 +1617,7 @@
     {
       "symbol": "HEI",
       "ltp": 553,
-      "pointchange": 3.6,
+      "pointchange": -1,
       "percentchange": -1,
       "open": 560,
       "high": 564,
@@ -1577,7 +1637,7 @@
     {
       "symbol": "HEIP",
       "ltp": 341,
-      "pointchange": -6.8,
+      "pointchange": -0.2,
       "percentchange": -7,
       "open": 361,
       "high": 361,
@@ -1597,7 +1657,7 @@
     {
       "symbol": "HHL",
       "ltp": 321,
-      "pointchange": 14.9,
+      "pointchange": 14.1,
       "percentchange": -2,
       "open": 325,
       "high": 335,
@@ -1617,7 +1677,7 @@
     {
       "symbol": "HIDCL",
       "ltp": 170,
-      "pointchange": 0.5,
+      "pointchange": 1.5,
       "percentchange": -2,
       "open": 174,
       "high": 175,
@@ -1637,7 +1697,7 @@
     {
       "symbol": "HIDCLP",
       "ltp": 100,
-      "pointchange": 0.5,
+      "pointchange": 0.4,
       "percentchange": 0,
       "open": 100,
       "high": 101,
@@ -1657,7 +1717,7 @@
     {
       "symbol": "HLBSL",
       "ltp": 568,
-      "pointchange": -1,
+      "pointchange": -2,
       "percentchange": 0,
       "open": 560,
       "high": 581,
@@ -1677,7 +1737,7 @@
     {
       "symbol": "HLI",
       "ltp": 381,
-      "pointchange": -1.4,
+      "pointchange": 5.2,
       "percentchange": 0,
       "open": 383,
       "high": 387,
@@ -1717,7 +1777,7 @@
     {
       "symbol": "HRL",
       "ltp": 607,
-      "pointchange": 1.5,
+      "pointchange": 8.4,
       "percentchange": -2,
       "open": 624,
       "high": 632,
@@ -1757,7 +1817,7 @@
     {
       "symbol": "ICFC",
       "ltp": 493,
-      "pointchange": -2.5,
+      "pointchange": 6.4,
       "percentchange": 0,
       "open": 499,
       "high": 507,
@@ -1775,9 +1835,23 @@
       "week52low": 391
     },
     {
+      "symbol": "ICFCD83",
+      "ltp": 1,
+      "pointchange": 8,
+      "percentchange": 0.71,
+      "open": 1,
+      "high": 1,
+      "low": 1,
+      "volume": 10,
+      "previousclose": 1,
+      "name": "",
+      "category": "stock",
+      "sector": ""
+    },
+    {
       "symbol": "IGI",
       "ltp": 529,
-      "pointchange": 0.8,
+      "pointchange": 0,
       "percentchange": -1,
       "open": 546,
       "high": 546,
@@ -1797,7 +1871,7 @@
     {
       "symbol": "IHL",
       "ltp": 357,
-      "pointchange": -1,
+      "pointchange": 2,
       "percentchange": -3,
       "open": 365,
       "high": 375,
@@ -1817,7 +1891,7 @@
     {
       "symbol": "ILBS",
       "ltp": 695,
-      "pointchange": -13.9,
+      "pointchange": -5,
       "percentchange": 0,
       "open": 677,
       "high": 698,
@@ -1837,7 +1911,7 @@
     {
       "symbol": "ILI",
       "ltp": 520,
-      "pointchange": 3.1,
+      "pointchange": 6,
       "percentchange": 0,
       "open": 514,
       "high": 546,
@@ -1857,7 +1931,7 @@
     {
       "symbol": "JALPA",
       "ltp": 1050,
-      "pointchange": 15,
+      "pointchange": 9,
       "percentchange": -1,
       "open": 1055,
       "high": 1090,
@@ -1897,7 +1971,7 @@
     {
       "symbol": "JBBL",
       "ltp": 294,
-      "pointchange": -3,
+      "pointchange": -1,
       "percentchange": 0,
       "open": 299,
       "high": 299,
@@ -1917,7 +1991,7 @@
     {
       "symbol": "JBLB",
       "ltp": 1237,
-      "pointchange": -16.5,
+      "pointchange": -16,
       "percentchange": -1,
       "open": 1243,
       "high": 1250,
@@ -1937,7 +2011,7 @@
     {
       "symbol": "JFL",
       "ltp": 363,
-      "pointchange": 1,
+      "pointchange": 5.9,
       "percentchange": 0,
       "open": 370,
       "high": 377,
@@ -1957,7 +2031,7 @@
     {
       "symbol": "JOSHI",
       "ltp": 380,
-      "pointchange": 7.5,
+      "pointchange": 17,
       "percentchange": -7,
       "open": 404,
       "high": 412,
@@ -1977,7 +2051,7 @@
     {
       "symbol": "JSLBB",
       "ltp": 867,
-      "pointchange": -16.9,
+      "pointchange": -2.9,
       "percentchange": 0,
       "open": 891,
       "high": 891,
@@ -1997,7 +2071,7 @@
     {
       "symbol": "KBL",
       "ltp": 142,
-      "pointchange": -1.7,
+      "pointchange": 0.2,
       "percentchange": -1,
       "open": 147,
       "high": 147,
@@ -2037,7 +2111,7 @@
     {
       "symbol": "KBSH",
       "ltp": 988,
-      "pointchange": -0.7,
+      "pointchange": -4,
       "percentchange": -1,
       "open": 985,
       "high": 1004,
@@ -2057,7 +2131,7 @@
     {
       "symbol": "KDBY",
       "ltp": 8,
-      "pointchange": 0.04,
+      "pointchange": 0.21,
       "percentchange": 0,
       "open": 8,
       "high": 8,
@@ -2077,7 +2151,7 @@
     {
       "symbol": "KDL",
       "ltp": 748,
-      "pointchange": 5,
+      "pointchange": 42,
       "percentchange": -2,
       "open": 752,
       "high": 761,
@@ -2097,7 +2171,7 @@
     {
       "symbol": "KEF",
       "ltp": 7,
-      "pointchange": -0.03,
+      "pointchange": 0.04,
       "percentchange": 0,
       "open": 8,
       "high": 8,
@@ -2117,7 +2191,7 @@
     {
       "symbol": "KKHC",
       "ltp": 244,
-      "pointchange": -7,
+      "pointchange": 7.9,
       "percentchange": -2,
       "open": 245,
       "high": 250,
@@ -2137,7 +2211,7 @@
     {
       "symbol": "KLBSL",
       "ltp": 852,
-      "pointchange": -33.5,
+      "pointchange": -47.4,
       "percentchange": -1,
       "open": 870,
       "high": 870,
@@ -2197,7 +2271,7 @@
     {
       "symbol": "KRBL",
       "ltp": 365,
-      "pointchange": -1,
+      "pointchange": 3,
       "percentchange": 0,
       "open": 367,
       "high": 376,
@@ -2217,7 +2291,7 @@
     {
       "symbol": "KSBBL",
       "ltp": 343,
-      "pointchange": 0.5,
+      "pointchange": 0.9,
       "percentchange": -1,
       "open": 344,
       "high": 353,
@@ -2237,7 +2311,7 @@
     {
       "symbol": "LBBL",
       "ltp": 384,
-      "pointchange": -4,
+      "pointchange": 1,
       "percentchange": 0,
       "open": 382,
       "high": 389,
@@ -2257,7 +2331,7 @@
     {
       "symbol": "LEC",
       "ltp": 187,
-      "pointchange": 1.2,
+      "pointchange": 0.5,
       "percentchange": -3,
       "open": 194,
       "high": 198,
@@ -2277,7 +2351,7 @@
     {
       "symbol": "LEMF",
       "ltp": 9,
-      "pointchange": -0.01,
+      "pointchange": -0.03,
       "percentchange": -1,
       "open": 9,
       "high": 9,
@@ -2297,7 +2371,7 @@
     {
       "symbol": "LICN",
       "ltp": 1330,
-      "pointchange": -22,
+      "pointchange": -3.1,
       "percentchange": 0,
       "open": 1313,
       "high": 1330,
@@ -2317,7 +2391,7 @@
     {
       "symbol": "LLBS",
       "ltp": 764,
-      "pointchange": -9.9,
+      "pointchange": 4.1,
       "percentchange": 1,
       "open": 752,
       "high": 767,
@@ -2337,7 +2411,7 @@
     {
       "symbol": "LSL",
       "ltp": 158,
-      "pointchange": 0.1,
+      "pointchange": 1,
       "percentchange": 0,
       "open": 160,
       "high": 160,
@@ -2357,7 +2431,7 @@
     {
       "symbol": "LUK",
       "ltp": 8,
-      "pointchange": -0.17,
+      "pointchange": -0.2,
       "percentchange": 4,
       "open": 8,
       "high": 8,
@@ -2397,7 +2471,7 @@
     {
       "symbol": "MAKAR",
       "ltp": 398,
-      "pointchange": -4.3,
+      "pointchange": -2,
       "percentchange": -5,
       "open": 412,
       "high": 422,
@@ -2417,7 +2491,7 @@
     {
       "symbol": "MANDU",
       "ltp": 687,
-      "pointchange": -16.9,
+      "pointchange": 3,
       "percentchange": -1,
       "open": 700,
       "high": 700,
@@ -2437,7 +2511,7 @@
     {
       "symbol": "MBJC",
       "ltp": 307,
-      "pointchange": 0.3,
+      "pointchange": 5,
       "percentchange": -2,
       "open": 314,
       "high": 316,
@@ -2457,7 +2531,7 @@
     {
       "symbol": "MBL",
       "ltp": 178,
-      "pointchange": -0.6,
+      "pointchange": 1.8,
       "percentchange": -1,
       "open": 180,
       "high": 180,
@@ -2497,7 +2571,7 @@
     {
       "symbol": "MCHL",
       "ltp": 330,
-      "pointchange": 2,
+      "pointchange": 10,
       "percentchange": -2,
       "open": 344,
       "high": 344,
@@ -2517,7 +2591,7 @@
     {
       "symbol": "MDB",
       "ltp": 392,
-      "pointchange": -2.5,
+      "pointchange": -1.5,
       "percentchange": 0,
       "open": 395,
       "high": 395,
@@ -2537,7 +2611,7 @@
     {
       "symbol": "MEHL",
       "ltp": 285,
-      "pointchange": 1.4,
+      "pointchange": 7.9,
       "percentchange": -3,
       "open": 296,
       "high": 301,
@@ -2557,7 +2631,7 @@
     {
       "symbol": "MEL",
       "ltp": 216,
-      "pointchange": -0.5,
+      "pointchange": 6,
       "percentchange": -2,
       "open": 221,
       "high": 225,
@@ -2577,7 +2651,7 @@
     {
       "symbol": "MEN",
       "ltp": 593,
-      "pointchange": 2.7,
+      "pointchange": 1.7,
       "percentchange": -1,
       "open": 600,
       "high": 609,
@@ -2597,7 +2671,7 @@
     {
       "symbol": "MERO",
       "ltp": 525,
-      "pointchange": -5,
+      "pointchange": 9.8,
       "percentchange": -2,
       "open": 528,
       "high": 534,
@@ -2617,7 +2691,7 @@
     {
       "symbol": "MFIL",
       "ltp": 509,
-      "pointchange": 0,
+      "pointchange": 6,
       "percentchange": 0,
       "open": 512,
       "high": 520,
@@ -2657,7 +2731,7 @@
     {
       "symbol": "MHCL",
       "ltp": 562,
-      "pointchange": -25.7,
+      "pointchange": 10.5,
       "percentchange": -10,
       "open": 612,
       "high": 612,
@@ -2677,7 +2751,7 @@
     {
       "symbol": "MHL",
       "ltp": 384,
-      "pointchange": 4.5,
+      "pointchange": 3,
       "percentchange": -5,
       "open": 400,
       "high": 400,
@@ -2697,7 +2771,7 @@
     {
       "symbol": "MHNL",
       "ltp": 249,
-      "pointchange": 2,
+      "pointchange": 5,
       "percentchange": 0,
       "open": 256,
       "high": 259,
@@ -2717,7 +2791,7 @@
     {
       "symbol": "MKCL",
       "ltp": 924,
-      "pointchange": 0,
+      "pointchange": 24,
       "percentchange": -1,
       "open": 950,
       "high": 955,
@@ -2737,7 +2811,7 @@
     {
       "symbol": "MKHC",
       "ltp": 288,
-      "pointchange": 1.5,
+      "pointchange": 12,
       "percentchange": -4,
       "open": 300,
       "high": 300,
@@ -2757,7 +2831,7 @@
     {
       "symbol": "MKHL",
       "ltp": 367,
-      "pointchange": -1,
+      "pointchange": 8.9,
       "percentchange": -1,
       "open": 375,
       "high": 380,
@@ -2777,7 +2851,7 @@
     {
       "symbol": "MKJC",
       "ltp": 483,
-      "pointchange": -4.8,
+      "pointchange": 10,
       "percentchange": -3,
       "open": 510,
       "high": 510,
@@ -2797,7 +2871,7 @@
     {
       "symbol": "MKLB",
       "ltp": 637,
-      "pointchange": 13.7,
+      "pointchange": 52,
       "percentchange": -1,
       "open": 634,
       "high": 641,
@@ -2817,7 +2891,7 @@
     {
       "symbol": "MLBBL",
       "ltp": 789,
-      "pointchange": -15.7,
+      "pointchange": -4.1,
       "percentchange": -1,
       "open": 784,
       "high": 799,
@@ -2837,7 +2911,7 @@
     {
       "symbol": "MLBL",
       "ltp": 320,
-      "pointchange": -1.2,
+      "pointchange": 1.8,
       "percentchange": -1,
       "open": 321,
       "high": 327,
@@ -2857,7 +2931,7 @@
     {
       "symbol": "MLBS",
       "ltp": 630,
-      "pointchange": -6.5,
+      "pointchange": 11.4,
       "percentchange": -2,
       "open": 638,
       "high": 662,
@@ -2877,7 +2951,7 @@
     {
       "symbol": "MLBSL",
       "ltp": 1581,
-      "pointchange": -35,
+      "pointchange": -29,
       "percentchange": -1,
       "open": 1567,
       "high": 1591,
@@ -2897,7 +2971,7 @@
     {
       "symbol": "MMF1",
       "ltp": 7,
-      "pointchange": -0.1,
+      "pointchange": -0.05,
       "percentchange": 1,
       "open": 7,
       "high": 7,
@@ -2917,7 +2991,7 @@
     {
       "symbol": "MMFDB",
       "ltp": 525,
-      "pointchange": -4.4,
+      "pointchange": -1,
       "percentchange": -2,
       "open": 528,
       "high": 535,
@@ -2937,7 +3011,7 @@
     {
       "symbol": "MMKJL",
       "ltp": 424,
-      "pointchange": -12.5,
+      "pointchange": 2,
       "percentchange": -2,
       "open": 436,
       "high": 438,
@@ -2957,7 +3031,7 @@
     {
       "symbol": "MNBBL",
       "ltp": 352,
-      "pointchange": -0.2,
+      "pointchange": 0.9,
       "percentchange": -1,
       "open": 353,
       "high": 358,
@@ -2977,7 +3051,7 @@
     {
       "symbol": "MPFL",
       "ltp": 357,
-      "pointchange": -5,
+      "pointchange": -1.6,
       "percentchange": 2,
       "open": 347,
       "high": 364,
@@ -2997,7 +3071,7 @@
     {
       "symbol": "MSHL",
       "ltp": 617,
-      "pointchange": -15,
+      "pointchange": 21.9,
       "percentchange": -3,
       "open": 626,
       "high": 655,
@@ -3017,7 +3091,7 @@
     {
       "symbol": "MSLB",
       "ltp": 820,
-      "pointchange": 0,
+      "pointchange": 9.9,
       "percentchange": -1,
       "open": 815,
       "high": 820,
@@ -3037,7 +3111,7 @@
     {
       "symbol": "NABBC",
       "ltp": 410,
-      "pointchange": -4.8,
+      "pointchange": 7.3,
       "percentchange": -1,
       "open": 412,
       "high": 412,
@@ -3057,7 +3131,7 @@
     {
       "symbol": "NABIL",
       "ltp": 436,
-      "pointchange": -5,
+      "pointchange": -2.5,
       "percentchange": -1,
       "open": 445,
       "high": 445,
@@ -3077,7 +3151,7 @@
     {
       "symbol": "NADEP",
       "ltp": 508,
-      "pointchange": -7.7,
+      "pointchange": 7,
       "percentchange": -1,
       "open": 508,
       "high": 524,
@@ -3097,7 +3171,7 @@
     {
       "symbol": "NBF2",
       "ltp": 8,
-      "pointchange": -0.07,
+      "pointchange": -0.09,
       "percentchange": -1,
       "open": 8,
       "high": 8,
@@ -3137,7 +3211,7 @@
     {
       "symbol": "NBL",
       "ltp": 219,
-      "pointchange": 0,
+      "pointchange": -0.7,
       "percentchange": -1,
       "open": 223,
       "high": 223,
@@ -3205,7 +3279,7 @@
     {
       "symbol": "NESDO",
       "ltp": 1525,
-      "pointchange": -19,
+      "pointchange": -10.2,
       "percentchange": -1,
       "open": 1553,
       "high": 1553,
@@ -3225,7 +3299,7 @@
     {
       "symbol": "NFS",
       "ltp": 365,
-      "pointchange": -6.4,
+      "pointchange": -5.4,
       "percentchange": 3,
       "open": 361,
       "high": 375,
@@ -3265,7 +3339,7 @@
     {
       "symbol": "NHDL",
       "ltp": 422,
-      "pointchange": 2.2,
+      "pointchange": 1.1,
       "percentchange": 0,
       "open": 429,
       "high": 439,
@@ -3303,9 +3377,23 @@
       "week52low": 126
     },
     {
+      "symbol": "NIBD2082",
+      "ltp": 1,
+      "pointchange": -4,
+      "percentchange": -0.39,
+      "open": 1,
+      "high": 1,
+      "low": 1,
+      "volume": 50,
+      "previousclose": 1,
+      "name": "",
+      "category": "stock",
+      "sector": ""
+    },
+    {
       "symbol": "NIBLGF",
       "ltp": 7,
-      "pointchange": 0.14,
+      "pointchange": 0.02,
       "percentchange": 0,
       "open": 7,
       "high": 8,
@@ -3325,7 +3413,7 @@
     {
       "symbol": "NIBSF2",
       "ltp": 7,
-      "pointchange": 0.05,
+      "pointchange": 0.06,
       "percentchange": -2,
       "open": 7,
       "high": 7,
@@ -3345,7 +3433,7 @@
     {
       "symbol": "NICA",
       "ltp": 410,
-      "pointchange": 1.1,
+      "pointchange": 7.1,
       "percentchange": -3,
       "open": 427,
       "high": 430,
@@ -3365,7 +3453,7 @@
     {
       "symbol": "NICAD8283",
       "ltp": 1025,
-      "pointchange": 1.5,
+      "pointchange": 20.5,
       "percentchange": 0,
       "open": 1040,
       "high": 1040,
@@ -3385,7 +3473,7 @@
     {
       "symbol": "NICBF",
       "ltp": 8,
-      "pointchange": -0.07,
+      "pointchange": 0.07,
       "percentchange": -1,
       "open": 8,
       "high": 8,
@@ -3425,7 +3513,7 @@
     {
       "symbol": "NICGF",
       "ltp": 9,
-      "pointchange": 0.14,
+      "pointchange": 0.13,
       "percentchange": 1,
       "open": 9,
       "high": 9,
@@ -3445,7 +3533,7 @@
     {
       "symbol": "NICGF2",
       "ltp": 7,
-      "pointchange": 0.15,
+      "pointchange": 0,
       "percentchange": 0,
       "open": 7,
       "high": 7,
@@ -3465,7 +3553,7 @@
     {
       "symbol": "NICL",
       "ltp": 827,
-      "pointchange": -10.9,
+      "pointchange": -2,
       "percentchange": -1,
       "open": 834,
       "high": 848,
@@ -3485,7 +3573,7 @@
     {
       "symbol": "NICLBSL",
       "ltp": 539,
-      "pointchange": -4.6,
+      "pointchange": -1.8,
       "percentchange": 0,
       "open": 545,
       "high": 553,
@@ -3505,7 +3593,7 @@
     {
       "symbol": "NICSF",
       "ltp": 8,
-      "pointchange": -0.11,
+      "pointchange": -0.04,
       "percentchange": 1,
       "open": 8,
       "high": 8,
@@ -3525,7 +3613,7 @@
     {
       "symbol": "NIFRA",
       "ltp": 205,
-      "pointchange": 0.5,
+      "pointchange": 2.5,
       "percentchange": -1,
       "open": 207,
       "high": 210,
@@ -3545,7 +3633,7 @@
     {
       "symbol": "NIL",
       "ltp": 795,
-      "pointchange": 4.9,
+      "pointchange": 5.9,
       "percentchange": -1,
       "open": 800,
       "high": 804,
@@ -3565,7 +3653,7 @@
     {
       "symbol": "NIMB",
       "ltp": 163,
-      "pointchange": -1.9,
+      "pointchange": -1,
       "percentchange": -1,
       "open": 166,
       "high": 167,
@@ -3583,9 +3671,29 @@
       "week52low": 163
     },
     {
+      "symbol": "NIMBPO",
+      "ltp": 135,
+      "pointchange": 0.1,
+      "percentchange": -1,
+      "open": 136,
+      "high": 137,
+      "low": 135,
+      "volume": 10873,
+      "previousclose": 138,
+      "name": "Nepal Investment Mega Bank Ltd. Promoter Share",
+      "category": "Assets",
+      "sector": "Bank",
+      "vwap": 136,
+      "Turnover": 1481296,
+      "day120": 145,
+      "day180": 150,
+      "week52high": 189,
+      "week52low": 107
+    },
+    {
       "symbol": "NLBBL",
       "ltp": 521,
-      "pointchange": -5.9,
+      "pointchange": -0.9,
       "percentchange": -1,
       "open": 521,
       "high": 525,
@@ -3605,7 +3713,7 @@
     {
       "symbol": "NLG",
       "ltp": 733,
-      "pointchange": -14.2,
+      "pointchange": -13.9,
       "percentchange": 0,
       "open": 749,
       "high": 808,
@@ -3625,7 +3733,7 @@
     {
       "symbol": "NLIC",
       "ltp": 597,
-      "pointchange": -2,
+      "pointchange": -1,
       "percentchange": -1,
       "open": 605,
       "high": 617,
@@ -3645,7 +3753,7 @@
     {
       "symbol": "NLICL",
       "ltp": 552,
-      "pointchange": 3.2,
+      "pointchange": 7.2,
       "percentchange": 0,
       "open": 555,
       "high": 566,
@@ -3665,7 +3773,7 @@
     {
       "symbol": "NMB",
       "ltp": 177,
-      "pointchange": -1.3,
+      "pointchange": -0.6,
       "percentchange": -1,
       "open": 182,
       "high": 182,
@@ -3681,6 +3789,26 @@
       "day180": 214,
       "week52high": 252,
       "week52low": 177
+    },
+    {
+      "symbol": "NMB50",
+      "ltp": 9,
+      "pointchange": -0.15,
+      "percentchange": 1,
+      "open": 9,
+      "high": 9,
+      "low": 9,
+      "volume": 7950,
+      "previousclose": 9,
+      "name": "NMB 50",
+      "category": "Assets",
+      "sector": "unknown",
+      "vwap": 9,
+      "Turnover": 72264,
+      "day120": 9,
+      "day180": 9,
+      "week52high": 11,
+      "week52low": 8
     },
     {
       "symbol": "NMBD87/88",
@@ -3705,7 +3833,7 @@
     {
       "symbol": "NMBMF",
       "ltp": 500,
-      "pointchange": 1.2,
+      "pointchange": 9.9,
       "percentchange": -3,
       "open": 520,
       "high": 520,
@@ -3725,7 +3853,7 @@
     {
       "symbol": "NMFBS",
       "ltp": 1075,
-      "pointchange": -15,
+      "pointchange": 6.2,
       "percentchange": 0,
       "open": 1050,
       "high": 1075,
@@ -3745,7 +3873,7 @@
     {
       "symbol": "NRIC",
       "ltp": 750,
-      "pointchange": -3,
+      "pointchange": -8.9,
       "percentchange": 0,
       "open": 767,
       "high": 767,
@@ -3765,7 +3893,7 @@
     {
       "symbol": "NRM",
       "ltp": 339,
-      "pointchange": 0.8,
+      "pointchange": 21,
       "percentchange": -1,
       "open": 340,
       "high": 365,
@@ -3785,7 +3913,7 @@
     {
       "symbol": "NRN",
       "ltp": 540,
-      "pointchange": 0,
+      "pointchange": 10,
       "percentchange": -3,
       "open": 562,
       "high": 565,
@@ -3805,7 +3933,7 @@
     {
       "symbol": "NSIF2",
       "ltp": 9,
-      "pointchange": 0.02,
+      "pointchange": 0,
       "percentchange": 0,
       "open": 8,
       "high": 9,
@@ -3825,7 +3953,7 @@
     {
       "symbol": "NTC",
       "ltp": 834,
-      "pointchange": 3.9,
+      "pointchange": 10.9,
       "percentchange": -1,
       "open": 847,
       "high": 850,
@@ -3845,7 +3973,7 @@
     {
       "symbol": "NUBL",
       "ltp": 596,
-      "pointchange": 5,
+      "pointchange": 9,
       "percentchange": -2,
       "open": 602,
       "high": 610,
@@ -3865,7 +3993,7 @@
     {
       "symbol": "NWCL",
       "ltp": 745,
-      "pointchange": 25,
+      "pointchange": 57,
       "percentchange": -2,
       "open": 750,
       "high": 765,
@@ -3885,7 +4013,7 @@
     {
       "symbol": "NYADI",
       "ltp": 277,
-      "pointchange": 2.6,
+      "pointchange": 7.4,
       "percentchange": -2,
       "open": 284,
       "high": 285,
@@ -3905,7 +4033,7 @@
     {
       "symbol": "OHL",
       "ltp": 750,
-      "pointchange": 5,
+      "pointchange": 4,
       "percentchange": -1,
       "open": 750,
       "high": 765,
@@ -3945,7 +4073,7 @@
     {
       "symbol": "PBLD84",
       "ltp": 1005,
-      "pointchange": -5,
+      "pointchange": -3,
       "percentchange": 0,
       "open": 1005,
       "high": 1005,
@@ -3985,7 +4113,7 @@
     {
       "symbol": "PCBL",
       "ltp": 193,
-      "pointchange": -1.6,
+      "pointchange": -0.5,
       "percentchange": -1,
       "open": 197,
       "high": 199,
@@ -4019,7 +4147,7 @@
     {
       "symbol": "PFL",
       "ltp": 366,
-      "pointchange": -4.2,
+      "pointchange": 0.5,
       "percentchange": 0,
       "open": 372,
       "high": 379,
@@ -4039,7 +4167,7 @@
     {
       "symbol": "PHCL",
       "ltp": 316,
-      "pointchange": 6,
+      "pointchange": 7.9,
       "percentchange": -3,
       "open": 320,
       "high": 330,
@@ -4059,7 +4187,7 @@
     {
       "symbol": "PMHPL",
       "ltp": 249,
-      "pointchange": -0.9,
+      "pointchange": 4,
       "percentchange": -3,
       "open": 254,
       "high": 260,
@@ -4099,7 +4227,7 @@
     {
       "symbol": "PPCL",
       "ltp": 271,
-      "pointchange": 0,
+      "pointchange": -1,
       "percentchange": -1,
       "open": 274,
       "high": 275,
@@ -4119,7 +4247,7 @@
     {
       "symbol": "PPL",
       "ltp": 328,
-      "pointchange": -2.5,
+      "pointchange": 5,
       "percentchange": -4,
       "open": 342,
       "high": 348,
@@ -4139,7 +4267,7 @@
     {
       "symbol": "PRIN",
       "ltp": 767,
-      "pointchange": -7.2,
+      "pointchange": 2.7,
       "percentchange": 0,
       "open": 765,
       "high": 777,
@@ -4159,7 +4287,7 @@
     {
       "symbol": "PROFL",
       "ltp": 315,
-      "pointchange": -2.4,
+      "pointchange": 1.9,
       "percentchange": 0,
       "open": 320,
       "high": 326,
@@ -4199,7 +4327,7 @@
     {
       "symbol": "PRVU",
       "ltp": 148,
-      "pointchange": 0,
+      "pointchange": 0.1,
       "percentchange": 0,
       "open": 149,
       "high": 151,
@@ -4219,7 +4347,7 @@
     {
       "symbol": "PSF",
       "ltp": 8,
-      "pointchange": -0.06,
+      "pointchange": -0.04,
       "percentchange": -1,
       "open": 8,
       "high": 8,
@@ -4239,7 +4367,7 @@
     {
       "symbol": "RADHI",
       "ltp": 245,
-      "pointchange": 0,
+      "pointchange": 2.8,
       "percentchange": -1,
       "open": 245,
       "high": 253,
@@ -4259,7 +4387,7 @@
     {
       "symbol": "RAWA",
       "ltp": 460,
-      "pointchange": 11.9,
+      "pointchange": 13.9,
       "percentchange": -1,
       "open": 459,
       "high": 485,
@@ -4279,7 +4407,7 @@
     {
       "symbol": "RBCL",
       "ltp": 13567,
-      "pointchange": -117,
+      "pointchange": 74,
       "percentchange": 0,
       "open": 13600,
       "high": 13675,
@@ -4299,7 +4427,7 @@
     {
       "symbol": "RBCLPO",
       "ltp": 10624,
-      "pointchange": -171,
+      "pointchange": 38,
       "percentchange": -2,
       "open": 11062,
       "high": 11062,
@@ -4319,7 +4447,7 @@
     {
       "symbol": "RFPL",
       "ltp": 318,
-      "pointchange": -0.1,
+      "pointchange": 0,
       "percentchange": 0,
       "open": 327,
       "high": 327,
@@ -4339,7 +4467,7 @@
     {
       "symbol": "RHGCL",
       "ltp": 293,
-      "pointchange": 0.5,
+      "pointchange": 5,
       "percentchange": -2,
       "open": 300,
       "high": 304,
@@ -4359,7 +4487,7 @@
     {
       "symbol": "RHPL",
       "ltp": 276,
-      "pointchange": 0.5,
+      "pointchange": 1.4,
       "percentchange": -2,
       "open": 286,
       "high": 286,
@@ -4379,7 +4507,7 @@
     {
       "symbol": "RIDI",
       "ltp": 188,
-      "pointchange": 1.7,
+      "pointchange": 1.9,
       "percentchange": -2,
       "open": 195,
       "high": 196,
@@ -4399,7 +4527,7 @@
     {
       "symbol": "RLFL",
       "ltp": 362,
-      "pointchange": -7,
+      "pointchange": -1.9,
       "percentchange": 3,
       "open": 348,
       "high": 366,
@@ -4419,7 +4547,7 @@
     {
       "symbol": "RMF1",
       "ltp": 7,
-      "pointchange": -0.08,
+      "pointchange": 0.15,
       "percentchange": -1,
       "open": 7,
       "high": 7,
@@ -4459,7 +4587,7 @@
     {
       "symbol": "RNLI",
       "ltp": 424,
-      "pointchange": 1.8,
+      "pointchange": 5.8,
       "percentchange": -1,
       "open": 435,
       "high": 440,
@@ -4479,7 +4607,7 @@
     {
       "symbol": "RSDC",
       "ltp": 524,
-      "pointchange": -7.9,
+      "pointchange": 0,
       "percentchange": 0,
       "open": 518,
       "high": 525,
@@ -4499,7 +4627,7 @@
     {
       "symbol": "RURU",
       "ltp": 705,
-      "pointchange": 0.6,
+      "pointchange": 9.6,
       "percentchange": 0,
       "open": 705,
       "high": 711,
@@ -4519,7 +4647,7 @@
     {
       "symbol": "SABSL",
       "ltp": 599,
-      "pointchange": 6.1,
+      "pointchange": -9.8,
       "percentchange": 0,
       "open": 590,
       "high": 601,
@@ -4539,7 +4667,7 @@
     {
       "symbol": "SADBL",
       "ltp": 292,
-      "pointchange": 1.1,
+      "pointchange": 4.8,
       "percentchange": -2,
       "open": 304,
       "high": 304,
@@ -4559,7 +4687,7 @@
     {
       "symbol": "SAEF",
       "ltp": 9,
-      "pointchange": -0.15,
+      "pointchange": -0.1,
       "percentchange": 0,
       "open": 9,
       "high": 10,
@@ -4599,7 +4727,7 @@
     {
       "symbol": "SAHAS",
       "ltp": 525,
-      "pointchange": -2.9,
+      "pointchange": 5,
       "percentchange": -2,
       "open": 526,
       "high": 537,
@@ -4619,7 +4747,7 @@
     {
       "symbol": "SALICO",
       "ltp": 659,
-      "pointchange": -6,
+      "pointchange": -1,
       "percentchange": 0,
       "open": 653,
       "high": 661,
@@ -4635,6 +4763,26 @@
       "day180": 700,
       "week52high": 805,
       "week52low": 551
+    },
+    {
+      "symbol": "SALICOPO",
+      "ltp": 328,
+      "pointchange": -31.3,
+      "percentchange": -9,
+      "open": 356,
+      "high": 356,
+      "low": 328,
+      "volume": 50,
+      "previousclose": 363,
+      "name": "Sagarmatha Lumbini Insurance Company Limited Promoter Share",
+      "category": "Assets",
+      "sector": "Insurance",
+      "vwap": 342,
+      "Turnover": 17126,
+      "day120": 0,
+      "day180": 0,
+      "week52high": 394,
+      "week52low": 328
     },
     {
       "symbol": "SAMAJ",
@@ -4659,7 +4807,7 @@
     {
       "symbol": "SANIMA",
       "ltp": 233,
-      "pointchange": 1.9,
+      "pointchange": 3.9,
       "percentchange": 0,
       "open": 236,
       "high": 236,
@@ -4699,7 +4847,7 @@
     {
       "symbol": "SBCF",
       "ltp": 7,
-      "pointchange": 0,
+      "pointchange": -0.02,
       "percentchange": -1,
       "open": 7,
       "high": 7,
@@ -4719,7 +4867,7 @@
     {
       "symbol": "SBI",
       "ltp": 286,
-      "pointchange": -1.5,
+      "pointchange": -0.6,
       "percentchange": 0,
       "open": 288,
       "high": 295,
@@ -4737,9 +4885,23 @@
       "week52low": 282
     },
     {
+      "symbol": "SBID83",
+      "ltp": 1,
+      "pointchange": 5,
+      "percentchange": 0.5,
+      "open": 1,
+      "high": 1,
+      "low": 1,
+      "volume": 150,
+      "previousclose": 1,
+      "name": "",
+      "category": "stock",
+      "sector": ""
+    },
+    {
       "symbol": "SBID89",
       "ltp": 900,
-      "pointchange": 17.8,
+      "pointchange": -0.2,
       "percentchange": 1,
       "open": 900,
       "high": 918,
@@ -4759,7 +4921,7 @@
     {
       "symbol": "SBL",
       "ltp": 223,
-      "pointchange": -6,
+      "pointchange": -3.1,
       "percentchange": -1,
       "open": 229,
       "high": 229,
@@ -4799,7 +4961,7 @@
     {
       "symbol": "SCB",
       "ltp": 510,
-      "pointchange": -2,
+      "pointchange": -1,
       "percentchange": 0,
       "open": 514,
       "high": 516,
@@ -4819,7 +4981,7 @@
     {
       "symbol": "SDLBSL",
       "ltp": 595,
-      "pointchange": -2,
+      "pointchange": -5,
       "percentchange": -1,
       "open": 607,
       "high": 607,
@@ -4839,7 +5001,7 @@
     {
       "symbol": "SFCL",
       "ltp": 309,
-      "pointchange": -1,
+      "pointchange": 5,
       "percentchange": 0,
       "open": 313,
       "high": 317,
@@ -4879,7 +5041,7 @@
     {
       "symbol": "SGHC",
       "ltp": 306,
-      "pointchange": 4,
+      "pointchange": 3,
       "percentchange": -2,
       "open": 312,
       "high": 315,
@@ -4899,7 +5061,7 @@
     {
       "symbol": "SGIC",
       "ltp": 496,
-      "pointchange": 0.3,
+      "pointchange": 15.6,
       "percentchange": -2,
       "open": 506,
       "high": 509,
@@ -4919,7 +5081,7 @@
     {
       "symbol": "SHEL",
       "ltp": 211,
-      "pointchange": 2.5,
+      "pointchange": 5,
       "percentchange": 0,
       "open": 211,
       "high": 215,
@@ -4939,7 +5101,7 @@
     {
       "symbol": "SHINE",
       "ltp": 370,
-      "pointchange": 1,
+      "pointchange": 2,
       "percentchange": -1,
       "open": 375,
       "high": 382,
@@ -4959,7 +5121,7 @@
     {
       "symbol": "SHIVM",
       "ltp": 463,
-      "pointchange": 3.1,
+      "pointchange": 10.9,
       "percentchange": 0,
       "open": 467,
       "high": 471,
@@ -4979,7 +5141,7 @@
     {
       "symbol": "SHL",
       "ltp": 433,
-      "pointchange": 3.6,
+      "pointchange": 8.6,
       "percentchange": -1,
       "open": 433,
       "high": 445,
@@ -4999,7 +5161,7 @@
     {
       "symbol": "SHLB",
       "ltp": 825,
-      "pointchange": -4.9,
+      "pointchange": -6.8,
       "percentchange": -4,
       "open": 877,
       "high": 889,
@@ -5019,7 +5181,7 @@
     {
       "symbol": "SHPC",
       "ltp": 337,
-      "pointchange": 1.7,
+      "pointchange": 3.8,
       "percentchange": -2,
       "open": 352,
       "high": 352,
@@ -5039,7 +5201,7 @@
     {
       "symbol": "SICL",
       "ltp": 680,
-      "pointchange": -0.2,
+      "pointchange": 1.7,
       "percentchange": 0,
       "open": 680,
       "high": 693,
@@ -5059,7 +5221,7 @@
     {
       "symbol": "SIFC",
       "ltp": 364,
-      "pointchange": -5.5,
+      "pointchange": 0.5,
       "percentchange": 1,
       "open": 358,
       "high": 371,
@@ -5079,7 +5241,7 @@
     {
       "symbol": "SIGS2",
       "ltp": 8,
-      "pointchange": -0.23,
+      "pointchange": -0.16,
       "percentchange": 0,
       "open": 8,
       "high": 8,
@@ -5119,7 +5281,7 @@
     {
       "symbol": "SIKLES",
       "ltp": 508,
-      "pointchange": -16.1,
+      "pointchange": -8.6,
       "percentchange": 2,
       "open": 505,
       "high": 508,
@@ -5139,7 +5301,7 @@
     {
       "symbol": "SINDU",
       "ltp": 312,
-      "pointchange": 3.9,
+      "pointchange": 4.5,
       "percentchange": 0,
       "open": 308,
       "high": 320,
@@ -5159,7 +5321,7 @@
     {
       "symbol": "SJCL",
       "ltp": 275,
-      "pointchange": -0.9,
+      "pointchange": -0.7,
       "percentchange": -1,
       "open": 275,
       "high": 282,
@@ -5179,7 +5341,7 @@
     {
       "symbol": "SJLIC",
       "ltp": 483,
-      "pointchange": -7.9,
+      "pointchange": -4.1,
       "percentchange": -1,
       "open": 484,
       "high": 492,
@@ -5199,7 +5361,7 @@
     {
       "symbol": "SKBBL",
       "ltp": 822,
-      "pointchange": -8.5,
+      "pointchange": -4,
       "percentchange": 0,
       "open": 825,
       "high": 829,
@@ -5219,7 +5381,7 @@
     {
       "symbol": "SLBBL",
       "ltp": 575,
-      "pointchange": 0,
+      "pointchange": -4.5,
       "percentchange": -2,
       "open": 600,
       "high": 600,
@@ -5239,7 +5401,7 @@
     {
       "symbol": "SLBSL",
       "ltp": 791,
-      "pointchange": -1,
+      "pointchange": 14.4,
       "percentchange": 0,
       "open": 775,
       "high": 791,
@@ -5259,7 +5421,7 @@
     {
       "symbol": "SLCF",
       "ltp": 7,
-      "pointchange": -0.09,
+      "pointchange": 0.03,
       "percentchange": -1,
       "open": 7,
       "high": 7,
@@ -5279,7 +5441,7 @@
     {
       "symbol": "SMATA",
       "ltp": 588,
-      "pointchange": 3,
+      "pointchange": 8.7,
       "percentchange": -3,
       "open": 600,
       "high": 600,
@@ -5297,9 +5459,29 @@
       "week52low": 552
     },
     {
+      "symbol": "SMB",
+      "ltp": 929,
+      "pointchange": 17.8,
+      "percentchange": -1,
+      "open": 954,
+      "high": 954,
+      "low": 929,
+      "volume": 519,
+      "previousclose": 947,
+      "name": "Support Laghubitta Bittiya Sanstha Limited",
+      "category": "Assets",
+      "sector": "Microfinance",
+      "vwap": 936,
+      "Turnover": 485802,
+      "day120": 959,
+      "day180": 952,
+      "week52high": 1188,
+      "week52low": 812
+    },
+    {
       "symbol": "SMFBS",
       "ltp": 860,
-      "pointchange": -6,
+      "pointchange": -17.2,
       "percentchange": -2,
       "open": 880,
       "high": 880,
@@ -5319,7 +5501,7 @@
     {
       "symbol": "SMH",
       "ltp": 689,
-      "pointchange": 4.3,
+      "pointchange": 3.3,
       "percentchange": 0,
       "open": 677,
       "high": 703,
@@ -5339,7 +5521,7 @@
     {
       "symbol": "SMHL",
       "ltp": 468,
-      "pointchange": -3,
+      "pointchange": 3.4,
       "percentchange": -2,
       "open": 488,
       "high": 492,
@@ -5359,7 +5541,7 @@
     {
       "symbol": "SMJC",
       "ltp": 387,
-      "pointchange": 5.5,
+      "pointchange": 6.7,
       "percentchange": -3,
       "open": 391,
       "high": 405,
@@ -5379,7 +5561,7 @@
     {
       "symbol": "SNLI",
       "ltp": 599,
-      "pointchange": -2.8,
+      "pointchange": -3.7,
       "percentchange": 5,
       "open": 582,
       "high": 628,
@@ -5399,7 +5581,7 @@
     {
       "symbol": "SONA",
       "ltp": 408,
-      "pointchange": 13.5,
+      "pointchange": 30,
       "percentchange": -2,
       "open": 422,
       "high": 424,
@@ -5419,7 +5601,7 @@
     {
       "symbol": "SPC",
       "ltp": 615,
-      "pointchange": -13,
+      "pointchange": -10,
       "percentchange": -9,
       "open": 666,
       "high": 666,
@@ -5439,7 +5621,7 @@
     {
       "symbol": "SPDL",
       "ltp": 247,
-      "pointchange": 1.9,
+      "pointchange": 3.9,
       "percentchange": -4,
       "open": 256,
       "high": 258,
@@ -5459,7 +5641,7 @@
     {
       "symbol": "SPHL",
       "ltp": 470,
-      "pointchange": 4.3,
+      "pointchange": 10,
       "percentchange": 1,
       "open": 470,
       "high": 479,
@@ -5479,7 +5661,7 @@
     {
       "symbol": "SPIL",
       "ltp": 724,
-      "pointchange": -3,
+      "pointchange": -5,
       "percentchange": 0,
       "open": 710,
       "high": 728,
@@ -5499,7 +5681,7 @@
     {
       "symbol": "SPL",
       "ltp": 630,
-      "pointchange": -3,
+      "pointchange": 10,
       "percentchange": -2,
       "open": 649,
       "high": 654,
@@ -5519,7 +5701,7 @@
     {
       "symbol": "SRLI",
       "ltp": 425,
-      "pointchange": -2.5,
+      "pointchange": 3,
       "percentchange": 0,
       "open": 423,
       "high": 430,
@@ -5539,7 +5721,7 @@
     {
       "symbol": "SSHL",
       "ltp": 160,
-      "pointchange": 2,
+      "pointchange": 3.4,
       "percentchange": -5,
       "open": 169,
       "high": 171,
@@ -5559,7 +5741,7 @@
     {
       "symbol": "STC",
       "ltp": 4920,
-      "pointchange": 15,
+      "pointchange": 80,
       "percentchange": -1,
       "open": 5000,
       "high": 5040,
@@ -5579,7 +5761,7 @@
     {
       "symbol": "SWBBL",
       "ltp": 708,
-      "pointchange": -6.5,
+      "pointchange": -1.5,
       "percentchange": -1,
       "open": 720,
       "high": 720,
@@ -5599,7 +5781,7 @@
     {
       "symbol": "SWMF",
       "ltp": 658,
-      "pointchange": -5.6,
+      "pointchange": 7.4,
       "percentchange": -1,
       "open": 656,
       "high": 667,
@@ -5619,7 +5801,7 @@
     {
       "symbol": "TAMOR",
       "ltp": 395,
-      "pointchange": -1,
+      "pointchange": 1.1,
       "percentchange": -2,
       "open": 414,
       "high": 414,
@@ -5639,7 +5821,7 @@
     {
       "symbol": "TPC",
       "ltp": 537,
-      "pointchange": -9,
+      "pointchange": 1,
       "percentchange": 0,
       "open": 539,
       "high": 555,
@@ -5659,7 +5841,7 @@
     {
       "symbol": "TRH",
       "ltp": 746,
-      "pointchange": -10,
+      "pointchange": 4,
       "percentchange": -1,
       "open": 746,
       "high": 764,
@@ -5679,7 +5861,7 @@
     {
       "symbol": "TSHL",
       "ltp": 490,
-      "pointchange": 7,
+      "pointchange": 19,
       "percentchange": -7,
       "open": 540,
       "high": 540,
@@ -5699,7 +5881,7 @@
     {
       "symbol": "TVCL",
       "ltp": 541,
-      "pointchange": 3.5,
+      "pointchange": 7.2,
       "percentchange": -3,
       "open": 558,
       "high": 568,
@@ -5719,7 +5901,7 @@
     {
       "symbol": "UAIL",
       "ltp": 520,
-      "pointchange": 0.5,
+      "pointchange": 9,
       "percentchange": 0,
       "open": 520,
       "high": 525,
@@ -5739,7 +5921,7 @@
     {
       "symbol": "UHEWA",
       "ltp": 364,
-      "pointchange": -17.4,
+      "pointchange": -1,
       "percentchange": 1,
       "open": 362,
       "high": 367,
@@ -5759,7 +5941,7 @@
     {
       "symbol": "ULBSL",
       "ltp": 1080,
-      "pointchange": -21.6,
+      "pointchange": -5,
       "percentchange": 0,
       "open": 1086,
       "high": 1086,
@@ -5779,7 +5961,7 @@
     {
       "symbol": "ULHC",
       "ltp": 324,
-      "pointchange": -6.5,
+      "pointchange": -3.8,
       "percentchange": -1,
       "open": 328,
       "high": 330,
@@ -5799,7 +5981,7 @@
     {
       "symbol": "UMHL",
       "ltp": 252,
-      "pointchange": 4,
+      "pointchange": 8,
       "percentchange": -3,
       "open": 258,
       "high": 267,
@@ -5819,7 +6001,7 @@
     {
       "symbol": "UMRH",
       "ltp": 358,
-      "pointchange": 0.1,
+      "pointchange": 7,
       "percentchange": 0,
       "open": 356,
       "high": 372,
@@ -5839,7 +6021,7 @@
     {
       "symbol": "UNHPL",
       "ltp": 243,
-      "pointchange": 4.8,
+      "pointchange": 12.8,
       "percentchange": -3,
       "open": 250,
       "high": 257,
@@ -5859,7 +6041,7 @@
     {
       "symbol": "UNL",
       "ltp": 40000,
-      "pointchange": 443,
+      "pointchange": -500,
       "percentchange": 1,
       "open": 39600,
       "high": 40000,
@@ -5879,7 +6061,7 @@
     {
       "symbol": "UNLB",
       "ltp": 1218,
-      "pointchange": -11,
+      "pointchange": -1,
       "percentchange": -1,
       "open": 1217,
       "high": 1240,
@@ -5899,7 +6081,7 @@
     {
       "symbol": "UPCL",
       "ltp": 209,
-      "pointchange": 3.1,
+      "pointchange": 3.7,
       "percentchange": -3,
       "open": 220,
       "high": 220,
@@ -5919,7 +6101,7 @@
     {
       "symbol": "UPPER",
       "ltp": 195,
-      "pointchange": 3.2,
+      "pointchange": 8.7,
       "percentchange": -1,
       "open": 196,
       "high": 199,
@@ -5939,7 +6121,7 @@
     {
       "symbol": "USHEC",
       "ltp": 370,
-      "pointchange": 1.1,
+      "pointchange": 3,
       "percentchange": 0,
       "open": 379,
       "high": 394,
@@ -5959,7 +6141,7 @@
     {
       "symbol": "USHL",
       "ltp": 471,
-      "pointchange": 0.3,
+      "pointchange": 12.9,
       "percentchange": 1,
       "open": 471,
       "high": 485,
@@ -5979,7 +6161,7 @@
     {
       "symbol": "USLB",
       "ltp": 1045,
-      "pointchange": -16,
+      "pointchange": 5,
       "percentchange": 0,
       "open": 1050,
       "high": 1051,
@@ -5999,7 +6181,7 @@
     {
       "symbol": "VLBS",
       "ltp": 594,
-      "pointchange": -6,
+      "pointchange": 4,
       "percentchange": -1,
       "open": 605,
       "high": 607,
@@ -6019,7 +6201,7 @@
     {
       "symbol": "VLUCL",
       "ltp": 521,
-      "pointchange": -1.5,
+      "pointchange": 3.9,
       "percentchange": 0,
       "open": 516,
       "high": 540,
@@ -6039,7 +6221,7 @@
     {
       "symbol": "WNLB",
       "ltp": 791,
-      "pointchange": -15,
+      "pointchange": 45.4,
       "percentchange": -3,
       "open": 801,
       "high": 814,
@@ -6061,6 +6243,6 @@
   "isCached": false,
   "dataversion": {
     "versionCode": 208,
-    "timestamp": "2024-02-26T13:49:38.647+05:45"
+    "timestamp": "2024-02-26T20:23:01.890+05:45"
   }
 }

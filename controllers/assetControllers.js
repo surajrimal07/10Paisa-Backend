@@ -1193,21 +1193,9 @@ export const TopTransData = async (req, res) => {
           isCached: true,
           dataversion: cachedDataVersion,
         });
-        //return respondWithData(res,'SUCCESS','Data refreshed Successfully',cachedData);
       }
     };
 
-    // const cachedData = await fetchFromCache(CACHE_KEY_TOP_TRANS);
-
-    // if (cachedData !== null) {
-    //   console.log('Returning cached top transaction data');
-    //   return res.status(200).json({
-    //     data: cachedData,
-    //     isFallback: false,
-    //     isCached: true,
-    //     dataversion: cachedDataVersion,
-    //   });
-    // }
 
     const topGainersData = await topTransactions();
 
@@ -1291,6 +1279,48 @@ export const DashBoardData = async (req, res) => {
   }
 };
 
+//new all indices data
+export const AllIndicesData = async (req, res) => {
+  console.log('All Indices Data Requested');
+
+  try {
+    if (req.query.refresh === "false") {
+      const cachedData = await fetchFromCache('AllIndicesData');
+
+      if (cachedData !== null) {
+
+        console.log('Returning cached all indices data');
+        return res.status(200).json({
+          data: cachedData,
+          isFallback: false,
+          isCached: true,
+          dataversion: cachedDataVersion,
+        });
+      }
+    };
+
+    const allIndicesData = await fetchIndexes();
+
+    if (!allIndicesData) {
+      return res.status(500).json({ error: 'Failed to fetch all indices data.' });
+    }
+
+    await storage.setItem('AllIndicesData', allIndicesData);
+
+    return res.status(200).json({
+      data: allIndicesData,
+      isFallback: false,
+      isCached: false,
+      dataversion: cachedDataVersion,
+    });
+
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: 'Internal Server Error' });
+  }
+
+}
+
 
 //new cache mechanism fixed and added
 export const IndexData = async (req, res) => {
@@ -1344,11 +1374,6 @@ export const CombinedIndexData = async (req, res) => {
     if (!indexData || !indexDataByDate) {
       return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'Failed to fetch index data.');
     }
-
-    // if (indexData.date === indexDataByDate[0].date || indexData.percentageChange === indexDataByDate[0].percentageChange) {
-    //   await storage.setItem('CombinedIndexData', indexDataByDate);
-    //   return respondWithData(res, 'SUCCESS', 'Data Fetched Successfully', indexDataByDate);
-    // }
 
     const pointChange = calculatePointChange(indexDataByDate,indexData);
     indexData.pointChange = pointChange.pointChange;

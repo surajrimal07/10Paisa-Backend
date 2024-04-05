@@ -15,7 +15,8 @@ describe('GET /', () => {
     request(app)
       .get('/')
       .expect(200)
-      .expect('This API is running live🥳', done);
+      .expect('Content-Type', 'text/html; charset=utf-8')
+      .expect(/This API is running live<span class="emoji">🥳<\/span>/, done);
   });
 });
 

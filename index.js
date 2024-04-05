@@ -1,8 +1,13 @@
+//package imports
 import bodyParser from 'body-parser';
 import { v2 as cloudinary } from 'cloudinary';
+import multipart from 'connect-multiparty';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import express from 'express';
+import fs from 'fs';
+
+//file imports
 import initializeRefreshMechanism from './controllers/refreshController.js';
 import { mainDB } from './database/db.js';
 import userRouter from './routes/appRoutes.js';
@@ -10,8 +15,6 @@ import { startNewsServer } from './server/newsServer.js';
 import { startWebSocketServer } from './server/websocket.js';
 import { initializeStorage } from './utils/initilize_storage.js';
 
-
-import multipart from 'connect-multiparty';
 
 dotenv.config();
 
@@ -64,17 +67,6 @@ initializeStorage()
     console.error('Error initializing storage:', error);
   });
 
-
-// //use https
-// const forceSecure = (req, res, next) => {
-//   if (req.secure)
-//      return next();
-//   res.redirect('https://' + req.hostname + req.url)
-// }
-// app.all('*', forceSecure);
-// //
-
-//await storage.init();
 initializeRefreshMechanism();
 
 app.listen(port, () => {
@@ -84,7 +76,7 @@ app.listen(port, () => {
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
-//testing
+
 app.get('/test', (req, res) => {
   res.send('Testing API is running live🥳');
 });
@@ -92,8 +84,17 @@ app.get('/test', (req, res) => {
 app.use('/api', userRouter);
 
 app.get('/', (req, res) => {
-  res.send('This API is running live🥳');
+
+  fs.readFile('./utils/index.html', 'utf8', (err, data) => {
+    if (err) {
+      console.error('Error reading HTML file:', err.message);
+      res.status(500).send('Error reading HTML file');
+      return;
+    }
+    res.send(data);
+  });
 });
+
 
 startWebSocketServer();
 startNewsServer(app);
