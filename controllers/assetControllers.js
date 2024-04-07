@@ -4,10 +4,11 @@ import path, { dirname } from 'path';
 import { fileURLToPath } from 'url';
 import saveDataToJson from '../controllers/jsonControllers.js';
 import Asset from '../models/assetModel.js';
-import { FetchOldData, FetchSingularDataOfAsset, extractIndex, extractIndexDateWise, topLosersShare, topTradedShares, topTransactions, topTurnoversShare, topgainersShare } from '../server/assetServer.js';
+import { FetchOldData, FetchSingularDataOfAsset, extractIndex, extractIndexDateWise, fetchIndexes, topLosersShare, topTradedShares, topTransactions, topTurnoversShare, topgainersShare } from '../server/assetServer.js';
 import { commodityprices } from '../server/commodityServer.js';
 import { metalPriceExtractor } from '../server/metalServer.js';
 import { oilExtractor } from '../server/oilServer.js';
+import topCompanies from '../server/top_capitalization.js';
 import { extractWorldMarketData } from '../server/worldmarketServer.js';
 import { respondWithData, respondWithError } from '../utils/response_utils.js';
 import { isMarketOpen } from './refreshController.js';
@@ -503,7 +504,7 @@ export const AssetMergedData = async (req, res) => {
 
   try {
     if (req.body.refresh=="false") {
-      const cachedData = await fetchFromCache('AssetMergedData');
+      const cachedData = await fetchFromCache('AssetMergedDatas');
 
       if (cachedData !== null) {
 
@@ -545,43 +546,12 @@ export const AssetMergedData = async (req, res) => {
       assetDataFolderPath
     );
 
-    // try {
-    //   await Promise.all(
-    //     mergedData.map(async (item) => {
-    //       await Asset.updateOne({ symbol: item.symbol }, { $set: item }, { upsert: true });
-    //     })
-    //   );
-    // } catch (error) {
-    //   console.error('DB Update Error:', error);
-    // }
-
     // Update cache and counter
     await Promise.all([
       storage.setItem(dataversion_cache, { versionCode: dataVersionCounter, timestamp: DateTime.now().toISO() }),
       storage.setItem(counter, dataVersionCounter),
       storage.setItem('AssetMergedData', mergedData)
     ]);
-
-    // await Promise.all(
-    //   mergedData.map(async (item) => {
-    //     try {
-    //       await Asset.updateOne(
-    //         { symbol: item.symbol },
-    //         {
-    //           $set: {
-    //             ...item,
-    //             isFallback: false,
-    //             isCached: false,
-    //             dataversion: { versionCode: dataVersionCounter, timestamp: DateTime.now().toISO() },
-    //           },
-    //         },
-    //         { upsert: true }
-    //       );
-    //     } catch (error) {
-    //       console.error('DB Update Error:', error);
-    //     }
-    //   })
-    // );
 
     return res.status(200).json({
       data: mergedData,
@@ -595,7 +565,6 @@ export const AssetMergedData = async (req, res) => {
   }
 };
 
-//
 //single asset from sharesanasar
 export const SingeAssetMergedData = async (req, res) => {
   console.log('Sharesansar Single Asset Data Requested');
@@ -606,40 +575,9 @@ export const SingeAssetMergedData = async (req, res) => {
     console.error('No symbol provided in the request');
     return respondWithError(res, 'BAD_REQUEST', 'No symbol provided in the request');
   }
-//  const cachedData = await fetchFromCache(Asset_cached_key);
 
   const symboll = symbol.toUpperCase();
   try {
-
-    // if (isRefresh == 'true') {
-    //   const cachedData = await fetchFromCache('SingeAssetMergedData');
-
-    //   if (cachedData !== null) {
-
-    //     const filteredData = cachedData.filter(item => item.symbol === symboll);
-
-    //     console.log('Returning cached commodity data');
-    //     return res.status(200).json({
-    //       data: filteredData,
-    //       isFallback: false,
-    //       isCached: true,
-    //       dataversion: cachedDataVersion,
-    //     });
-    //   }
-    // };
-    // if (cachedData !== null) {
-    //   console.log('Returning cached data for symbol:', symboll);
-
-    //   const filteredData = cachedData.filter(item => item.symbol === symboll);
-
-    //   return res.status(200).json({
-    //     data: filteredData,
-    //     isFallback: false,
-    //     isCached: true,
-    //     dataversion: cachedDataVersion,
-    //   });
-    // }
-
     const [todayData, liveData] = await Promise.all([FetchSingularDataOfAsset(), FetchOldData()]);
 
   // Merge data
@@ -1285,7 +1223,7 @@ export const AllIndicesData = async (req, res) => {
 
   try {
     if (req.query.refresh === "false") {
-      const cachedData = await fetchFromCache('AllIndicesData');
+      const cachedData = await fetchFromCache('AllIndicesDatas');
 
       if (cachedData !== null) {
 
@@ -1302,10 +1240,10 @@ export const AllIndicesData = async (req, res) => {
     const allIndicesData = await fetchIndexes();
 
     if (!allIndicesData) {
-      return res.status(500).json({ error: 'Failed to fetch all indices data.' });
+      return res.status(500).json({ error: 'Failed to fetch all indices datas.' });
     }
 
-    await storage.setItem('AllIndicesData', allIndicesData);
+    //await storage.setItem('AllIndicesData', allIndicesData);
 
     return res.status(200).json({
       data: allIndicesData,
@@ -1435,6 +1373,90 @@ function calculatePointChange(indexDataByDate, indexData) {
   };
 }
 
+//index prediction //6th sem
+
+export const TopHeavyStocks = async (req, res) => {
+  console.log("Top Impacting stocks data requested");
+
+  try {
+    const topStocks = topCompanies();
+    const todayData = await FetchSingularDataOfAsset();
+
+    const result = topStocks.map(stock => {
+      const matchingData = todayData.find(data => data.symbol === stock.ticker);
+      if (matchingData) {
+        return {
+          ticker: stock.ticker,
+          name: stock.name,
+          impact: stock.impact,
+          ltp: matchingData.ltp,
+          pointchange: matchingData.pointchange,
+          percentchange: matchingData.percentchange
+        };
+      } else {
+        return {
+          ticker: stock.ticker,
+          name: stock.name,
+          impact: stock.impact,
+          ltp: null,
+          pointchange: null,
+          percentchange: null
+        };
+      }
+    });
+
+    const overallStrength = calculateOverallStrength(result, todayData);
+
+    const jsonResponse = {
+      prediction: calculateOverallPrediction(overallStrength),
+      strength: parseFloat(overallStrength.toFixed(2)),
+      topCompanies: result,
+    };
+
+    res.json(jsonResponse);
+  } catch (error) {
+    console.error("Error fetching data:", error);
+    res.status(500).send("Error fetching data");
+  }
+};
+
+function calculateOverallStrength(companies, todayData) {
+  let overallWeightedChange = 0;
+  let overallWeight = 0;
+
+  companies.forEach((stock) => {
+    const matchingData = todayData.find(data => data.symbol === stock.ticker);
+    if (matchingData) {
+      const impactPercentage = parseFloat(stock.impact) / 100;
+      const weightedChange = impactPercentage * parseFloat(matchingData.percentchange);
+      overallWeightedChange += weightedChange;
+      overallWeight += impactPercentage;
+    }
+  });
+
+  if (overallWeight > 0) {
+    const overallStrength = overallWeightedChange / overallWeight;
+    return overallStrength;
+  } else {
+    return 0;
+  }
+}
+
+function calculateOverallPrediction(overallStrength) {
+  if (overallStrength > 0.8) {
+    return "Market likely to increase significantly";
+  } else if (overallStrength > 0.2 && overallStrength <= 0.8) {
+    return "Market may increase";
+  } else if (overallStrength < -0.8) {
+    return "Market likely to decrease significantly";
+  } else if (overallStrength < -0.2 && overallStrength >= -0.8) {
+    return "Market may decrease";
+  } else {
+    return "Market may remain stable";
+  }
+}
+//
+
 export const WorldMarketData = async (req, res) => {
   console.log("World Index Data Requested");
   try {
@@ -1450,7 +1472,6 @@ export const WorldMarketData = async (req, res) => {
     };
 
     const worlddata = await extractWorldMarketData();
-
 
     if (!worlddata) {
       return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'Failed to fetch world data.');

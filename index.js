@@ -11,7 +11,7 @@ import fs from 'fs';
 import initializeRefreshMechanism from './controllers/refreshController.js';
 import { mainDB } from './database/db.js';
 import userRouter from './routes/appRoutes.js';
-import { startNewsServer } from './server/newsServer.js';
+import { startNewsServer } from './server/newsserver.js';
 import { startWebSocketServer } from './server/websocket.js';
 import { initializeStorage } from './utils/initilize_storage.js';
 

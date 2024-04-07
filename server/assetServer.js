@@ -44,10 +44,9 @@ const fetchFromCache = async (cacheKey) => {
 //preparing to switch to sharesansar as data provider
 export async function FetchSingularDataOfAsset() {
   const liveTradingUrl = 'https://www.sharesansar.com/live-trading';
-  const todaySharePriceUrl = 'https://www.sharesansar.com/today-share-price';
 
   try {
-    const cachedData = await fetchFromCache('FetchSingularDataOfAsset');
+    const cachedData = await fetchFromCache('FetchSingularDataOfAssets');
     if (cachedData !== null) {
       return cachedData;
     }
@@ -69,68 +68,22 @@ export async function FetchSingularDataOfAsset() {
 
           const stockInfo = {
               symbol: columns[1].querySelector('a').textContent.trim(),
-              ltp: parseFloat(columns[2].textContent.trim()),
+              ltp: parseFloat(columns[2].textContent.trim().replace(/,(?=\d{3})/g, '')),
               pointchange: parseFloat(columns[3].textContent.trim()),
               percentchange: parseFloat(columns[4].textContent.trim()),
-              open: parseFloat(columns[5].textContent.trim()),
-              high: parseFloat(columns[6].textContent.trim()),
-              low: parseFloat(columns[7].textContent.trim()),
-              volume: parseFloat(columns[8].textContent.trim()),
-              previousclose: parseFloat(columns[9].textContent.trim()),
+              open: parseFloat(columns[5].textContent.trim().replace(/,(?=\d{3})/g, '')),
+              high: parseFloat(columns[6].textContent.trim().replace(/,(?=\d{3})/g, '')),
+              low: parseFloat(columns[7].textContent.trim().replace(/,(?=\d{3})/g, '')),
+              volume: parseFloat(columns[8].textContent.trim().replace(/,(?=\d{3})/g, '')),
+              previousclose: parseFloat(columns[9].textContent.trim().replace(/,(?=\d{3})/g, '')),
           };
 
           stockDataWithoutName.push(stockInfo);
       });
 
-      const responseTodaySharePrice = await axios.get(todaySharePriceUrl);
+      await storage.setItem('FetchSingularDataOfAssets', stockDataWithoutName);
 
-      if (!responseTodaySharePrice.data) {
-          throw new Error(`Failed to fetch today's share price data. Status: ${responseTodaySharePrice.status}`);
-      }
-
-      const domTodaySharePrice = new JSDOM(responseTodaySharePrice.data);
-      const documentTodaySharePrice = domTodaySharePrice.window.document;
-
-      const scriptElements = documentTodaySharePrice.querySelectorAll('script');
-      let cmpjsonArray = [];
-
-      scriptElements.forEach((scriptElement) => {
-          if (scriptElement.textContent.includes('var cmpjson')) {
-              const scriptContent = scriptElement.textContent;
-              const jsonMatch = scriptContent.match(/var cmpjson = (\[.*\]);/);
-
-              if (jsonMatch && jsonMatch[1]) {
-                  const jsonContent = jsonMatch[1];
-                  cmpjsonArray = JSON.parse(jsonContent);
-              }
-          }
-      });
-
-      const symbolToNameMap = cmpjsonArray.reduce((map, item) => {
-          map[item.symbol] = item.companyname;
-          return map;
-      }, {});
-
-      const stockDataWithName = stockDataWithoutName.map((stockInfo) => ({
-          ...stockInfo,
-          name: symbolToNameMap[stockInfo.Symbol] || '',
-          category: '',
-          sector: '',
-      }));
-
-      stockDataWithName.forEach((stock) => {
-          if (stock.name.toLowerCase().includes('debenture')) {
-              stock.category = 'debenture';
-          } else if (stock.LTP < 20) {
-              stock.category = 'mutual fund';
-          } else {
-              stock.category = 'stock';
-          }
-      });
-
-      await storage.setItem('FetchSingularDataOfAsset', stockDataWithName);
-
-      return stockDataWithName;
+      return stockDataWithoutName;
 
   } catch (error) {
       console.error(error);
@@ -222,7 +175,7 @@ export async function FetchOldData() {
   const hardcodedUrl = 'https://www.sharesansar.com/today-share-price';
 
   try {
-    const cachedData = await fetchFromCache('FetchOldData');
+    const cachedData = await fetchFromCache('FetchOldDatas');
     if (cachedData !== null) {
       return cachedData;
     }
@@ -264,15 +217,9 @@ export async function FetchOldData() {
 
           const stockInfo = {
               symbol: columns[1].querySelector('a').textContent.trim(),
-              open: parseInt(columns[3].textContent.replace(/,/g, '')),
-              high: parseInt(columns[4].textContent.replace(/,/g, '')),
-              low: parseInt(columns[5].textContent.replace(/,/g, '')),
-              ltp: parseInt(columns[6].textContent.replace(/,/g, '')),
               vwap: parseInt(columns[7].textContent.trim()),
-              volume: parseInt(columns[8].textContent.replace(/,/g, '')),
-              previousclose: parseInt(columns[9].textContent.trim()),
-              Turnover: parseInt(columns[10].textContent.replace(/,/g, '')),
-              percentchange: parseInt(columns[14].textContent.replace(/,/g, '')),
+              Turnover: parseInt(columns[10].textContent.replace(/,/g, '')), //controvercial
+              //why add yesterday turnover in today data? //find alternative way
               day120: parseInt(columns[17].textContent.replace(/,/g, '')),
               day180: parseInt(columns[18].textContent.replace(/,/g, '')),
               week52high: parseInt(columns[19].textContent.replace(/,/g, '')),
@@ -285,7 +232,7 @@ export async function FetchOldData() {
 
       const enrichedData = await AddCategoryAndSector(stockDataWithoutName);
 
-      await storage.setItem('FetchOldData', enrichedData);
+      await storage.setItem('FetchOldDatas', enrichedData);
 
       return enrichedData;
 
@@ -551,7 +498,7 @@ export const topTransactions = async () => {
 export async function fetchIndexes() {
   try {
 
-    const cachedData = await fetchFromCache('allindices_data');
+    const cachedData = await fetchFromCache('allindices_sourcedata');
 
     if (cachedData !== null) {
       return cachedData;
@@ -586,21 +533,14 @@ export async function fetchIndexes() {
 
       fieldsToExtract.forEach((field) => {
         const $element = $(`h4:contains('${field}')`).closest('.mu-list');
-        const price = $element.find('.mu-price').text().trim();
+        const volume = parseInt($element.find('.mu-price').text().replace(/,/g, ''), 10);
+        const index = parseFloat($element.find('.mu-value').text().replace(/,/g, ''));
+        const percent = parseFloat($element.find('.mu-percent').text().replace(/%/g, ''));
 
-        const valueText = $element.find('.mu-value').text().trim();
-        const values = valueText.match(/\d{1,3}(,\d{3})*\.\d+/g) || [];
+        extractedData[field] = { volume, index, percent };
+    });
 
-        const percent = $element.find('.mu-percent').text().trim();
-
-        extractedData[field] = {
-          price,
-          values,
-          percent,
-        };
-      });
-
-      await storage.setItem('allindices_data', extractedData);
+      //await storage.setItem('allindices_sourcedata', extractedData);
 
       return extractedData;
     } catch (error) {
