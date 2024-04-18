@@ -24,7 +24,6 @@ export const deleteUserByEmail = async (req, res) => {
 
     try {
 
-    //also delete user portfolio
         await Portfolio.deleteMany({ userEmail: email });
 
         const deletedUser = await User.findOneAndDelete({ email });

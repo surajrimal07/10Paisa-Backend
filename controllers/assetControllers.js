@@ -1381,6 +1381,7 @@ export const TopHeavyStocks = async (req, res) => {
   try {
     const topStocks = topCompanies();
     const todayData = await FetchSingularDataOfAsset();
+    const allIndicesData = await fetchIndexes();
 
     const result = topStocks.map(stock => {
       const matchingData = todayData.find(data => data.symbol === stock.ticker);
@@ -1405,12 +1406,13 @@ export const TopHeavyStocks = async (req, res) => {
       }
     });
 
-    const overallStrength = calculateOverallStrength(result, todayData);
+    const overallStrength = await calculateOverallStrength(result, todayData,allIndicesData);
 
     const jsonResponse = {
       prediction: calculateOverallPrediction(overallStrength),
       strength: parseFloat(overallStrength.toFixed(2)),
-      topCompanies: result,
+      topIndex: allIndicesData,
+      topCompanies: result
     };
 
     res.json(jsonResponse);
@@ -1420,7 +1422,19 @@ export const TopHeavyStocks = async (req, res) => {
   }
 };
 
-function calculateOverallStrength(companies, todayData) {
+async function calculateOverallStrength(companies, todayData,allIndicesData) {
+
+  const specifiedWeights = {
+    'Banking SubIndex': 0.2,
+    'HydroPower Index': 0.15,
+    'Life Insurance': 0.10,
+    'Others Index': 0.15,
+    'Non Life Insurance': 0.10,
+  };
+
+  const specifiedWeightTotal = Object.values(specifiedWeights).reduce((sum, weight) => sum + weight, 0);
+  const remainingWeight = 1 - specifiedWeightTotal;
+
   let overallWeightedChange = 0;
   let overallWeight = 0;
 
@@ -1428,9 +1442,21 @@ function calculateOverallStrength(companies, todayData) {
     const matchingData = todayData.find(data => data.symbol === stock.ticker);
     if (matchingData) {
       const impactPercentage = parseFloat(stock.impact) / 100;
-      const weightedChange = impactPercentage * parseFloat(matchingData.percentchange);
+
+      // Calculate weighted change for high-cap companies (60% weight)
+      const weightedChange = 0.6 * impactPercentage * parseFloat(matchingData.percentchange);
       overallWeightedChange += weightedChange;
-      overallWeight += impactPercentage;
+      overallWeight += 0.6 * impactPercentage;
+    }
+  });
+
+  // Calculate weighted change for index movements (40% weight)
+  Object.keys(allIndicesData).forEach((indexName) => {
+    if (specifiedWeights[indexName]) {
+      const indexData = allIndicesData[indexName];
+      const indexWeightedChange = 0.4 * specifiedWeights[indexName] * (indexData.percent / 100);
+      overallWeightedChange += indexWeightedChange;
+      overallWeight += 0.4 * specifiedWeights[indexName];
     }
   });
 
@@ -1441,6 +1467,7 @@ function calculateOverallStrength(companies, todayData) {
     return 0;
   }
 }
+
 
 function calculateOverallPrediction(overallStrength) {
   if (overallStrength > 0.8) {

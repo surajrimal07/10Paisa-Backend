@@ -3,8 +3,11 @@ import cheerio from 'cheerio';
 import fs from 'fs/promises';
 import { JSDOM } from 'jsdom';
 import storage from 'node-persist';
+import { dirname } from 'path';
+import { fileURLToPath } from 'url';
 import nepseUrls from '../middleware/nepseapiUrl.js';
 await storage.init();
+
 
 export async function fetchDataAndMapToAssetModel() {
   try {
@@ -495,6 +498,9 @@ export const topTransactions = async () => {
 };
 
 //used for machine learning model
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
 export async function fetchIndexes() {
   try {
 
@@ -503,6 +509,13 @@ export async function fetchIndexes() {
     if (cachedData !== null) {
       return cachedData;
     }
+
+    // const currentDate = new Date().toISOString().split('T')[0];
+    // const Assetfolder = 'indices_data';
+    // const assetDataFolderPath = path.join(__dirname, '..', 'AssetData', Assetfolder);
+    // const csvFileName = `NEPSE_Index_${currentDate}.csv`;
+    // const fullPath = path.join(assetDataFolderPath, csvFileName);
+
 
     const url = 'https://www.sharesansar.com/live-trading'
       const response = await axios.get(url);
@@ -533,14 +546,32 @@ export async function fetchIndexes() {
 
       fieldsToExtract.forEach((field) => {
         const $element = $(`h4:contains('${field}')`).closest('.mu-list');
+        const time = $('#dDate').text();
         const volume = parseInt($element.find('.mu-price').text().replace(/,/g, ''), 10);
         const index = parseFloat($element.find('.mu-value').text().replace(/,/g, ''));
         const percent = parseFloat($element.find('.mu-percent').text().replace(/%/g, ''));
 
-        extractedData[field] = { volume, index, percent };
+        extractedData[field] = { volume, index, percent,time };
     });
 
-      //await storage.setItem('allindices_sourcedata', extractedData);
+    // //i want to save in json in following format
+    // // first only date NEPSE Index data
+    // // then write to the csv file
+
+    // // Write NEPSE Index data to CSV file
+    // await mkdirPromise(folder, { recursive: true }).catch(() => {});
+    // const csvHeader = 'Time,Volume,Index,Percent\n';
+    // const csvContent = `${extractedData['NEPSE Index'].time},${extractedData['NEPSE Index'].volume},${extractedData['NEPSE Index'].index},${extractedData['NEPSE Index'].percent}\n`;
+
+    // try {
+    //   await fs.access(csvFileName);
+    //   await fs.appendFile(csvFileName, csvContent);
+    // } catch (error) {
+    //   await fs.writeFile(csvFileName, csvHeader + csvContent);
+    // }
+
+
+      await storage.setItem('allindices_sourcedata', extractedData);
 
       return extractedData;
     } catch (error) {

@@ -7,10 +7,105 @@ import { forgetPassword } from '../controllers/otpControllers.js';
 import Portfolio from '../models/portfolioModel.js';
 import User from '../models/userModel.js';
 import { notifyClients } from '../server/websocket.js';
-import { validateEmail, validateName, validatePassword, validatePhoneNumber } from '../utils/dataValidation_utils.js';
+import { LDAcheck, NameorEmailinPassword, validateEmail, validateName, validatePassword, validatePhoneNumber } from '../utils/dataValidation_utils.js';
+import globalVariables from '../utils/globalVariables.js';
 import { respondWithData, respondWithError, respondWithSuccess } from '../utils/response_utils.js';
 
 
+function setUserDetails({ name, phone, email }) {
+  console.log("Setting user global details");
+  if (name) globalVariables.setUsername(name);
+  if (phone) globalVariables.setPhone(phone);
+  if (email) globalVariables.setEmail(email);
+}
+
+
+//on fly validations
+export const verifyName = async (req, res) => {
+  const name = req.body.name;
+  console.log("Name verification requested")
+  console.log(name);
+
+  if (!name) {
+    return respondWithError(res, 'BAD_REQUEST', "Name is missing");
+  }
+
+  if (!validateName(name)) {
+    return respondWithError(res, 'BAD_REQUEST', "Name should be fname and lname format.");
+  }
+
+  return respondWithSuccess(res, 'SUCCESS', "Name is valid");
+};
+
+export const verifyEmail = async (req, res) => {
+  const email = req.body.email;
+
+  if (!email) {
+    return respondWithError(res, 'BAD_REQUEST', "Email is missing");
+  }
+
+  const user = await User.findOne({ email });
+
+  if (user) {
+    return respondWithError(res, 'BAD_REQUEST', "Email already exists");
+  }
+
+  if (!validateEmail(email)) {
+    return respondWithError(res, 'BAD_REQUEST', "Invalid email format. Please provide a valid email address.");
+  }
+
+  return respondWithSuccess(res, 'SUCCESS', "Email is valid");
+};
+
+export const verifyPassword = async (req, res) => {
+  const password = req.body.password;
+  const name = req.body.name;
+  const email = req.body.email;
+
+  if (!password) {
+    return respondWithError(res, 'BAD_REQUEST', "Password is missing");
+  }
+
+  const validationError = validatePassword(password);
+    if (validationError !== true) {
+        return respondWithError(res, 'BAD_REQUEST', validationError);
+    }
+
+  if (!NameorEmailinPassword(name, email, password)) {
+    return respondWithError(res, 'BAD_REQUEST', "Password contains name or email.");
+  }
+
+  if (!LDAcheck(password)) {
+    return respondWithError(res, 'BAD_REQUEST', "Password is too common.");
+  }
+
+  return respondWithSuccess(res, 'SUCCESS', "Password is valid");
+};
+
+export const verifyPhoneNumber = async (req, res) => {
+  const phone = req.body.phone;
+
+
+  const phoneUser = await User.findOne({ phone });
+
+  if (phoneUser) {
+    return respondWithError(res, 'BAD_REQUEST', "Phone number already exists");
+  }
+
+  if (!phone) {
+    return respondWithError(res, 'BAD_REQUEST', "Phone number is missing");
+  }
+
+  if (!validatePhoneNumber(phone)) {
+    return respondWithError(res, 'BAD_REQUEST', "Invalid phone number. Please provide a 10-digit number.");
+  }
+
+  return respondWithSuccess(res, 'SUCCESS', "Phone number is valid");
+};
+
+
+
+//create user
 export const createUser = async (req, res) => {
   const name = req.body.name;
   const email = req.body.email;
@@ -29,7 +124,6 @@ export const createUser = async (req, res) => {
   }
 
   if (!validatePhoneNumber(phone)) {
-    console.log(phone, typeof phone);
     return respondWithError(res, 'BAD_REQUEST', "Invalid phone number. Please provide a 10-digit number.");
   }
 
@@ -45,6 +139,10 @@ export const createUser = async (req, res) => {
     return respondWithError(res, 'BAD_REQUEST', "Name should be fname and lname format.");
   }
 
+  if(!LDAcheck(password)){
+    return respondWithError(res, 'BAD_REQUEST', "Password is too common.");
+  }
+
   let dpImage;
 
   if (req.files && req.files.length > 0) {
@@ -52,6 +150,7 @@ export const createUser = async (req, res) => {
   }
 
   try {
+    setUserDetails({ name, phone, email });
     const hashedPassword = await bcrypt.hash(password, 10);
     const token = jwt.sign({ email: email, isAdmin: false }, process.env.JWT_SECRET, { expiresIn: '7d' });
     await storage.setItem(email + '_token', token);
@@ -65,6 +164,8 @@ export const createUser = async (req, res) => {
 
     const user = await User.findOne({ email });
     const phoneUser = await User.findOne({ phone });
+
+    //remove these two validations from here, duplicate email and phone number should be checked in the frontend
 
     if (!user) {
       if (!phoneUser) {
@@ -146,56 +247,6 @@ const formatSinglePortfolio = (portfolio) => {
     percentage: portfolio.percentage,
   };
 };
-
-// const getUserDataWithToken = async (user, email, storage) => {
-//   const User_token_key = email + '_token';
-//   let token = '';
-
-//   const cachedtkn = await storage.getItem(User_token_key);
-
-//   if (cachedtkn == null) {
-//     token = jwt.sign({ email: user.email, isAdmin: user.isAdmin }, process.env.JWT_SECRET, { expiresIn: '7d' });
-//     await storage.setItem(User_token_key, token);
-//   } else {
-//     token = cachedtkn;
-//   }
-
-//   return {
-//     _id: user._id,
-//     name: user.name,
-//     email: user.email,
-//     pass: user.password,
-//     phone: user.phone,
-//     token: token,
-//     profilePicture: user.profilePicture,
-//     style: user.style,
-//     premium: user.premium,
-//     defaultport: user.defaultport,
-//     isAdmin: user.isAdmin,
-//     dpImage: user.dpImage,
-//     userAmount: user.userAmount,
-//     portfolio: formatPortfolioData(user.portfolio),
-//     wallets: user.wallets
-//   };
-// };
-
-
-// const formatPortfolioData = (portfolio) => {
-//   return {
-//     _id: portfolio._id,
-//     id: portfolio.id,
-//     name: portfolio.name,
-//     userEmail: portfolio.userEmail,
-//     stocks: portfolio.stocks,
-//     totalunits: portfolio.totalunits,
-//     gainLossRecords: portfolio.gainLossRecords,
-//     portfoliocost: portfolio.portfoliocost,
-//     portfoliovalue: portfolio.portfoliovalue,
-//     recommendation: portfolio.recommendation,
-//     percentage: portfolio.percentage,
-//   };
-// };
-
 //
 export const loginUser = async (req, res) => {
     const email = req.body.email;

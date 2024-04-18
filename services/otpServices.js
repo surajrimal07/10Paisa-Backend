@@ -1,8 +1,12 @@
 import crypto from 'crypto';
 import otpGenerator from 'otp-generator';
 import emailServices from '../services/emailerServices.js';
+import context from '../utils/globalVariables.js';
 
 const key = "test123";
+const logo = '../AssetData/images/logo.png';
+
+//logo is broken, it need to be hosted in cloud for it to work.
 
 export const sendOTP = (params, callback) => {
     const otp = otpGenerator.generate(4, {
@@ -18,17 +22,235 @@ export const sendOTP = (params, callback) => {
     const data = `${params.email}.${otp}.${expires}`;
     const hash = crypto.createHmac("sha256", key).update(data).digest("hex");
     const fullhash = `${hash}.${expires}`;
-    // console.log(hash);
-    // console.log(fullhash);
+    const currentDate = new Date().toLocaleString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: 'numeric',
+        hour12: true,
+    });
+    const expiresIn = new Date(Date.now() + ttl).toLocaleTimeString();
+    const dynamicReasonBody = "to complete the procedure of registration process"
+    const otpMessage = `<!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+        <title>Static Template</title>
 
-    const otpMessage = `Dear User,
-        Thank you for choosing to join 10Paisa! Your One-Time Password (OTP) for registration is: ${otp}
-        Please use this OTP to complete your registration process.
-        If you did not initiate this registration or have any concerns, please contact our support team immediately.
+        <link
+          href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap"
+          rel="stylesheet"
+        />
+    </head>
+    <body
+      style="
+        margin: 0;
+        font-family: 'Poppins', sans-serif;
+        background: #ffffff;
+        font-size: 14px;
+      "
+    >
+    <div
+      style="
+        max-width: 700px;
+        margin: 0 auto;
+        padding: 45px 30px 60px;
+        background: #f4f7ff;
+        background-image: url(https://archisketch-resources.s3.ap-northeast-2.amazonaws.com/vrstyler/1661497957196_595865/email-template-background-banner);
+        background-repeat: no-repeat;
+        background-size: 800px 452px;
+        background-position: top center;
+        font-size: 14px;
+        color: #434343;
+      "
+    >
+      <header>
+        <table style="width: 100%;">
+          <tbody>
+            <tr style="height: 0;">
+              <td>
+                <img
+                  alt=""
+                  src=${logo}
+                  height="30px"
+                />
+              </td>
+              <td style="text-align: right;">
+                <span
+                  style="font-size: 16px; line-height: 30px; color: #ffffff;"
+                  >Date: ${currentDate}</span
+                >
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </header>
 
-        Best Regards,
-        The 10Paisa Team`;
+      <main>
+        <div
+          style="
+            margin: 0;
+            margin-top: 20px;
+            padding: 40px 30px 25px;
+            background: #ffffff;
+            border-radius: 30px;
+            text-align: center;
+          "
+        >
+          <div style="width: 100%; max-width: 489px; margin: 0 auto;">
+            <h1
+              style="
+                margin: 0;
+                font-size: 24px;
+                font-weight: 500;
+                color: #1f1f1f;
+              "
+            >
+            Email Verification
+            </h1>
+            <p
+              style="
+                margin: 0;
+                margin-top: 17px;
+                font-size: 16px;
+                font-weight: 500;
+              "
+            >
+              Hey ${context.username},
+            </p>
+            <p
+              style="
+                margin: 0;
+                margin-top: 17px;
+                font-weight: 500;
+                letter-spacing: 0.56px;
+              "
+            >
+              Thank you for choosing 10Paisa Portfolio management service. Use the following OTP
+              ${dynamicReasonBody}. OTP is
+              <span style='font-weight: 600; color: #1f1f1f;'>${otp}</span> and is
+              valid for <span style='font-weight: 600; color: #1f1f1f;'>5 minutes</span>
+              till <span style='font-weight: 600; color: #1f1f1f;'>${expiresIn}</span>.
+              Do not share this code with others, including 10Paisa employees.
+            </p>
+            <p
+              style="
+                margin: 0;
+                margin-top: 20px; /* Adjust this margin-top value */
+                font-size: 40px;
+                font-weight: 600;
+                letter-spacing: 25px;
+                color: #ba3d4f;
+              "
+            >
+            ${otp}
+            </p>
+          </div>
+        </div>
 
+        <p
+          style="
+            max-width: 400px;
+            margin: 0 auto;
+            margin-top: 40px; /* Adjust this margin-top value */
+            text-align: center;
+            font-weight: 500;
+            color: #8c8c8c;
+          "
+        >
+          Need help? Ask at
+          <a
+            href="mailto:10paisaservices@gmail.com"
+            style="color: #499fb6; text-decoration: none;"
+            >10Paisa Mail</a
+          >
+          or visit our
+          <a
+            href="https://tenpaisa.tech/"
+            target="_blank"
+            style="color: #499fb6; text-decoration: none;"
+            >Help Center</a
+          >
+        </p>
+      </main>
+
+      <footer
+        style="
+          width: 100%;
+          max-width: 490px;
+          margin: 10px auto 0;
+          text-align: center;
+          border-top: 1px solid #e6ebf1;
+        "
+      >
+        <p
+          style="
+            margin: 0;
+            margin-top: 5px;
+            font-size: 16px;
+            font-weight: 600;
+            color: #434343;
+          "
+        >
+          10Paisa Investment Pvt Ltd.
+        </p>
+        <p style="margin: 0; margin-top: 2px; color: #434343;">
+          Ranibari Marg, Samakushi, Kathmandu, Nepal.
+        </p>
+        <div style="margin: 0; margin-top: 16px;">
+          <a href="" target="_blank" style="display: inline-block;">
+            <img
+              width="36px"
+              alt="Facebook"
+              src="https://archisketch-resources.s3.ap-northeast-2.amazonaws.com/vrstyler/1661502815169_682499/email-template-icon-facebook"
+            />
+          </a>
+          <a
+            href=""
+            target="_blank"
+            style="display: inline-block; margin-left: 8px;"
+          >
+            <img
+              width="36px"
+              alt="Instagram"
+              src="https://archisketch-resources.s3.ap-northeast-2.amazonaws.com/vrstyler/1661504218208_684135/email-template-icon-instagram"
+          /></a>
+          <a
+            href=""
+            target="_blank"
+            style="display: inline-block; margin-left: 8px;"
+          >
+            <img
+              width="36px"
+              alt="Twitter"
+              src="https://archisketch-resources.s3.ap-northeast-2.amazonaws.com/vrstyler/1661503043040_372004/email-template-icon-twitter"
+            />
+          </a>
+          <a
+            href=""
+            target="_blank"
+            style="display: inline-block; margin-left: 8px;"
+          >
+            <img
+              width="36px"
+              alt="Youtube"
+              src="https://archisketch-resources.s3.ap-northeast-2.amazonaws.com/vrstyler/1661503195931_210869/email-template-icon-youtube"
+          /></a>
+        </div>
+        <p style="margin: 0; margin-top: 16px; color: #434343;">
+        Copyright © 2024 Company. All rights reserved.
+      </p>
+      <p style="margin: 0; margin-top: 16px; color: #434343;">
+  <span style="display:none">${currentDate}</span>
+</p>
+      </footer>
+    </div>
+    </body>
+    </html>
+    `;
 
     const model = {
         email: params.email,
@@ -51,25 +273,14 @@ export const verifyOTP = (params, callback) => {
     }
     const [hashValue, expires] = params.hash.split('.');
     const now = Date.now();
-    // console.log(params.email);
-    // console.log(params.otp);
-    // console.log(params.hash);
-    // console.log(hashValue);
-
 
     if (now > parseInt(expires)) {
-        //console.log("Otp Expired")
         return callback("OTP Expired");
     }
 
     const data = `${params.email}.${params.otp}.${expires}`;
-   // console.log(params.email,params.hash,params.otp)
     const newCalculatedHash = crypto.createHmac("sha256", key).update(data).digest("hex");
-    // console.log(newCalculatedHash);
-    // console.log(hashValue);
-
     if (newCalculatedHash === hashValue) {
-       // console.log("Otp Matched, Success")
         return callback(null, "Success");
     }
     return callback("Invalid OTP");
@@ -104,9 +315,6 @@ export const forgotpass = (emails, callback) => {
         subject: "10Paisa Password Reset",
         body: otpMessage
     };
-
-    // console.log("Otp generated from backend "+ otp +" hash is "+ fullhash)
-    // console.log(otpMessage)
 
     emailServices.sendEmail(model, (error, result) => {
         if (error) {

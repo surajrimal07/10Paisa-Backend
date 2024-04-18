@@ -1,0 +1,106 @@
+{
+  "extractedData": {
+    "Banking SubIndex": {
+      "volume": 177123956,
+      "index": 1056.86,
+      "percent": 0.06,
+      "time": "2024-04-09 14:45:00"
+    },
+    "Development Bank Ind.": {
+      "volume": 213626879,
+      "index": 4011.45,
+      "percent": 0.69,
+      "time": "2024-04-09 14:45:00"
+    },
+    "Finance Index": {
+      "volume": 884002488,
+      "index": 2074.94,
+      "percent": 3.19,
+      "time": "2024-04-09 14:45:00"
+    },
+    "Float Index": {
+      "volume": 0,
+      "index": 137.58,
+      "percent": 0.3,
+      "time": "2024-04-09 14:45:00"
+    },
+    "Hotels And Tourism": {
+      "volume": 106458850,
+      "index": 5180.31,
+      "percent": -1.15,
+      "time": "2024-04-09 14:45:00"
+    },
+    "HydroPower Index": {
+      "volume": 778206351,
+      "index": 2477.3,
+      "percent": 0.54,
+      "time": "2024-04-09 14:45:00"
+    },
+    "Investment": {
+      "volume": 90755376,
+      "index": 75.83,
+      "percent": 0.33,
+      "time": "2024-04-09 14:45:00"
+    },
+    "Life Insurance": {
+      "volume": 329990952147901300,
+      "index": 10351.95,
+      "percent": 0.42,
+      "time": "2024-04-09 14:45:00"
+    },
+    "Manufacturing And Pr.": {
+      "volume": 219382808,
+      "index": 6754.16,
+      "percent": -1.29,
+      "time": "2024-04-09 14:45:00"
+    },
+    "Microfinance Index": {
+      "volume": 434155398,
+      "index": 4047.49,
+      "percent": -1.23,
+      "time": "2024-04-09 14:45:00"
+    },
+    "Mutual Fund": {
+      "volume": 2262538,
+      "index": 18.41,
+      "percent": 0.53,
+      "time": "2024-04-09 14:45:00"
+    },
+    "NEPSE Index": {
+      "volume": 3665019047,
+      "index": 2032.63,
+      "percent": 0.28,
+      "time": "2024-04-09 14:45:00"
+    },
+    "Non Life Insurance": {
+      "volume": 147901341,
+      "index": 10637.21,
+      "percent": 1.06,
+      "time": "2024-04-09 14:45:00"
+    },
+    "Others Index": {
+      "volume": 241663926,
+      "index": 1703.06,
+      "percent": 2.06,
+      "time": "2024-04-09 14:45:00"
+    },
+    "Sensitive Float Inde.": {
+      "volume": 0,
+      "index": 117.47,
+      "percent": 0.13,
+      "time": "2024-04-09 14:45:00"
+    },
+    "Sensitive Index": {
+      "volume": 0,
+      "index": 359.54,
+      "percent": 0.04,
+      "time": "2024-04-09 14:45:00"
+    },
+    "Trading Index": {
+      "volume": 12370262,
+      "index": 2750.92,
+      "percent": 0.39,
+      "time": "2024-04-09 14:45:00"
+    }
+  }
+}

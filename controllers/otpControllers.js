@@ -4,7 +4,6 @@ import { respondWithError } from '../utils/response_utils.js';
 
 export const sendOTP = async (req, res, next) => {
 
-
 const email = req.body.email;
 
 if (email == null || email == undefined || email == "") {

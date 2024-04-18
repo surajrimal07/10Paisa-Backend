@@ -4,13 +4,21 @@ import { AllIndicesData, AssetMergedData, AssetMergedDataBySector, CombinedIndex
 import { NrbBankingData, NrbBankingDataAll, combinedNrbData, nrbForexData } from '../controllers/extraDataControllers.js';
 import { sendOTP, verifyOTP } from '../controllers/otpControllers.js';
 import { addStockToPortfolio, createPortfolio, deletePortfolio, getAllPortfoliosForUser, removeStockFromPortfolio, renamePortfolio } from '../controllers/portfolioControllers.js';
-import { createUser, deleteAccount, forgetPass, googleSignIn, loginUser, makeadmin, updateUser, updateUserData, updateUserProfilePicture, verifyData, verifyUser } from '../controllers/userController.js';
+import { createUser, deleteAccount, forgetPass, googleSignIn, loginUser, makeadmin, updateUser, updateUserData, updateUserProfilePicture, verifyEmail, verifyName, verifyPassword, verifyData, verifyUser,verifyPhoneNumber } from '../controllers/userController.js';
 import { addStockToWatchlist, createWatchlist, deleteWatchlist, getWatchlistsByUserEmail, removeStockFromWatchlist, renameWatchlist } from '../controllers/watchlistController.js';
 import { authGuard, authGuardAdmin } from '../middleware/authGuard.js';
 import { startNewsServer } from '../server/newsserver.js';
 
 const router = Router();
 
+//user routes
+//security verification
+router.post('/verifyname',verifyName);
+router.post('/verifyemail',verifyEmail);
+router.post('/verifypassword',verifyPassword);
+router.post('/verifyphone',verifyPhoneNumber);
+
+//general routes
 router.post('/create', createUser);
 router.post('/login', loginUser);
 router.post('/googlelogin', googleSignIn);
