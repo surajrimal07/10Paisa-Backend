@@ -38,63 +38,62 @@ const cachedDataVersion = await fetchFromCache(dataversion_cache);
 const cache_counter = await storage.getItem(counter);
 const dataVersion = cache_counter !== null ? cache_counter : 0;
 
-//
-export const createAsset = async (req, res) => {
-    console.log("Create Data Requested");
-    const symbol = req.body.symbol;
-    const name = req.body.name;
-    const category = req.body.category;
-    const sector = req.body.sector;
+// export const createAsset = async (req, res) => {
+//     console.log("Create Data Requested");
+//     const symbol = req.body.symbol;
+//     const name = req.body.name;
+//     const category = req.body.category;
+//     const sector = req.body.sector;
 
-    const newAsset = new Asset({
-        symbol,
-        name,
-        category,
-        sector,
-      });
+//     const newAsset = new Asset({
+//         symbol,
+//         name,
+//         category,
+//         sector,
+//       });
 
-      try {
-        const savedAsset = await newAsset.save();
-        const assetData = {
-          _id: savedAsset._id,
-          symbol: savedAsset.symbol,
-          name: savedAsset.name,
-          category: savedAsset.category,
-          category: savedAsset.category,
+//       try {
+//         const savedAsset = await newAsset.save();
+//         const assetData = {
+//           _id: savedAsset._id,
+//           symbol: savedAsset.symbol,
+//           name: savedAsset.name,
+//           category: savedAsset.category,
+//           category: savedAsset.category,
 
-        };
-        res.status(200).json(assetData);
-        console.log("Asset saved successfully");
-      } catch (err) {
-        console.error(err);
-        res.status(500).json(err);
-      }
-};
+//         };
+//         res.status(200).json(assetData);
+//         console.log("Asset saved successfully");
+//       } catch (err) {
+//         console.error(err);
+//         res.status(500).json(err);
+//       }
+// };
 
-export const updateAssetData = async (symbol, newData) => {
-    console.log("Update Data Requested");
+// export const updateAssetData = async (symbol, newData) => {
+//     console.log("Update Data Requested");
 
-    try {
-        const updatedAsset = await Asset.findOneAndUpdate(
-            { symbol },
-            { $set: newData },
-            { new: true }
-        );
+//     try {
+//         const updatedAsset = await Asset.findOneAndUpdate(
+//             { symbol },
+//             { $set: newData },
+//             { new: true }
+//         );
 
-        if (updatedAsset) {
-            console.log("Asset updated successfully", updatedAsset);
-            return updatedAsset;
-        } else {
-            console.log("Asset not found for update");
-            return null;
-        }
+//         if (updatedAsset) {
+//             console.log("Asset updated successfully", updatedAsset);
+//             return updatedAsset;
+//         } else {
+//             console.log("Asset not found for update");
+//             return null;
+//         }
 
-    } catch (error) {
-        console.error("Error updating asset data:", error);
-        return null;
+//     } catch (error) {
+//         console.error("Error updating asset data:", error);
+//         return null;
 
-    }
-}
+//     }
+// }
 
 // //
 // const CACHE_KEY_ALL_ASSET_NAMES = 'allAssetNames';
@@ -1516,4 +1515,4 @@ export const WorldMarketData = async (req, res) => {
 
 
 
-export default {createAsset,CombinedIndexData, fetchMetalPrices,TopVolumeData,TopTransData,TopTurnoverData,topLosersShare, AssetMergedData, SingeAssetMergedData, AssetMergedDataBySector, CommodityData, TopGainersData, DashBoardData};
+export default {CombinedIndexData, fetchMetalPrices,TopVolumeData,TopTransData,TopTurnoverData,topLosersShare, AssetMergedData, SingeAssetMergedData, AssetMergedDataBySector, CommodityData, TopGainersData, DashBoardData};

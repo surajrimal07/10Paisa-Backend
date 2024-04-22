@@ -1,12 +1,14 @@
 import fs from 'fs';
 
 export const validatePhoneNumber = (phone) => {
-    if (phone.length == 10 && !isNaN(phone)) {
+    const phoneString = String(phone);
+    if (phoneString.length === 10) {
         return true;
+    } else {
+        return false;
     }
+};
 
-    return false;
-  };
 
 export const validateEmail = (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -44,6 +46,10 @@ export const validateEmail = (email) => {
 
 //security measures 2 -- check if password contains name or email
 export const NameorEmailinPassword = (name, email, password) => {
+    name = String(name);
+    email = String(email);
+    password = String(password);
+
     if (password.toLowerCase().includes(name.toLowerCase()) || password.toLowerCase().includes(email.toLowerCase())) {
         return false;
     }

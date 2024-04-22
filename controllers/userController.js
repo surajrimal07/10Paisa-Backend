@@ -6,7 +6,7 @@ import storage from 'node-persist';
 import { forgetPassword } from '../controllers/otpControllers.js';
 import Portfolio from '../models/portfolioModel.js';
 import User from '../models/userModel.js';
-import { notifyClients } from '../server/websocket.js';
+import { notifySelectedClients } from '../server/websocket.js';
 import { LDAcheck, NameorEmailinPassword, validateEmail, validateName, validatePassword, validatePhoneNumber } from '../utils/dataValidation_utils.js';
 import globalVariables from '../utils/globalVariables.js';
 import { respondWithData, respondWithError, respondWithSuccess } from '../utils/response_utils.js';
@@ -18,7 +18,6 @@ function setUserDetails({ name, phone, email }) {
   if (phone) globalVariables.setPhone(phone);
   if (email) globalVariables.setEmail(email);
 }
-
 
 //on fly validations
 export const verifyName = async (req, res) => {
@@ -44,16 +43,15 @@ export const verifyEmail = async (req, res) => {
     return respondWithError(res, 'BAD_REQUEST', "Email is missing");
   }
 
+  if (!validateEmail(email)) {
+    return respondWithError(res, 'BAD_REQUEST', "Invalid email format. Please provide a valid email address.");
+  }
+
   const user = await User.findOne({ email });
 
   if (user) {
     return respondWithError(res, 'BAD_REQUEST', "Email already exists");
   }
-
-  if (!validateEmail(email)) {
-    return respondWithError(res, 'BAD_REQUEST', "Invalid email format. Please provide a valid email address.");
-  }
-
   return respondWithSuccess(res, 'SUCCESS', "Email is valid");
 };
 
@@ -85,19 +83,22 @@ export const verifyPassword = async (req, res) => {
 export const verifyPhoneNumber = async (req, res) => {
   const phone = req.body.phone;
 
+  if (!phone) {
+    return respondWithError(res, 'BAD_REQUEST', "Phone number is missing");
+  }
+
+  if (isNaN(phone)) {
+    return respondWithError(res, 'BAD_REQUEST', "Phone number should be a number");
+}
+
+if (!validatePhoneNumber(phone)) {
+  return respondWithError(res, 'BAD_REQUEST', "Invalid phone number. Please provide a 10-digit number.");
+}
 
   const phoneUser = await User.findOne({ phone });
 
   if (phoneUser) {
     return respondWithError(res, 'BAD_REQUEST', "Phone number already exists");
-  }
-
-  if (!phone) {
-    return respondWithError(res, 'BAD_REQUEST', "Phone number is missing");
-  }
-
-  if (!validatePhoneNumber(phone)) {
-    return respondWithError(res, 'BAD_REQUEST', "Invalid phone number. Please provide a 10-digit number.");
   }
 
   return respondWithSuccess(res, 'SUCCESS', "Phone number is valid");
@@ -162,62 +163,46 @@ export const createUser = async (req, res) => {
       stocks: [{ symbol: "CBBL", quantity: 10, wacc: 750 }],
     });
 
-    const user = await User.findOne({ email });
-    const phoneUser = await User.findOne({ phone });
+    const newUser = new User({
+      token,
+      name,
+      email: email.toLowerCase(),
+      password: hashedPassword,
+      phone,
+      style,
+      isAdmin,
+      premium,
+      dpImage: dpImage ? dpImage.path : undefined,
+      userAmount: userAmount !== undefined ? userAmount : undefined,
+      portfolio: [samplePortfolio._id],
 
-    //remove these two validations from here, duplicate email and phone number should be checked in the frontend
+    });
+  try {
+    const savedUser = await newUser.save();
+    const populatedPortfolio = await Portfolio.findById(samplePortfolio._id);
 
-    if (!user) {
-      if (!phoneUser) {
-        const newUser = new User({
-          token,
-          name,
-          email: email.toLowerCase(),
-          password: hashedPassword,
-          phone,
-          style,
-          isAdmin,
-          premium,
-          dpImage: dpImage ? dpImage.path : undefined,
-          userAmount: userAmount !== undefined ? userAmount : undefined,
-          portfolio: [samplePortfolio._id],
+    const formattedPortfolio = formatPortfolioData(populatedPortfolio)
 
-        });
-
-        try {
-          const savedUser = await newUser.save();
-          const populatedPortfolio = await Portfolio.findById(samplePortfolio._id);
-
-          const formattedPortfolio = formatPortfolioData(populatedPortfolio)
-
-          const userData = {
-            _id: savedUser._id,
-            token: savedUser.token,
-            name: savedUser.name,
-            email: savedUser.email,
-            pass: savedUser.password,
-            phone: savedUser.phone,
-            style: savedUser.style,
-            isAdmin: savedUser.isAdmin,
-            dpImage: savedUser.dpImage,
-            userAmount: savedUser.userAmount,
-            portfolio: [formattedPortfolio],
-            wallets: savedUser.wallets
-          };
-          console.log("Signup Was Success");
-          return respondWithData(res, 'CREATED', "User created successfully", userData);
-        } catch (err) {
-          console.log("Signup failed");
-          return respondWithError(res, 'INTERNAL_SERVER_ERROR', err.toString());
-        }
-      } else {
-        console.log("Phone number already exists");
-        return respondWithError(res, 'BAD_REQUEST', "Phone number already exists");
-      }
-    } else {
-      console.log("Email already exists");
-      return respondWithError(res, 'BAD_REQUEST', "Email already exists");
-    }
+    const userData = {
+      _id: savedUser._id,
+      token: savedUser.token,
+      name: savedUser.name,
+      email: savedUser.email,
+      pass: savedUser.password,
+      phone: savedUser.phone,
+      style: savedUser.style,
+      isAdmin: savedUser.isAdmin,
+      dpImage: savedUser.dpImage,
+      userAmount: savedUser.userAmount,
+      portfolio: [formattedPortfolio],
+      wallets: savedUser.wallets
+    };
+    console.log("Signup Was Success");
+    return respondWithData(res, 'CREATED', "User created successfully", userData);
+  } catch (err) {
+    console.log("Signup failed");
+    return respondWithError(res, 'INTERNAL_SERVER_ERROR', err.toString());
+  }
   } catch (err) {
     console.error(err);
     return respondWithError(res, 'INTERNAL_SERVER_ERROR', err.toString());
@@ -260,6 +245,12 @@ export const loginUser = async (req, res) => {
         return respondWithError(res, 'UNAUTHORIZED', "Invalid email or password.");
       } else {
         console.log("user found");
+
+        const isExpired = user.isPasswordExpired();
+          if (isExpired) {
+            notifyClients({type:'notification', title: 'Password Expired', description: "Your password is expired, please change soon", image: user.dpImage, url: "https://10paisa.com"});
+        }
+
         const token = jwt.sign({email : email, isAdmin: user.isAdmin},process.env.JWT_SECRET,{expiresIn: '7d'});
         await storage.setItem(email + '_token', token);
 
@@ -277,9 +268,10 @@ export const loginUser = async (req, res) => {
           userAmount: user.userAmount,
           defaultport: user.defaultport,
           portfolio: user.portfolio,
-          wallets: user.wallets
+          wallets: user.wallets,
+          LastPasswordChangeDate: user.LastPasswordChangeDate
         };
-        notifyClients({type:'notification', title: 'Welcome 🎉', description: "Welcome to 10Paisa "+user.name+"!", image: user.dpImage, url: "https://10paisa.com"});
+        notifySelectedClients(user.email, {type:'notification', title: 'Login', description: "User "+user.name+" logged in", image: user.dpImage, url: "https://10paisa.com"});
         return respondWithData(res, 'SUCCESS', "Login successful", userData);
       }
     } catch (error) {

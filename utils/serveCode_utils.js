@@ -13,4 +13,5 @@ export class ApiStatus {
     static BAD_GATEWAY = 502;
     static SERVICE_UNAVAILABLE = 503;
     static GATEWAY_TIMEOUT = 504;
+    static INVALID_INPUT = 422;
   }

@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import bcrypt from 'bcrypt';
 
 const Schema = mongoose.Schema;
 
@@ -59,10 +60,28 @@ const newSchema = new Schema({
       max: 3, // 0: No wallet,
       //1: Khalti, 2: Esewa,
       //3: Both (Khalti and Esewa)
-  }
+  },
+    LastPasswordChangeDate: {
+      type: Date,
+      default: Date.now,
+  },
+
 });
 
-const User = mongoose.model('User',newSchema);
+newSchema.methods.isPasswordExpired = function () {
+  const expirationDays = process.env.PASSWORD_EXPIRATION_DAYS || 30;
+  const currentDate = new Date();
+  const lastPasswordChangeDate = this.LastPasswordChangeDate || currentDate;
+  const differenceInDays = Math.ceil((currentDate - lastPasswordChangeDate) / (1000 * 60 * 60 * 24));
+  return differenceInDays > expirationDays;
+};
 
+//single code to compare password, update other code too
+newSchema.methods.comparePassword = async function(candidatePassword) {
+  //return bcrypt.compare(candidatePassword, this.password);
+  return await bcrypt.compare(candidatePassword, this.password);
+};
+
+const User = mongoose.model('User',newSchema);
 
 export default User;
