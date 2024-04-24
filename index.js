@@ -6,6 +6,12 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import express from 'express';
 import fs from 'fs';
+import httpsOptions from './certificate/httpOptions.js';
+
+
+//
+import https from 'https';
+import { clean } from 'perfect-express-sanitizer';
 
 //file imports
 import initializeRefreshMechanism from './controllers/refreshController.js';
@@ -15,14 +21,12 @@ import { startNewsServer } from './server/newsserver.js';
 import { startWebSocketServer } from './server/websocket.js';
 import { initializeStorage } from './utils/initilize_storage.js';
 
-
 dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 4000;
 
 //middlewares
-
 // Use express.json() middleware to parse JSON bodies
 app.use(express.json());
 
@@ -30,23 +34,29 @@ app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
-//test code to log all incomoning requests
-// app.use((req, res, next) => {
-//   if (req.is('json')) {
-//     console.log('Received JSON:', req.body);
-//   }
-//   next();
-// });
+// Use perfect-express-sanitizer middleware to sanitize user input
+app.use(clean({
+  xss: true,
+  noSql: true,
+  sql: true,
+  sqlLevel: 5,
+  noSqlLevel: 5,
+}));
 
 //multiparty middleware
 app.use(multipart())
 
+// app.use(cors({
+//   origin: (origin, callback) => {
+//     callback(null, origin);
+//   },
+//   credentials: true,
+//   optionsSuccessStatus: 200
+// }));
+
 app.use(cors({
-  origin: (origin, callback) => {
-    callback(null, origin);
-  },
+  origin: 'https://localhost:3000',
   credentials: true,
-  optionsSuccessStatus: 200
 }));
 
 //cloudnary config
@@ -56,10 +66,24 @@ cloudinary.config({
   api_secret: process.env.API_SECRET
 });
 
+//starting server
+const isDevelopment = process.env.NODE_ENV== 'development';
+if (isDevelopment) {
+  const server = https.createServer(httpsOptions, app);
+  console.log('Development Server')
+  server.listen(port, () => {
+    console.log(`Development Server is running on port ${port}`);
+  });
+} else {
+  console.log('Production Server')
+  app.listen(port, () => {
+    console.log(`Server is running on port ${port}`);
+  });
+}
 
-mainDB();
+mainDB(); //initialize database
 
-initializeStorage()
+initializeStorage() //initialize storage
   .then(() => {
     console.log('Storage initialized successfully');
   })
@@ -67,23 +91,12 @@ initializeStorage()
     console.error('Error initializing storage:', error);
   });
 
-initializeRefreshMechanism();
-
-app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
-});
-
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
-
-app.get('/test', (req, res) => {
-  res.send('Testing API is running live🥳');
-});
-
 app.use('/api', userRouter);
 
-app.get('/', (req, res) => {
+app.get('/', (req, res) => { //serving index.html
 
   fs.readFile('./utils/index.html', 'utf8', (err, data) => {
     if (err) {
@@ -95,8 +108,16 @@ app.get('/', (req, res) => {
   });
 });
 
-
+initializeRefreshMechanism();
 startWebSocketServer();
 startNewsServer(app);
+
+//starting https server or http server
+//const server = https.createServer(httpsOptions, app);
+
+
+// server.listen(port, () => {
+//   console.log(`Secure Server is running on port ${port}`);
+// });
 
 export default app;

@@ -11,7 +11,7 @@ import { oilExtractor } from '../server/oilServer.js';
 import topCompanies from '../server/top_capitalization.js';
 import { extractWorldMarketData } from '../server/worldmarketServer.js';
 import { respondWithData, respondWithError } from '../utils/response_utils.js';
-import { isMarketOpen } from './refreshController.js';
+//import {getIsMarketOpen } from '../state/StateManager.js';
 await storage.init();
 
 
@@ -1157,8 +1157,6 @@ export const TopTransData = async (req, res) => {
 
 export const DashBoardData = async (req, res) => {
 
-  console.log('Dashboard data requested');
-  console.log(isMarketOpen);
   try {
     if (req.query.refresh === "false") {
       const cachedData = await fetchFromCache('DashBoardData');
@@ -1481,7 +1479,8 @@ function calculateOverallPrediction(overallStrength) {
     return "Market may remain stable";
   }
 }
-//
+
+
 
 export const WorldMarketData = async (req, res) => {
   console.log("World Index Data Requested");

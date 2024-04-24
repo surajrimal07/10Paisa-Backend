@@ -1,24 +1,26 @@
+import bcrypt from 'bcrypt';
 import express from 'express';
-import { createServer } from 'http';
+import https from 'https';
 import WebSocket, { WebSocketServer } from 'ws';
+import httpsOptions from '../certificate/httpOptions.js';
 import User from '../models/userModel.js';
+import { getIsMarketOpen, getPreviousIndexData, getTodayAllIndexData } from '../state/StateManager.js';
 
 let wss;
 const connectedClients = new Map();
 
 function createWebSocketServer() {
   const app = express();
+  const server = https.createServer(httpsOptions, app);
 
   if (!wss) {
-    const server = createServer(app);
     wss = new WebSocketServer({ server });
 
-    wss.on('connection', async function connection(ws,req) {
-      //now ask password too in params
-      //const userEmail = new URL(req.url, `http://${req.headers.host}`).searchParams.get('email');
+    wss.on('connection', async function connection(ws, req) {
       const { searchParams } = new URL(req.url, `https://${req.headers.host}`);
       const userEmail = searchParams.get('email');
       const password = searchParams.get('password');
+      console.log("Web socket request received : ", userEmail, password);
 
       //checking if id and pass is empty or not
       if (!userEmail || !password) {
@@ -32,19 +34,14 @@ function createWebSocketServer() {
       const user = await User.findOne({ email: userEmail.toLowerCase() });
       if (!user) {
         console.log(`User not found for email: ${userEmail}`);
-        ws.send(JSON.stringify({ error: 'Email not found' }));
+        ws.send(JSON.stringify({ error: 'User not found' }));
         ws.close();
-        return;
-      }
-
-      // Verify user password
-      if (!user.comparePassword(password)) {
+      } else if (!(await bcrypt.compare(password, user.password))) {
         console.log(`Invalid credentials for user: ${userEmail}`);
         ws.send(JSON.stringify({ error: 'Invalid credentials' }));
-        console.log("Web socket request failed : Invalid credentials for email: ", userEmail);
         ws.close();
-        return;
       } else {
+        console.log(`User verified: ${userEmail}`);
         ws.send(JSON.stringify({ info: 'User verified' }));
       }
 
@@ -56,32 +53,53 @@ function createWebSocketServer() {
 
       console.log(`New Client connected: ${userEmail}`);
       console.log(`Total Connected clients: ${connectedClients.size}`);
+
+      ws.on('message', function incoming(message) {
+        handleMessage(userEmail, message);
+      });
+
+      ws.on('close', function close() {
+        connectedClients.delete(userEmail);
+        console.log(`Client disconnected: ${userEmail}`);
+        console.log(`Total Connected clients: ${connectedClients.size}`);
+      });
+
+      wss.on('error', function error(err) {
+        console.error('WebSocket Server Error:', err);
+      });
+
     });
-
-    wss.on('message', function incoming(message) {
-      console.log(`Received message from ${userEmail}: ${message}`);
-    });
-
-    wss.on('close', function close() {
-      connectedClients.delete(userEmail);
-      console.log(`Client disconnected: ${userEmail}`);
-      console.log(`Total Connected clients: ${connectedClients.size}`);
-    });
-
-    wss.on('error', function error(err) {
-      console.error('WebSocket Server Error:', err);
-    });
-
-    if (wss.readyState === WebSocketServer.OPEN) {
-      console.log('WebSocket connection is open.');
-    }
-
     server.listen(8081, () => {
       console.log('WebSocket server is running on port 8081');
     });
   }
 
   return wss;
+}
+
+//handle message sent by clients to socket
+async function handleMessage(userEmail, message) {
+  console.log(`Received message from ${userEmail}: ${message}`);
+
+  if (message == "index") {
+    const previousIndexData = getPreviousIndexData();
+    notifySelectedClients(userEmail, { type: 'index', data: previousIndexData });
+    return;
+  }
+
+  if (message == "indexAll"){
+    const todayAllIndexData = getTodayAllIndexData();
+    notifySelectedClients(userEmail, { type: 'indexAll', data: todayAllIndexData });
+    return;
+  }
+
+  if (message == "marketOpen"){
+    const isMarketOpen = getIsMarketOpen();
+    notifySelectedClients(userEmail, { type: 'marketOpen', data: isMarketOpen });
+    return;
+  }
+
+  console.log(`Message received from ${userEmail}: ${message}`);
 }
 
 //notify selected clients
@@ -117,20 +135,20 @@ function notifyClients(message) {
 }
 
 export function closeWebSocketServer() {
-    if (wss) {
-      wss.close();
-    }
+  if (wss) {
+    wss.close();
   }
+}
 
-  export function getWebSocketServer() {
-    return wss;
-  }
+export function getWebSocketServer() {
+  return wss;
+}
 
- export function startWebSocketServer() {
-    if (!wss) {
-      createWebSocketServer();
-    }
+export function startWebSocketServer() {
+  if (!wss) {
+    createWebSocketServer();
   }
+}
 
 export { createWebSocketServer, notifyClients, notifySelectedClients };
 

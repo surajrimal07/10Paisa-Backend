@@ -1,7 +1,9 @@
+import axios from 'axios';
 import storage from 'node-persist';
 import { FetchOldData, FetchSingularDataOfAsset, extractIndex, extractIndexDateWise, fetchIndexes, topLosersShare, topTradedShares, topTransactions, topTurnoversShare, topgainersShare } from '../server/assetServer.js';
 import { commodityprices } from '../server/commodityServer.js';
 import { notifyClients } from '../server/websocket.js';
+import { setIsMarketOpen,getIsMarketOpen } from '../state/StateManager.js';
 
 const CACHE_KEYS = [
   'commodityprices',
@@ -21,78 +23,59 @@ const CACHE_KEYS = [
 ];
 
 const refreshInterval = 60 * 1000; // 1 minute //makes no sense lowering this as sharesansar updates data
-//every 1 minute
+export let previousIndexData = null; //use this for now only, switch it global state later
 
-const marketClosingHour = 15;
-const oneDayInMilliseconds = 24 * 60 * 60 * 1000;
-export let isMarketOpen = false;
-
-async function getLastDataRefreshTime() {
-  const lastDataRefreshTimeStr = await storage.getItem('lastDataRefreshTime');
-  return lastDataRefreshTimeStr ? new Date(JSON.parse(lastDataRefreshTimeStr).timestamp) : null;
-}
-
-async function saveLastDataRefreshTime(timestamp) {
-  await storage.setItem('lastDataRefreshTime', JSON.stringify({ timestamp }));
+export async function isNepseOpen() {
+  try {
+    const response = await axios.get('https://nepseapi.zorsha.com.np/IsNepseOpen');
+    if (response.data.isOpen === 'CLOSE') {
+      setIsMarketOpen(false);
+      return false;
+    } else {
+      setIsMarketOpen(true);
+    }
+  } catch (error) {
+    console.error('Error fetching Nepse status:', error);
+    return false;
+  }
 }
 
 async function wipeCachesAndRefreshData() {
   try {
-    const lastDataRefreshTime = await getLastDataRefreshTime();
     const now = new Date();
-    const isMarketOpen = isMarketOpenNow();
+    console.log('Wiping cache and refreshing data.');
+    await Promise.all(CACHE_KEYS.map(key => storage.removeItem(key)));
 
-    if (isMarketOpen || (now - lastDataRefreshTime > oneDayInMilliseconds && isWeekday())) {
-      console.log('Wiping cache and refreshing data.');
-      await Promise.all(CACHE_KEYS.map(key => storage.removeItem(key)));
+    await Promise.all([
+      extractIndexDateWise(),
+      FetchSingularDataOfAsset(),
+      FetchOldData(),
+      topgainersShare(),
+      topLosersShare(),
+      topTurnoversShare(),
+      topTradedShares(),
+      topTransactions(),
+      commodityprices(),
+      fetchIndexes(),
+    ]);
 
-      await Promise.all([
-        extractIndexDateWise(),
-        FetchSingularDataOfAsset(),
-        FetchOldData(),
-        topgainersShare(),
-        topLosersShare(),
-        topTurnoversShare(),
-        topTradedShares(),
-        topTransactions(),
-        commodityprices(),
-        fetchIndexes(),
-        saveLastDataRefreshTime(now)
-      ]);
-
-      let IndexData = await extractIndex();
-      if (IndexData) {
-        notifyClients({ type: 'index', data: IndexData });
-      }
-
-      console.log(`Data wipe and refresh successful. Last Refreshed: ${now.toLocaleTimeString('en-US')}`);
-    } else {
-      console.log(`Skipping data refresh. Last Refreshed: ${lastDataRefreshTime?.toLocaleTimeString('en-US')}`);
+    let newIndexData = await extractIndex();
+    if (newIndexData && newIndexData !== previousIndexData) {
+      notifyClients({ type: 'index', data: newIndexData });
+      previousIndexData = newIndexData;
     }
+    console.log(`Data wipe and refresh successful. Last Refreshed: ${now.toLocaleTimeString('en-US')}`);
+
   } catch (error) {
     console.error('Error wiping caches or refreshing data:', error.message);
   }
 }
 
-function isWeekday() {
-  const now = new Date();
-  const dayOfWeek = now.getDay();
-  return dayOfWeek >= 0 && dayOfWeek <= 4;
-}
-
-function isMarketOpenNow() {
-  const now = new Date();
-  const currentHour = now.getHours();
-  return isWeekday() && currentHour >= 11 && currentHour < marketClosingHour;
-}
-
 export default async function initializeRefreshMechanism() {
   try {
     console.log('Initializing refresh mechanism...');
-    await wipeCachesAndRefreshData();
-
     setInterval(async () => {
-      if (isMarketOpenNow()) {
+      if (await isNepseOpen()) {
         await wipeCachesAndRefreshData();
       }
     }, refreshInterval);

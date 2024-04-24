@@ -664,7 +664,6 @@ export async function extractIndexDateWise() {
   }
 }
 
-
 export async function liveIndexPrices() {
 
 }
