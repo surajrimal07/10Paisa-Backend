@@ -3,7 +3,7 @@ import storage from 'node-persist';
 import { FetchOldData, FetchSingularDataOfAsset, extractIndex, extractIndexDateWise, fetchIndexes, topLosersShare, topTradedShares, topTransactions, topTurnoversShare, topgainersShare } from '../server/assetServer.js';
 import { commodityprices } from '../server/commodityServer.js';
 import { notifyClients } from '../server/websocket.js';
-import { setIsMarketOpen,getIsMarketOpen } from '../state/StateManager.js';
+import { setIsMarketOpen, setPreviousIndexData, getPreviousIndexData } from '../state/StateManager.js';
 
 const CACHE_KEYS = [
   'commodityprices',
@@ -23,21 +23,22 @@ const CACHE_KEYS = [
 ];
 
 const refreshInterval = 60 * 1000; // 1 minute //makes no sense lowering this as sharesansar updates data
-export let previousIndexData = null; //use this for now only, switch it global state later
 
 export async function isNepseOpen() {
-  try {
+  console.log('Checking if Nepse is open...');
     const response = await axios.get('https://nepseapi.zorsha.com.np/IsNepseOpen');
     if (response.data.isOpen === 'CLOSE') {
+      console.log('Nepse is closed.');
       setIsMarketOpen(false);
       return false;
-    } else {
+    } else if (response.data.isOpen === 'OPEN'){
+      console.log('Nepse is open.');
       setIsMarketOpen(true);
+      return true;
+    } else {
+      console.log('Error fetching Nepse status:', response.data);
+      return false;
     }
-  } catch (error) {
-    console.error('Error fetching Nepse status:', error);
-    return false;
-  }
 }
 
 async function wipeCachesAndRefreshData() {
@@ -60,9 +61,9 @@ async function wipeCachesAndRefreshData() {
     ]);
 
     let newIndexData = await extractIndex();
-    if (newIndexData && newIndexData !== previousIndexData) {
+    if (newIndexData && newIndexData !== getPreviousIndexData) {
       notifyClients({ type: 'index', data: newIndexData });
-      previousIndexData = newIndexData;
+      setPreviousIndexData(newIndexData);
     }
     console.log(`Data wipe and refresh successful. Last Refreshed: ${now.toLocaleTimeString('en-US')}`);
 

@@ -1,7 +1,8 @@
 let state = {
     isMarketOpen: false,
-    previousIndexData: null,
+    previousIndexData: [],
     todayAllIndexData: [],
+    dailyIndexData: [],
     loggedInUsers: [],
   };
 

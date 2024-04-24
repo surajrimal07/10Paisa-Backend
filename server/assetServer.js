@@ -1,47 +1,9 @@
 import axios from 'axios';
 import cheerio from 'cheerio';
-import fs from 'fs/promises';
 import { JSDOM } from 'jsdom';
 import storage from 'node-persist';
-import { dirname } from 'path';
 import { fileURLToPath } from 'url';
-import nepseUrls from '../middleware/nepseapiUrl.js';
 await storage.init();
-
-
-export async function fetchDataAndMapToAssetModel() {
-  try {
-    const response = await axios.get(nepseUrls.Company_URL);
-
-    const assetData = response.data.map(company => ({
-      symbol: company.symbol,
-      name: company.companyName,
-      category: company.instrumentType,
-      sector: company.sectorName,
-    }));
-
-    const jsonData = JSON.stringify(assetData, null, 2);
-
-    await fs.writeFile('mappedAssetData.json', jsonData);
-
-    return jsonData;
-  } catch (error) {
-    console.error('Error fetching data:', error.message);
-    throw error;
-  }
-}
-const fetchFromCache = async (cacheKey) => {
-  try {
-    const cachedData = await storage.getItem(cacheKey);
-    if (cachedData) {
-      return cachedData;
-    }
-    return null;
-  } catch (error) {
-    console.error('Error fetching data from cache:', error.message);
-    throw new Error('Error fetching data from cache');
-  }
-};
 
 
 //preparing to switch to sharesansar as data provider
@@ -150,7 +112,6 @@ export async function AddCategoryAndSector(stockData) {
 
 export async function GetMutualFund () {
   try {
-
       const stockData = await fetchAndExtractStockData();
       const mutualFundStocks = stockData.filter(stock =>stock.LTP < 20);
 
@@ -255,20 +216,7 @@ export const topgainersShare = async () => {
     }
 
     const response = await axios.get(url, {
-      headers: {
-        "accept": "application/json, text/javascript, */*; q=0.01",
-        "accept-language": "en-US,en;q=0.9,ne;q=0.8",
-        "sec-ch-ua": "\"Not_A Brand\";v=\"8\", \"Chromium\";v=\"120\", \"Microsoft Edge\";v=\"120\"",
-        "sec-ch-ua-mobile": "?0",
-        "sec-ch-ua-platform": "\"Windows\"",
-        "sec-fetch-dest": "empty",
-        "sec-fetch-mode": "cors",
-        "sec-fetch-site": "same-origin",
-        "x-requested-with": "XMLHttpRequest",
-        "cookie": "XSRF-TOKEN=your_XSRF_TOKEN_here; sharesansar_session=your_sharesansar_session_here",
-        "Referer": "https://www.sharesansar.com/top-gainers",
-        "Referrer-Policy": "strict-origin-when-cross-origin",
-      }
+      headers: header,
     });
 
     const data = response.data.data;
@@ -304,20 +252,7 @@ export const topLosersShare = async () => {
     }
 
     const response = await axios.get(url, {
-      headers: {
-        "accept": "application/json, text/javascript, */*; q=0.01",
-        "accept-language": "en-US,en;q=0.9,ne;q=0.8",
-        "sec-ch-ua": "\"Not_A Brand\";v=\"8\", \"Chromium\";v=\"120\", \"Microsoft Edge\";v=\"120\"",
-        "sec-ch-ua-mobile": "?0",
-        "sec-ch-ua-platform": "\"Windows\"",
-        "sec-fetch-dest": "empty",
-        "sec-fetch-mode": "cors",
-        "sec-fetch-site": "same-origin",
-        "x-requested-with": "XMLHttpRequest",
-        "cookie": "XSRF-TOKEN=your_XSRF_TOKEN_here; sharesansar_session=your_sharesansar_session_here",
-        "Referer": "https://www.sharesansar.com/top-losers",
-        "Referrer-Policy": "strict-origin-when-cross-origin",
-      }
+      headers: header,
     });
 
     const data = response.data.data;
@@ -354,20 +289,7 @@ export const topTurnoversShare = async () => {
     }
 
     const response = await axios.get(url, {
-      headers: {
-        "accept": "application/json, text/javascript, */*; q=0.01",
-        "accept-language": "en-US,en;q=0.9,ne;q=0.8",
-        "sec-ch-ua": "\"Not_A Brand\";v=\"8\", \"Chromium\";v=\"120\", \"Microsoft Edge\";v=\"120\"",
-        "sec-ch-ua-mobile": "?0",
-        "sec-ch-ua-platform": "\"Windows\"",
-        "sec-fetch-dest": "empty",
-        "sec-fetch-mode": "cors",
-        "sec-fetch-site": "same-origin",
-        "x-requested-with": "XMLHttpRequest",
-        "cookie": "XSRF-TOKEN=your_XSRF_TOKEN_here; sharesansar_session=your_sharesansar_session_here",
-        "Referer": "https://www.sharesansar.com/top-turnovers",
-        "Referrer-Policy": "strict-origin-when-cross-origin",
-      }
+      headers: header,
     });
 
     const data = response.data.data;
@@ -393,6 +315,7 @@ export const topTurnoversShare = async () => {
 };
 
 //top volume
+import { header } from './headers.js';
 export const topTradedShares = async () => {
   const url = "https://www.sharesansar.com/top-tradedshares?draw=1&columns%5B0%5D%5Bdata%5D=DT_Row_Index&columns%5B0%5D%5Bname%5D=&columns%5B0%5D%5Bsearchable%5D=false&columns%5B0%5D%5Borderable%5D=false&columns%5B0%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B0%5D%5Bsearch%5D%5Bregex%5D=false&columns%5B1%5D%5Bdata%5D=symbol&columns%5B1%5D%5Bname%5D=&columns%5B1%5D%5Bsearchable%5D=false&columns%5B1%5D%5Borderable%5D=false&columns%5B1%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B1%5D%5Bsearch%5D%5Bregex%5D=false&columns%5B2%5D%5Bdata%5D=companyname&columns%5B2%5D%5Bname%5D=&columns%5B2%5D%5Bsearchable%5D=false&columns%5B2%5D%5Borderable%5D=false&columns%5B2%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B2%5D%5Bsearch%5D%5Bregex%5D=false&columns%5B3%5D%5Bdata%5D=traded_quantity&columns%5B3%5D%5Bname%5D=&columns%5B3%5D%5Bsearchable%5D=false&columns%5B3%5D%5Borderable%5D=false&columns%5B3%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B3%5D%5Bsearch%5D%5Bregex%5D=false&columns%5B4%5D%5Bdata%5D=close&columns%5B4%5D%5Bname%5D=&columns%5B4%5D%5Bsearchable%5D=false&columns%5B4%5D%5Borderable%5D=false&columns%5B4%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B4%5D%5Bsearch%5D%5Bregex%5D=false&start=0&length=50&search%5Bvalue%5D=&search%5Bregex%5D=false&_=1702618649178";
 
@@ -404,22 +327,7 @@ export const topTradedShares = async () => {
     }
 
     const response = await axios.get(url, {
-      headers: {
-        "accept": "application/json, text/javascript, */*; q=0.01",
-        "accept-encoding": "gzip, deflate, br",
-        "accept-language": "en-US,en;q=0.9,ne;q=0.8",
-        "cookie": "XSRF-TOKEN=your_XSRF_TOKEN_here; sharesansar_session=your_sharesansar_session_here",
-        "dnt": "1",
-        "referer": "https://www.sharesansar.com/top-tradedshares",
-        "sec-ch-ua": "\"Not_A Brand\";v=\"8\", \"Chromium\";v=\"120\", \"Microsoft Edge\";v=\"120\"",
-        "sec-ch-ua-mobile": "?0",
-        "sec-ch-ua-platform": "\"Windows\"",
-        "sec-fetch-dest": "empty",
-        "sec-fetch-mode": "cors",
-        "sec-fetch-site": "same-origin",
-        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0",
-        "x-requested-with": "XMLHttpRequest",
-      },
+      headers: header,
     });
 
     const data = response.data.data;
@@ -457,22 +365,7 @@ export const topTransactions = async () => {
     }
 
     const response = await axios.get(url, {
-      headers: {
-        "accept": "application/json, text/javascript, */*; q=0.01",
-        "accept-encoding": "gzip, deflate, br",
-        "accept-language": "en-US,en;q=0.9,ne;q=0.8",
-        "cookie": "XSRF-TOKEN=your_XSRF_TOKEN_here; sharesansar_session=your_sharesansar_session_here",
-        "dnt": "1",
-        "referer": "https://www.sharesansar.com/top-transactions",
-        "sec-ch-ua": "\"Not_A Brand\";v=\"8\", \"Chromium\";v=\"120\", \"Microsoft Edge\";v=\"120\"",
-        "sec-ch-ua-mobile": "?0",
-        "sec-ch-ua-platform": "\"Windows\"",
-        "sec-fetch-dest": "empty",
-        "sec-fetch-mode": "cors",
-        "sec-fetch-site": "same-origin",
-        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0",
-        "x-requested-with": "XMLHttpRequest",
-      },
+      headers: header,
     });
 
     const data = response.data.data;
@@ -499,7 +392,6 @@ export const topTransactions = async () => {
 
 //used for machine learning model
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 
 export async function fetchIndexes() {
   try {
@@ -509,13 +401,6 @@ export async function fetchIndexes() {
     if (cachedData !== null) {
       return cachedData;
     }
-
-    // const currentDate = new Date().toISOString().split('T')[0];
-    // const Assetfolder = 'indices_data';
-    // const assetDataFolderPath = path.join(__dirname, '..', 'AssetData', Assetfolder);
-    // const csvFileName = `NEPSE_Index_${currentDate}.csv`;
-    // const fullPath = path.join(assetDataFolderPath, csvFileName);
-
 
     const url = 'https://www.sharesansar.com/live-trading'
       const response = await axios.get(url);
@@ -554,23 +439,6 @@ export async function fetchIndexes() {
         extractedData[field] = { volume, index, percent,time };
     });
 
-    // //i want to save in json in following format
-    // // first only date NEPSE Index data
-    // // then write to the csv file
-
-    // // Write NEPSE Index data to CSV file
-    // await mkdirPromise(folder, { recursive: true }).catch(() => {});
-    // const csvHeader = 'Time,Volume,Index,Percent\n';
-    // const csvContent = `${extractedData['NEPSE Index'].time},${extractedData['NEPSE Index'].volume},${extractedData['NEPSE Index'].index},${extractedData['NEPSE Index'].percent}\n`;
-
-    // try {
-    //   await fs.access(csvFileName);
-    //   await fs.appendFile(csvFileName, csvContent);
-    // } catch (error) {
-    //   await fs.writeFile(csvFileName, csvHeader + csvContent);
-    // }
-
-
       await storage.setItem('allindices_sourcedata', extractedData);
 
       return extractedData;
@@ -580,7 +448,7 @@ export async function fetchIndexes() {
   }
 
 
-///extract single index
+//to be removed
 export async function extractIndex() {
   try {
 
@@ -626,6 +494,7 @@ export async function extractIndex() {
   }
 }
 
+//to be removed
 export async function extractIndexDateWise() {
   try {
 
@@ -664,8 +533,53 @@ export async function extractIndexDateWise() {
   }
 }
 
-export async function liveIndexPrices() {
+//replacement of intraday index above
+export async function getIndexIntraday() {
+  try {
+    const [response1, response2, response3] = await Promise.all([
+      axios.get('https://www.sharesansar.com/live-trading'),
+      axios.get('https://nepseapi.zorsha.com.np/DailyNepseIndexGraph'),
+      axios.get('https://nepseapi.zorsha.com.np/IsNepseOpen')
+    ]);
 
+    const $ = cheerio.load(response1.data);
+
+    const nepseIndexContainer = $('h4:contains("NEPSE Index")').closest('.mu-list');
+    const turnover = parseFloat(nepseIndexContainer.find('.mu-price').text().replace(/,/g, ''));
+    const close = parseFloat(nepseIndexContainer.find('.mu-value').text().replace(/,/g, ''));
+    const percentageChange = parseFloat(nepseIndexContainer.find('.mu-percent').text().replace(/,/g, ''))
+    //const percentageChange = parseFloat(nepseIndexContainer.find('.mu-percent').text().match(/\d+\.\d+/)[0]) / 100;
+
+    const currentDate = new Date();
+    const formattedDate = currentDate.getFullYear() + '/' +
+                         (currentDate.getMonth() + 1).toString().padStart(2, '0') + '/' +
+                         currentDate.getDate().toString().padStart(2, '0');
+
+    const jsonData = response2.data;
+    const valuesArray = jsonData.map(item => item[1]);
+    const open = valuesArray[0];
+    const high = Math.max(...valuesArray);
+    const low = Math.min(...valuesArray);
+    const change = parseFloat((valuesArray[valuesArray.length - 1] - open).toFixed(2), 10);
+
+    const { isOpen } = response3.data;
+
+    const nepseIndexData = {
+      date: formattedDate,
+      open,
+      high,
+      low,
+      close,
+      change,
+      percentageChange,
+      turnover,
+      isOpen
+    };
+    return nepseIndexData;
+  } catch (error) {
+    console.error('Error fetching or parsing the data:', error.message);
+    throw error;
+  }
 }
 
-export default {extractIndexDateWise,extractIndex,fetchDataAndMapToAssetModel,fetchIndexes, FetchSingularDataOfAsset,GetDebentures,FetchOldData, topgainersShare, topLosersShare, topTradedShares, topTurnoversShare, topTransactions};
+export default {extractIndexDateWise,extractIndex,getIndexIntraday,fetchIndexes, FetchSingularDataOfAsset,GetDebentures,FetchOldData, topgainersShare, topLosersShare, topTradedShares, topTurnoversShare, topTransactions};
