@@ -1,23 +1,36 @@
 import bcrypt from 'bcrypt';
+import dotenv from 'dotenv';
 import express from 'express';
+import { createServer } from 'http';
 import https from 'https';
 import WebSocket, { WebSocketServer } from 'ws';
 import httpsOptions from '../certificate/httpOptions.js';
 import User from '../models/userModel.js';
 import { getIsMarketOpen, getPreviousIndexData, getTodayAllIndexData } from '../state/StateManager.js';
 
+
+dotenv.config();
 let wss;
+let server;
 const connectedClients = new Map();
 
 function createWebSocketServer() {
   const app = express();
-  const server = https.createServer(httpsOptions, app);
 
   if (!wss) {
+    const isDevelopment = process.env.NODE_ENV== 'development';
+
+    if (isDevelopment) {
+      server = https.createServer(httpsOptions, app);
+    } else {
+      server = createServer(app);
+    }
+
     wss = new WebSocketServer({ server });
 
     wss.on('connection', async function connection(ws, req) {
-      const { searchParams } = new URL(req.url, `https://${req.headers.host}`);
+      const protocol = isDevelopment ? 'https' : 'http';
+      const { searchParams } = new URL(req.url, `${protocol}://${req.headers.host}`);
       const userEmail = searchParams.get('email');
       const password = searchParams.get('password');
       console.log("Web socket request received : ", userEmail, password);
