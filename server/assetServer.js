@@ -3,6 +3,7 @@ import cheerio from 'cheerio';
 import { JSDOM } from 'jsdom';
 import storage from 'node-persist';
 import { fileURLToPath } from 'url';
+import { fetchFromCache } from '../controllers/savefetchCache.js';
 await storage.init();
 
 
