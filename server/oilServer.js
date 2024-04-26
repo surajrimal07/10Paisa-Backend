@@ -20,7 +20,7 @@ export async function oilExtractor(url = 'https://www.ktm2day.com/petrol-diesel-
 
                 price = price.replace(/^"(.*)"$/, '$1');
 
-                if (fuelType === 'Petrol' || fuelType === 'Diesel' || fuelType === 'Kerosene') {
+                if (fuelType === 'Petrol' || fuelType === 'Diesel' || fuelType === 'Kerosene' || fuelType === 'LP Gas – 14.2 kg') {
                     fuelPrices.push({
                         name: fuelType,
                         symbol: fuelType,
@@ -31,12 +31,9 @@ export async function oilExtractor(url = 'https://www.ktm2day.com/petrol-diesel-
                 }
             }
         });
-
         return fuelPrices;
     } catch (error) {
         console.error('Error fetching or parsing the HTML content:', error.message);
         return null;
     }
 }
-
-oilExtractor()

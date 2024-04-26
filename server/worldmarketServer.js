@@ -1,9 +1,17 @@
 import axios from 'axios';
 import cheerio from 'cheerio';
+import { fetchFromCache, saveToCache } from '../controllers/savefetchCache.js';
+
 
 export async function extractWorldMarketData() {
     const url = 'https://en.stockq.org/';
     try {
+
+        const cachedData = await fetchFromCache('worldmarket');
+        if (cachedData) {
+            return cachedData;
+        }
+
         const response = await axios.get(url);
         const $ = cheerio.load(response.data);
 
@@ -76,6 +84,8 @@ export async function extractWorldMarketData() {
                 marketData.americanMarketIndices.shift();
             }
         });
+
+        await saveToCache('worldmarket', marketData);
 
         return marketData;
     } catch (error) {

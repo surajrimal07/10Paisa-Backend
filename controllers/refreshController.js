@@ -1,32 +1,28 @@
 import axios from 'axios';
 import storage from 'node-persist';
-import { FetchOldData, FetchSingularDataOfAsset, extractIndex, extractIndexDateWise, fetchIndexes, topLosersShare, topTradedShares, topTransactions, topTurnoversShare, topgainersShare } from '../server/assetServer.js';
-import { commodityprices } from '../server/commodityServer.js';
+import { FetchOldData, FetchSingularDataOfAsset, fetchIndexes, getIndexIntraday, topLosersShare, topTradedShares, topTransactions, topTurnoversShare, topgainersShare } from '../server/assetServer.js';
 import { notifyClients } from '../server/websocket.js';
-import { setIsMarketOpen, setPreviousIndexData, getPreviousIndexData } from '../state/StateManager.js';
+import { getPreviousIndexData, setIsMarketOpen, setPreviousIndexData } from '../state/StateManager.js';
+
+//'metalprices', -- to be refreshed using chron job
+//'CommodityData' -- to be refreshed using chron job
 
 const CACHE_KEYS = [
-  'commodityprices',
-  'extractIndex',
-  'extractIndexDateWise',
-  'topTransactions',
-  'topTradedShares',
-  'topTurnoversShare',
-  'topLosersShare',
-  'topgainersShare',
-  'FetchOldData',
   'FetchSingularDataOfAssets',
-  'tableData',
-  'fetchMetalPrices',
-  'allindices_sourcedata',
-  'FetchOldDatas'
+  'FetchOldData',
+  'topgainersShare',
+  'topLosersShare',
+  'topTurnoversShare',
+  'topTradedShares',
+  'topTransactions',
+  'indexData',
 ];
 
 const refreshInterval = 60 * 1000; // 1 minute //makes no sense lowering this as sharesansar updates data
 
 export async function isNepseOpen() {
   console.log('Checking if Nepse is open...');
-    const response = await axios.get('https://nepseapi.zorsha.com.np/IsNepseOpen');
+    const response = await axios.get('http://localhost:5000/IsNepseOpen');
     if (response.data.isOpen === 'CLOSE') {
       console.log('Nepse is closed.');
       setIsMarketOpen(false);
@@ -48,19 +44,17 @@ async function wipeCachesAndRefreshData() {
     await Promise.all(CACHE_KEYS.map(key => storage.removeItem(key)));
 
     await Promise.all([
-      extractIndexDateWise(),
       FetchSingularDataOfAsset(),
       FetchOldData(),
-      topgainersShare(),
-      topLosersShare(),
-      topTurnoversShare(),
-      topTradedShares(),
-      topTransactions(),
-      commodityprices(),
+      topgainersShare(), //switch to get from nepseapi.zorsha.com.np
+      topLosersShare(), // switch to get from nepseapi.zorsha.com.np
+      topTurnoversShare(), // switch to get from nepseapi.zorsha.com.np
+      topTradedShares(), //  TopTenTradeScrips = top volume
+      topTransactions(), //  switch to get from nepseapi.zorsha.com.np
       fetchIndexes(),
     ]);
 
-    let newIndexData = await extractIndex();
+    let newIndexData = await getIndexIntraday();
     if (newIndexData && newIndexData !== getPreviousIndexData) {
       notifyClients({ type: 'index', data: newIndexData });
       setPreviousIndexData(newIndexData);

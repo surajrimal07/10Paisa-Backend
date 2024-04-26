@@ -1,34 +1,14 @@
 import axios from 'axios';
 import cheerio from 'cheerio';
-
-export async function extractNrbBankingData () {
-    const url = 'https://www.nrb.org.np/';
-    try {
-        const response = await axios.get(url);
-        const $ = cheerio.load(response.data);
-
-        const information = {};
-
-        $('table.table-compact tbody tr').each((index, element) => {
-            const label = $(element).find('td span').first().text().trim();
-            const firstData = $(element).find('.number.text-right').first().text().trim();
-
-
-            if (label !== '') {
-                information[label] = firstData;
-            }
-        });
-
-        return information;
-    } catch (error) {
-        console.error('Error fetching data:', error);
-        return null;
-    }
-}
+import { fetchFromCache, saveToCache } from '../controllers/savefetchCache.js';
 
 export async function extractNrbForexData () {
     const url  = 'https://www.nrb.org.np/forex/';
     try {
+        const cachedData = await fetchFromCache('nrbforexdata');
+        if (cachedData) {
+            return cachedData;
+        }
         const response = await axios.get(url);
         const $ = cheerio.load(response.data);
 
@@ -43,6 +23,7 @@ export async function extractNrbForexData () {
             exchangeRates[currency] = { unit, buy, sell };
         });
 
+        await saveToCache('nrbforexdata', exchangeRates);
         return exchangeRates;
     } catch (error) {
         console.error('Error fetching data:', error);
@@ -52,7 +33,13 @@ export async function extractNrbForexData () {
 
 export async function extractNrbBankingDataAll() {
     const url = 'https://www.nrb.org.np/';
+
     try {
+        const cachedData = await fetchFromCache('nrbbankingforexdata');
+        if (cachedData) {
+            return cachedData;
+        }
+
         const response = await axios.get(url);
         const $ = cheerio.load(response.data);
 
@@ -93,20 +80,10 @@ export async function extractNrbBankingDataAll() {
 
         data["Short Term Interest Rates"] = shortTermInterestRates;
 
+        await saveToCache('nrbbankingforexdata', data);
         return data;
     } catch (error) {
         console.error('Error fetching data:', error);
         return null;
     }
 }
-
-
-
-// // Example usage:
-// extractNrbForexData()
-//     .then(data => {
-//         console.log(data);
-//     })
-//     .catch(error => {
-//         console.error('Error:', error);
-//     });

@@ -1,17 +1,14 @@
 import fs from 'fs';
 import storage from 'node-persist';
 import path from 'path';
-import saveDataToJson from '../controllers/jsonControllers.js';
-import { fetchFromCache, saveToCache } from '../controllers/savefetchCache.js';
-import Asset from '../models/assetModel.js';
+import { deleteFromCache, fetchFromCache, saveToCache } from '../controllers/savefetchCache.js';
 import { FetchOldData, FetchSingularDataOfAsset, fetchIndexes, getIndexIntraday, topLosersShare, topTradedShares, topTransactions, topTurnoversShare, topgainersShare } from '../server/assetServer.js';
 import { commodityprices } from '../server/commodityServer.js';
 import { metalPriceExtractor } from '../server/metalServer.js';
 import { oilExtractor } from '../server/oilServer.js';
 import topCompanies from '../server/top_capitalization.js';
 import { extractWorldMarketData } from '../server/worldmarketServer.js';
-import { getIsMarketOpen } from '../state/StateManager.js';
-import { respondWithData, respondWithError } from '../utils/response_utils.js';
+import { respondWithData, respondWithError, respondWithSuccess } from '../utils/response_utils.js';
 await storage.init();
 
 // // single stopmic data from sharesansar
@@ -19,17 +16,10 @@ export const AssetMergedData = async (req, res) => {
   console.log('Sharesansar Asset Data Requested');
 
   try {
-    if (req.body.refresh=="false") {
-      const cachedData = await fetchFromCache('AssetMergedDatas');
-
-      if (cachedData !== null) {
-
-        console.log('Returning cached asset data');
-        return res.status(200).json({
-          data: cachedData,
-          isCached: true
-        });
-      }
+    const refreshParam = req.query.refresh || '';
+    if (refreshParam.toLowerCase() != 'refresh') {
+      await deleteFromCache('FetchSingularDataOfAssets');
+      await deleteFromCache('FetchOldData');
     };
 
     const [todayData, liveData] = await Promise.all([FetchSingularDataOfAsset(), FetchOldData()]);
@@ -41,26 +31,8 @@ export const AssetMergedData = async (req, res) => {
       ...(liveDataMap.get(item.symbol) || {}),
     }));
 
-    const currentDate = new Date().toISOString().split('T')[0];
-    const Assetfolder = 'AssetArchive';
-    const assetDataFolderPath = path.join(__dirname, '..', 'AssetData', Assetfolder);
-    const fileName = `${currentDate}_Stock.json`;
+    return respondWithData(res, 'SUCCESS', 'Data Fetched Successfully', mergedData);
 
-    saveDataToJson(
-      {
-        data: mergedData,
-        isCached: false
-      },
-      fileName,
-      assetDataFolderPath
-    );
-
-    await saveToCache('AssetMergedDatas', mergedData);
-
-    return res.status(200).json({
-      data: mergedData,
-      isCached: false
-    });
   } catch (error) {
     console.error(error);
     return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'Internal Server Error');
@@ -70,7 +42,6 @@ export const AssetMergedData = async (req, res) => {
 //single asset from sharesanasar like upcl
 export const SingeAssetMergedData = async (req, res) => {
   console.log('Sharesansar Single Asset Data Requested');
-
   const symbol = req.body.symbol;
 
   if (!symbol) {
@@ -78,7 +49,6 @@ export const SingeAssetMergedData = async (req, res) => {
     return respondWithError(res, 'BAD_REQUEST', 'No symbol provided in the request');
   }
 
-//  const symboll = symbol.toUpperCase();
   try {
     const [todayData, liveData] = await Promise.all([FetchSingularDataOfAsset(), FetchOldData()]);
 
@@ -115,38 +85,13 @@ export const AssetMergedDataBySector = async (req, res) => {
   }
 
   try {
-    if (req.body.refresh=="false") {
-      const cachedData = await fetchFromCache('AssetMergedDataBySector');
-
-      if (cachedData !== null) {
-
-      let filteredCachedData;
-
-      if (sector) {
-        filteredCachedData = cachedData.filter(item => item.sector === sector);
-      } else if (assettype === 'Assets') {
-
-        filteredCachedData = cachedData.filter(item => item.category === 'Assets');
-      } else if (assettype === 'Mutual Fund') {
-        filteredCachedData = cachedData.filter(item => item.category === 'Mutual Fund');
-      } else if (assettype === 'Debenture') {
-        filteredCachedData = cachedData.filter(item => item.category === 'Debenture');
-      } else {
-        respondWithError(res, 'BAD_REQUEST', 'Invalid asset type provided in the request');
-      }
-
-      if (filteredCachedData.length === 0) {
-        respondWithError(res, 'NOT_FOUND', 'No data found based on the provided criteria');
-      }
-
-      return res.status(200).json({
-        data: filteredCachedData,
-        isCached: true
-      });
-      }
+    const refreshParam = req.query.refresh || '';
+    if (refreshParam.toLowerCase() != 'refresh') {
+      await deleteFromCache('FetchSingularDataOfAssets');
+      await deleteFromCache('FetchOldData');
     };
 
-    const [todayData, liveData] = await Promise.all([FetchSingularDataOfAsset(), FetchOldData()]);
+  const [todayData, liveData] = await Promise.all([FetchSingularDataOfAsset(), FetchOldData()]);
 
   const liveDataMap = new Map(liveData.map((item) => [item.symbol, item]));
   const mergedData = todayData.map((item) => ({
@@ -172,12 +117,7 @@ export const AssetMergedDataBySector = async (req, res) => {
     respondWithError(res, 'NOT_FOUND', 'No data found based on the provided criteria');
   }
 
-  await saveToCache('AssetMergedDataBySector', filteredData);
-
-  return res.status(200).json({
-    data: filteredData,
-    isCached: false
-  });
+  return respondWithData(res, 'SUCCESS', 'Data Fetched Successfully', filteredData);
 
   } catch (error) {
     console.error(error);
@@ -186,76 +126,42 @@ export const AssetMergedDataBySector = async (req, res) => {
 };
 
 //get metal
-const assetToCategoryMap = {
-  'Gold hallmark': 'Fine Gold',
-  'Gold tejabi': 'Tejabi Gold',
-  'Silver': 'Silver',
-};
-
 export const fetchMetalPrices = async (req, res) => {
   console.log('Metal data requested');
+
   try {
-    if (req.body.refresh=="false") {
-      const cachedData = await fetchFromCache('fetchMetalPrices');
-
-      if (cachedData !== null) {
-
-        console.log('Returning cached metals data');
-        return res.status(200).json(
-          cachedData
-        );
-      }
-    };
-
-    const assets = Object.keys(assetToCategoryMap);
-    const metalPrices = [];
-
-    for (const asset of assets) {
-      const metalData = await metalPriceExtractor(asset);
-
-      if (metalData) {
-        const metalAsset = new Asset({
-          symbol: metalData.name,
-          name: metalData.name,
-          category: metalData.category,
-          sector: metalData.sector,
-          ltp: parseFloat(metalData.ltp),
-          unit: metalData.unit,
-        });
-
-        metalPrices.push(metalAsset);
-      } else {
-        console.log(`Price for ${asset} not found`);
-      }
+    const refreshParam = req.query.refresh || '';
+    if (refreshParam.toLowerCase() === 'refresh') {
+      console.log('Refreshing metal prices');
+      deleteFromCache('metalprices');
+    }
+    const metalData = await metalPriceExtractor();
+    if (!metalData) {
+      return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'Failed to fetch metal prices.');
     }
 
-    await saveToCache('fetchMetalPrices', { metalPrices });
-
-    console.log('Returning live Metal prices');
-    return res.status(200).json({metalPrices
-    });
+    return res.status(200).json({ metalData });
   } catch (error) {
     console.error('Error fetching or logging metal prices:', error.message);
     return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'Failed to fetch commodity data.');
   }
 };
 
+//commodity
 export const CommodityData = async (req, res) => {
   try {
-    if (req.body.refresh === "false") {
+    if (req.body.refresh != "refresh") {
       const cachedData = await fetchFromCache('CommodityData');
-      if (cachedData !== null) {
         console.log('Returning cached commodity data');
         return res.status(200).json({
           data: cachedData,
           isCached: true
         });
-      }
     }
 
-    const commodityTableData = await commodityprices();
+    const commodityTableData = await commodityprices(); //commodityprices
     const oilData = await oilExtractor();
-    if (!commodityTableData) { // || !oilData
+    if (!commodityTableData || !oilData) { // || !oilData
        return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'Failed to fetch commodity data.');
     }
 
@@ -275,10 +181,7 @@ export const CommodityData = async (req, res) => {
     const mergedData = oilData ? [...commodityData, ...oilAssetData] : [...commodityData];
     await saveToCache('CommodityData', mergedData);
 
-    return res.status(200).json({
-      data: mergedData,
-      isCached: false
-    });
+    return respondWithData(res, 'SUCCESS', 'Data Fetched Successfully', mergedData);
   } catch (error) {
     console.error(error);
     return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'Internal Server Error');
@@ -288,68 +191,43 @@ export const CommodityData = async (req, res) => {
 //top gainers //share sansar
 export const TopGainersData = async (req, res) => {
   console.log('Top gainers data requested');
-
   try {
-    if (req.body.refresh=="false") {
-      const cachedData = await fetchFromCache('TopGainersData');
-
-      if (cachedData !== null) {
-
-        console.log('Returning cached top gainers data');
-        return res.status(200).json({
-          data: cachedData,
-          isCached: true
-        });
-      }
-    };
-
-    const topGainersData = await topgainersShare();
-
-    if (!topGainersData) {
-      return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'Failed to fetch top gainers data.');
+    const refreshParam = req.query.refresh || '';
+    if (refreshParam.toLowerCase() === "refresh") {
+      console.log('Refreshing top gainers data');
+      deleteFromCache('topgainersShare');
     }
-    await saveToCache('TopGainersData', topGainersData);
+      const topGainersData = await topgainersShare();
 
-    return res.status(200).json({
-      data: topGainersData,
-      isCached: false
-    });
+      if (!topGainersData) {
+        return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'Failed to fetch top gainers data.');
+      }
+
+      return respondWithData(res,'SUCCESS','Data Fetched Successfully',topGainersData);
   } catch (error) {
     console.error(error);
     return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'Internal Server Error');
   }
 };
 
+
 //toploosers
 export const TopLoosersData = async (req, res) => {
   console.log('Top loosers data requested');
 
   try {
-    if (req.body.refresh=="false") {
-      const cachedData = await fetchFromCache('TopLoosersData');
-
-      if (cachedData !== null) {
-
-        console.log('Returning cached top loosers data');
-        return res.status(200).json({
-          data: cachedData,
-          isCached: true
-        });
-      }
-    };
+    const refreshParam = req.query.refresh || '';
+    if (refreshParam.toLowerCase() === "refresh") {
+      console.log('Refreshing top loosers data');
+      deleteFromCache('topLosersShare');
+    }
 
     const topGainersData = await topLosersShare();
-
     if (!topGainersData) {
       return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'Failed to fetch top loosers data.');
     }
 
-    await saveToCache('TopLoosersData', topGainersData);
-
-    return res.status(200).json({
-      data: topGainersData,
-      isCached: false
-    });
+    return respondWithData(res,'SUCCESS','Data Fetched Successfully',topGainersData);
   } catch (error) {
     console.error(error);
     return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'Internal Server Error');
@@ -359,33 +237,19 @@ export const TopLoosersData = async (req, res) => {
 //top turnover
 export const TopTurnoverData = async (req, res) => {
   console.log('Top turnover data requested');
-
   try {
-    if (req.body.refresh=="false") {
-      const cachedData = await fetchFromCache('TopTurnoverData');
-
-      if (cachedData !== null) {
-
-        console.log('Returning cached top turnover data');
-        return res.status(200).json({
-          data: cachedData,
-          isCached: true
-        });
-      }
-    };
-
+    const refreshParam = req.query.refresh || '';
+    if (refreshParam.toLowerCase() === "refresh") {
+      console.log('Refreshing top turnover data');
+      deleteFromCache('topTurnoversShare');
+    }
     const topGainersData = await topTurnoversShare();
 
     if (!topGainersData) {
       return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'Failed to fetch top turnover data.');
     }
+    return respondWithData(res,'SUCCESS','Data Fetched Successfully',topGainersData);
 
-    await saveToCache('TopTurnoverData', topGainersData);
-
-    return res.status(200).json({
-      data: topGainersData,
-      isCached: false
-    });
   } catch (error) {
     console.error(error);
     return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'Internal Server Error');
@@ -397,29 +261,18 @@ export const TopVolumeData = async (req, res) => {
   console.log('Top volume data requested');
 
   try {
-    if (req.body.refresh=="false") {
-      const cachedData = await fetchFromCache('TopVolumeData');
-
-      if (cachedData !== null) {
-
-        console.log('Returning cached top volume data');
-        return res.status(200).json({
-          data: cachedData,
-          isCached: true
-        });
-      }
-    };
-    const topGainersData = await topTradedShares();
-
-    if (!topGainersData) {
-      return res.status(500).json({ error: 'Failed to fetch top volume data.' });
+    const refreshParam = req.query.refresh || '';
+    if (refreshParam.toLowerCase() === "refresh") {
+      console.log('Refreshing top volume data');
+      deleteFromCache('topTradedShares');
     }
-    await saveToCache('TopVolumeData', topGainersData);
 
-    return res.status(200).json({
-      data: topGainersData,
-      isCached: false
-    });
+    const topGainersData = await topTradedShares();
+    if (!topGainersData) {
+      return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'Failed to fetch top volume data.');
+    }
+
+    return respondWithData(res,'SUCCESS','Data Fetched Successfully',topGainersData);
   } catch (error) {
     console.error(error);
     return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'Internal Server Error');
@@ -430,31 +283,18 @@ export const TopTransData = async (req, res) => {
   console.log('Top Transaction data requested');
 
   try {
-
-    if (req.body.refresh=="false") {
-      const cachedData = await fetchFromCache('TopTransData');
-
-      if (cachedData !== null) {
-
-        console.log('Returning cached transaction data');
-        return res.status(200).json({
-          data: cachedData,
-          isCached: true
-        });
-      }
-    };
+    const refreshParam = req.query.refresh || '';
+    if (refreshParam.toLowerCase() === "refresh") {
+      console.log('Refreshing top transaction data');
+      deleteFromCache('topTransactions');
+    }
 
     const topGainersData = await topTransactions();
-
     if (!topGainersData) {
       return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'Failed to fetch top transaction data.');
     }
-    await saveToCache('TopTransData', topGainersData);
 
-    return res.status(200).json({
-      data: topGainersData,
-      isCached: false
-    });
+    return respondWithData(res,'SUCCESS','Data Fetched Successfully',topGainersData);
   } catch (error) {
     console.error(error);
     return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'Internal Server Error');
@@ -464,18 +304,14 @@ export const TopTransData = async (req, res) => {
 export const DashBoardData = async (req, res) => {
 
   try {
-    if (req.query.refresh === "false") {
-      const cachedData = await fetchFromCache('DashBoardData');
-
-      if (cachedData !== null) {
-
-        console.log('Returning cached dashboard data');
-      return res.status(200).json({
-        data: cachedData,
-        isCached: true
-      });
-
-      }
+    const refreshParam = req.query.refresh || '';
+    if (refreshParam.toLowerCase() === "refresh") {
+      console.log('Refreshing dashboard data');
+      deleteFromCache('topgainersShare');
+      deleteFromCache('topLosersShare');
+      deleteFromCache('topTurnoversShare');
+      deleteFromCache('topTradedShares');
+      deleteFromCache('topTransactions');
     };
 
     const topGainersData = await topgainersShare();
@@ -503,7 +339,6 @@ export const DashBoardData = async (req, res) => {
     };
 
     await saveToCache('DashBoardData', dashboardData);
-
     console.log('Returning live dashboard data');
 
     return res.status(200).json({
@@ -516,36 +351,24 @@ export const DashBoardData = async (req, res) => {
   }
 };
 
-//new all indices data
+//new all indices data //returns all sub indexes
 export const AllIndicesData = async (req, res) => {
   console.log('All Indices Data Requested');
 
   try {
-    if (req.query.refresh === "false") {
-      const cachedData = await fetchFromCache('AllIndicesDatas');
-
-      if (cachedData !== null) {
-
-        console.log('Returning cached all indices data');
-        return res.status(200).json({
-          data: cachedData,
-          isCached: true
-        });
-      }
-    };
+    const refreshParam = req.query.refresh || '';
+    if (refreshParam.toLowerCase() === "refresh") {
+      console.log('Refreshing all indices data');
+      deleteFromCache('allindices_sourcedata');
+    }
 
     const allIndicesData = await fetchIndexes();
-
     if (!allIndicesData) {
-      return res.status(500).json({ error: 'Failed to fetch all indices datas.' });
+      return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'Failed to fetch all indices datas.');
     }
 
     await saveToCache('AllIndicesDatas', allIndicesData);
-
-    return res.status(200).json({
-      data: allIndicesData,
-      isCached: false
-    });
+    return respondWithData(res,'SUCCESS','Data Fetched Successfully',allIndicesData);
 
   } catch (error) {
     console.error(error);
@@ -553,125 +376,41 @@ export const AllIndicesData = async (req, res) => {
   }
 
 }
-
 
 //new cache mechanism fixed and added
 export const IndexData = async (req, res) => {
   console.log("Index Data Requested");
 
   try {
-    if (req.query.refresh === "false") {
-      const cachedData = await fetchFromCache('indexData');
+    const refreshParam = req.query.refresh || '';
+    if (refreshParam.toLowerCase() === "refresh") {
 
-      if (cachedData !== null) {
-        console.log('Returning cached index data');
+      if (!getIsMarketOpen()){
+        const cachedData = await fetchFromCache('intradayIndexData');
         return respondWithData(res,'SUCCESS','Data Fetched Successfully',cachedData);
       }
+
+      console.log('Refreshing index data');
+      await deleteFromCache('intradayIndexData');
+
+      const indexData = await getIndexIntraday();
+      if (!indexData) {
+        return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'Failed to fetch index data.');
+      }
+      return respondWithData(res,'SUCCESS','Data Refrehed Successfully',indexData);
     };
 
-    if (!getIsMarketOpen()) {
-      const cachedData = await fetchFromCache('indexData');
-      if (cachedData) {
-        console.log('Market is closed. Returning cached intraday data.');
-        return respondWithData(res,'SUCCESS','Data Fetched Successfully',cachedData);
-      }
-      return;
-    }
-
     const indexData = await getIndexIntraday();
-    if (!indexData) {
-      return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'Failed to fetch index data.');
-    }
-    await saveToCache('indexData', indexData);
-    return respondWithData(res,'SUCCESS','Data Refrehed Successfully',indexData);
+    console.log('Returning index data');
+    return respondWithData(res,'SUCCESS','Data Fetched Successfully',indexData);
+
   } catch (error) {
     console.error(error);
     return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'Internal Server Error');
   }
 }
 
-//new cache mechanism fixed and added
-// export const CombinedIndexData = async (req, res) => {
-//   console.log("Combined Index Data Requested");
-//   try {
-
-//     if (req.query.refresh === "false") {
-//       const cachedData = await fetchFromCache('CombinedIndexData');
-
-//       if (cachedData !== null) {
-
-//         console.log('Returning cached combined index data');
-//         return respondWithData(res,'SUCCESS','Data Success',cachedData);
-//       }
-//     };
-
-//     const indexData = await extractIndex();
-//     const indexDataByDate = await extractIndexDateWise();
-
-//     if (!indexData || !indexDataByDate) {
-//       return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'Failed to fetch index data.');
-//     }
-
-//     const pointChange = calculatePointChange(indexDataByDate,indexData);
-//     indexData.pointChange = pointChange.pointChange;
-
-//     //instead of removing data of sharesansar we are removing data from merolagani
-//     //because data from sharesansar has more information than merolagani for today
-//     const startSliceIndex = (indexData.date === indexDataByDate[0].date || indexData.percentageChange === indexDataByDate[0].percentageChange) ? 1 : 0;
-
-//     const combinedData = [
-//       {
-//         date: indexData.date,
-//         index: indexData.index,
-//         percentageChange: indexData.percentageChange,
-//         pointChange: indexData.pointChange,
-//         //
-//         turnover: indexData.turnover,
-//         marketStatus: indexData.marketStatus,
-
-//       },
-//       ...indexDataByDate.slice(startSliceIndex, 15),
-//     ];
-
-//     await storage.setItem('CombinedIndexData', combinedData);
-
-//     return respondWithData(res, 'SUCCESS', 'Data refreshed Successfully', combinedData);
-//   } catch (error) {
-//     console.error(error);
-//     return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'Internal Server Error');
-//   }
-// };
-
-// function calculatePointChange(indexDataByDate, indexData) {
-
-//   //if after 3 pm today live and merolagani data becomes same then we don't calculate
-//   //point change of today from 1st index of indexDataByDate because both data is same, instead
-//   //we calculate point change of today from 2nd index of indexDataByDate.
-//   //but if we are in a live market when below condition is fase then we calculate point change of today
-//   // from 1st index of indexDataByDate (last trading day)
-
-//   if (indexData.date === indexDataByDate[0].date || indexData.percentageChange === indexDataByDate[0].percentageChange) {
-//     let olderIndexValuee = indexDataByDate[1].index;
-
-
-//   //const olderIndexValue = indexDataByDate[0].index;
-//   const todayIndexValue = indexData.index;
-//   const olderIndexValue = indexDataByDate[0].index //today added
-
-//       //added code below today
-//   const pointChange = parseFloat((todayIndexValue - olderIndexValuee).toFixed(2));
-//       return {
-//         pointChange
-//       };
-//     }
-
-//   const pointChange = parseFloat((indexData.index - indexDataByDate[0].index).toFixed(2));
-
-//   return {
-//     pointChange
-//   };
-// }
-
+//daily index data of aaile samma ko
 export const CombinedIndexData = async (req, res) => {
   console.log("Combined Index Data Requested");
   try {
@@ -806,37 +545,64 @@ function calculateOverallPrediction(overallStrength) {
   }
 }
 
-
 //
 export const WorldMarketData = async (req, res) => {
   console.log("World Index Data Requested");
   try {
-
-    if (req.query.refresh === "false") {
-      const cachedData = await fetchFromCache('WorldMarketData');
-
-      if (cachedData !== null) {
-
-        console.log('Returning cached world data');
-        return respondWithData(res,'SUCCESS','Data Success',cachedData);
-      }
+    const refreshParam = req.query.refresh || '';
+    if (refreshParam.toLowerCase() === "refresh") {
+      console.log('Refreshing worldmarket data');
+      await deleteFromCache('worldmarket');
     };
 
     const worlddata = await extractWorldMarketData();
-
     if (!worlddata) {
       return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'Failed to fetch world data.');
     }
-    await saveToCache('WorldMarketData', worlddata);
 
     return respondWithData(res, 'SUCCESS', 'Data refreshed Successfully', worlddata);
-
   } catch (error) {
     console.error(error);
     return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'Internal Server Error');
   }
 };
 
+//this api is to refresh top gainers etc data from sharesansar at EOD by using chron job
+export const refreshMetalsData = async (req, res) => {
+  console.log('Refreshing metals data through API');
+  await deleteFromCache('metalprices');
+  const metalPrices = await metalPriceExtractor();
+
+  if (!metalPrices) {
+    return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'Failed to fetch metal prices.');
+  }
+  return respondWithSuccess(res,'SUCCESS', 'Data refreshed Successfully');
+}
 
 
-export default {CombinedIndexData, fetchMetalPrices,TopVolumeData,TopTransData,TopTurnoverData,topLosersShare, AssetMergedData, SingeAssetMergedData, AssetMergedDataBySector, CommodityData, TopGainersData, DashBoardData};
+export const refreshCommodityData = async (req, res) => {
+  console.log('Refreshing commodity data through API');
+  await deleteFromCache('CommodityData');
+  const commodityData = await commodityprices();
+
+  if (!commodityData) {
+    return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'Failed to fetch commodity data.');
+  }
+
+  return respondWithSuccess(res,'SUCCESS', 'Data refreshed Successfully');
+}
+
+export const refreshWorldMarketData = async (req, res) => {
+  console.log('Refreshing world market data through API');
+  await deleteFromCache('worldmarket');
+  const worlddata = await extractWorldMarketData();
+
+  if (!worlddata) {
+    return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'Failed to fetch world data.');
+  };
+
+  return respondWithSuccess(res,'SUCCESS', 'Data refreshed Successfully');
+  }
+
+
+export default {refreshMetalsData,refreshWorldMarketData,refreshCommodityData,CombinedIndexData, fetchMetalPrices,TopVolumeData,TopTransData,TopTurnoverData,topLosersShare, AssetMergedData, SingeAssetMergedData, AssetMergedDataBySector, CommodityData, TopGainersData, DashBoardData};

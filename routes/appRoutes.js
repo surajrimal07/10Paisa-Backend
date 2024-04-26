@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { deleteUserByEmail, editUserByEmail, getAllPortfolios, getAllUsers } from '../controllers/adminController.js';
-import { AllIndicesData, AssetMergedData, AssetMergedDataBySector, CombinedIndexData, CommodityData, DashBoardData, IndexData, SingeAssetMergedData, TopGainersData, TopHeavyStocks, TopLoosersData, TopTransData, TopTurnoverData, TopVolumeData, WorldMarketData, fetchMetalPrices } from '../controllers/assetControllers.js';
-import { NrbBankingData, NrbBankingDataAll, combinedNrbData, nrbForexData } from '../controllers/extraDataControllers.js';
+import { AllIndicesData, AssetMergedData, AssetMergedDataBySector, CombinedIndexData, CommodityData, DashBoardData, IndexData, SingeAssetMergedData, TopGainersData, TopHeavyStocks, TopLoosersData, TopTransData, TopTurnoverData, TopVolumeData, WorldMarketData, fetchMetalPrices, refreshCommodityData, refreshMetalsData, refreshWorldMarketData } from '../controllers/assetControllers.js';
+import { NrbBankingDataAll, combinedNrbData, nrbForexData, refreshNRBData } from '../controllers/extraDataControllers.js';
 import { sendOTP, verifyOTP } from '../controllers/otpControllers.js';
 import { addStockToPortfolio, createPortfolio, deletePortfolio, getAllPortfoliosForUser, removeStockFromPortfolio, renamePortfolio } from '../controllers/portfolioControllers.js';
 import { createUser, deleteAccount, forgetPass, googleSignIn, loginUser, makeadmin, updateUser, updateUserData, updateUserProfilePicture, verifyData, verifyEmail, verifyName, verifyPassword, verifyPhoneNumber, verifyUser } from '../controllers/userController.js';
@@ -40,19 +40,20 @@ router.delete('/delport',deletePortfolio);
 router.post('/renameportfolio',renamePortfolio);
 router.post('/getallportforuser',getAllPortfoliosForUser);
 router.post('/remstock',removeStockFromPortfolio);
+
+//
 router.get('/commodity', CommodityData);
 router.get('/metal', fetchMetalPrices);
-router.post('/makeadmin',authGuard, makeadmin);
 router.get('/sharesansardata', AssetMergedData);
 router.post('/singlesharesansardata', SingeAssetMergedData);
 router.post('/sectorsharesansardata', AssetMergedDataBySector);
 
 //homepage data
-router.post('/topgainers', TopGainersData);
-router.post('/toploosers', TopLoosersData);
-router.post('/topturnover', TopTurnoverData);
-router.post('/topvolume', TopVolumeData);
-router.post('/toptrans', TopTransData);
+router.get('/topgainers', TopGainersData);
+router.get('/toploosers', TopLoosersData);
+router.get('/topturnover', TopTurnoverData);
+router.get('/topvolume', TopVolumeData);
+router.get('/toptrans', TopTransData);
 router.get('/dashboard', DashBoardData);
 router.get('/index', IndexData);
 router.get('/combinedindex', CombinedIndexData);
@@ -62,6 +63,7 @@ router.get('/allusers', getAllUsers);
 router.delete('/deleteUser',authGuardAdmin, deleteUserByEmail);
 router.put('/edituser',authGuardAdmin, editUserByEmail);
 router.get('/allportfolios', getAllPortfolios);
+router.post('/makeadmin',authGuard, makeadmin);
 
 //watchlist routes
 router.post('/createwatchlist', createWatchlist);
@@ -72,17 +74,22 @@ router.post('/addstocktowatchlist', addStockToWatchlist);
 router.post('/remstockfromwatchlist', removeStockFromWatchlist);
 
 //nrb datas
-router.get('/nrbbankdata', NrbBankingData);
+//router.get('/nrbbankdata', NrbBankingData);
 router.get('/nrbbankingdataAll', NrbBankingDataAll);
-
 router.get('/nrbforexdata', nrbForexData);
 router.get('/combinednrbdata', combinedNrbData);
 
 //world indices
-router.get('/worldmarketdata', WorldMarketData);
+router.get('/worldmarketdata', WorldMarketData); //crypto dead
 
 //routes for machine learning model and 6th sem project
 router.get('/allindices',AllIndicesData);
 router.get('/heavyStocks',TopHeavyStocks);
+
+//routes for chron server to fetch data per day automatically
+router.get('/refreshmetals',refreshMetalsData);
+router.get('/refreshworldmarket',refreshWorldMarketData);
+router.get('/refreshcommodity',refreshCommodityData);
+router.get('/refreshnrbdata', refreshNRBData);
 
 export default router;

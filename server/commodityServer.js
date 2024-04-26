@@ -1,20 +1,6 @@
 import axios from 'axios';
 import cheerio from 'cheerio';
-import storage from 'node-persist';
-await storage.init();
-
-const fetchFromCache = async (cacheKey) => {
-    try {
-      const cachedData = await storage.getItem(cacheKey);
-      if (cachedData) {
-        return cachedData;
-      }
-      return null;
-    } catch (error) {
-      console.error('Error fetching data from cache:', error.message);
-      throw new Error('Error fetching data from cache');
-    }
-  };
+import { fetchFromCache, saveToCache } from '../controllers/savefetchCache.js';
 
 export async function commodityprices() {
     const url = 'https://ramropatro.com/vegetable';
@@ -32,7 +18,7 @@ export async function commodityprices() {
         const table = $('#commodityDailyPrice');
 
         if (!table.length) {
-            console.error('Table not found in the HTML content.');
+            console.error('Table not found in the HTML content while fetching commodity prices.');
             return null;
         }
 
@@ -50,8 +36,7 @@ export async function commodityprices() {
 
             tableData.push(rowData);
         });
-
-        await storage.setItem('commodityprices', tableData);
+        await saveToCache('commodityprices', tableData);
 
         return tableData;
     } catch (error) {
@@ -59,50 +44,5 @@ export async function commodityprices() {
         throw error;
     }
 }
-
-// export async function singlecommodityprices() {
-//     const symbol = req.body.symbol;
-
-//     try {
-
-//         const dynamicInfo = await fetchSingleSecurityData(symbol);
-
-//         const asset = await Asset.findOne({ symbol });
-
-//         if (!asset) {
-//             console.error(`Asset with symbol ${symbol} not found.`);
-//             return res.status(404).json({ error: `Asset with symbol ${symbol} not found.` });
-//         }
-//         try {
-//             const dynamicInfoForAsset = dynamicInfo.find(info => info.symbol === symbol);
-
-//             await Asset.updateOne(
-//                 { _id: asset._id },
-//                 {
-//                     $set: {
-//                         ltp: dynamicInfoForAsset?.ltp || "",
-//                         totaltradedquantity: dynamicInfoForAsset?.totaltradedquantity || "",
-//                         percentchange: dynamicInfoForAsset?.percentchange || "",
-//                         previousclose: dynamicInfoForAsset?.previousclose || "",
-//                     },
-//                 },
-//                 { upsert: false }
-//             );
-
-//             const updatedAsset = {
-//                 ...asset.toObject(),
-//                 ...dynamicInfoForAsset,
-//             };
-
-//             return res.status(200).json(updatedAsset);
-//         } catch (error) {
-//             console.error('Error processing asset:', error.message);
-//             return res.status(500).json({ error: 'An error occurred while processing the asset.' });
-//         }
-//     } catch (error) {
-//         console.error('Error:', error.message);
-//         return res.status(500).json({ error: 'An error occurred.' });
-//     }
-// }
 
 export default { commodityprices };

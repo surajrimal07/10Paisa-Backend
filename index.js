@@ -8,7 +8,6 @@ import express from 'express';
 import fs from 'fs';
 import httpsOptions from './certificate/httpOptions.js';
 
-
 //
 import https from 'https';
 import { clean } from 'perfect-express-sanitizer';
@@ -18,6 +17,7 @@ import initializeRefreshMechanism from './controllers/refreshController.js';
 import { mainDB } from './database/db.js';
 import userRouter from './routes/appRoutes.js';
 import { startNewsServer } from './server/newsserver.js';
+import { redisclient } from './server/redisServer.js';
 import { startWebSocketServer } from './server/websocket.js';
 import { initializeStorage } from './utils/initilize_storage.js';
 
@@ -26,7 +26,6 @@ dotenv.config();
 const app = express();
 const port = process.env.PORT || 4000;
 
-//middlewares
 // Use express.json() middleware to parse JSON bodies
 app.use(express.json());
 
@@ -46,14 +45,6 @@ app.use(clean({
 //multiparty middleware
 app.use(multipart())
 
-// app.use(cors({
-//   origin: (origin, callback) => {
-//     callback(null, origin);
-//   },
-//   credentials: true,
-//   optionsSuccessStatus: 200
-// }));
-
 app.use(cors({
   origin: 'https://localhost:3000',
   credentials: true,
@@ -70,12 +61,12 @@ cloudinary.config({
 const isDevelopment = process.env.NODE_ENV== 'development';
 if (isDevelopment) {
   const server = https.createServer(httpsOptions, app);
-  console.log('Development Server')
+  console.log('Starting Development Server')
   server.listen(port, () => {
     console.log(`Development Server is running on port ${port}`);
   });
 } else {
-  console.log('Production Server')
+  console.log('Starting Production Server')
   app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
   });
@@ -108,16 +99,20 @@ app.get('/', (req, res) => { //serving index.html
   });
 });
 
+//connect to redis server
+await redisclient.connect();
+console.log(redisclient.isOpen?'Connected to Redis Server':'Not connected to Redis Server');
+
+redisclient.on('error', error => {
+  console.error(`Redis client error:`, error);
+});
+
 initializeRefreshMechanism();
 startWebSocketServer();
 startNewsServer(app);
 
-//starting https server or http server
-//const server = https.createServer(httpsOptions, app);
-
-
-// server.listen(port, () => {
-//   console.log(`Secure Server is running on port ${port}`);
-// });
+app.on('close', () => {
+  redisclient.disconnect();
+});
 
 export default app;
