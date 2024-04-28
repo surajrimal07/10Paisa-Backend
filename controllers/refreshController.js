@@ -15,23 +15,50 @@ const CACHE_KEYS = [
   'indexData',
 ];
 
-const refreshInterval = 60 * 1000; // 1 minute //makes no sense lowering this as sharesansar updates data
+export let NEPSE_ACTIVE_API_URL = process.env.NEPSE_API_URL;
+
+const refreshInterval = 60 * 1000;
 
 export async function isNepseOpen() {
   console.log('Checking if Nepse is open...');
-    const response = await axios.get('http://localhost:5000/IsNepseOpen');
+  try {
+    const response = await axios.get(process.env.NEPSE_API_URL + '/IsNepseOpen');
     if (response.data.isOpen === 'CLOSE') {
-      console.log('Nepse is closed.');
+      console.log('Nepse is closed (Primary URL).');
       setIsMarketOpen(false);
+      NEPSE_ACTIVE_API_URL = process.env.NEPSE_API_URL;
       return false;
-    } else if (response.data.isOpen === 'OPEN'){
-      console.log('Nepse is open.');
+    } else if (response.data.isOpen === 'OPEN') {
+      console.log('Nepse is open (Primary URL).');
       setIsMarketOpen(true);
+      NEPSE_ACTIVE_API_URL = process.env.NEPSE_API_URL;
       return true;
     } else {
-      console.log('Error fetching Nepse status: Aync Error', response.data);
+      console.log('Error fetching Nepse status from API1:', response.data);
       return false;
     }
+  } catch (error) {
+    try {
+      const responseBackup = await axios.get(process.env.NEPSE_API_URL_BACKUP + '/IsNepseOpen');
+      if (responseBackup.data.isOpen === 'CLOSE') {
+        console.log('Nepse is closed (Backup URL).');
+        setIsMarketOpen(false);
+        NEPSE_ACTIVE_API_URL = process.env.NEPSE_API_URL_BACKUP;
+        return false;
+      } else if (responseBackup.data.isOpen === 'OPEN') {
+        console.log('Nepse is open (Backup URL).');
+        setIsMarketOpen(true);
+        NEPSE_ACTIVE_API_URL = process.env.NEPSE_API_URL_BACKUP;
+        return true;
+      } else {
+        console.log('Error fetching Nepse status from backup URL:', responseBackup.data);
+        return false;
+      }
+    } catch (errorBackup) {
+      console.log('Error fetching Nepse status from backup URL:', errorBackup.message);
+      return false;
+    }
+  }
 }
 
 async function wipeCachesAndRefreshData() {

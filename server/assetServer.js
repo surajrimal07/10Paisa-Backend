@@ -1,9 +1,8 @@
 import axios from 'axios';
 import cheerio from 'cheerio';
 import { JSDOM } from 'jsdom';
-//import storage from 'node-persist';
+import { NEPSE_ACTIVE_API_URL } from '../controllers/refreshController.js';
 import { fetchFromCache, saveToCache } from '../controllers/savefetchCache.js';
-//await storage.init();
 
 //preparing to switch to sharesansar as data provider
 export async function FetchSingularDataOfAsset() {
@@ -204,7 +203,8 @@ export async function FetchOldData() {
 }
 //share sansar top gainers
 export const topgainersShare = async () => {
-  const url = "http://localhost:5000/TopGainers";
+//  const url = "http://localhost:5000/TopGainers";
+  const url = NEPSE_ACTIVE_API_URL+ '/TopGainers';
 
   try {
     const cachedData = await fetchFromCache('topgainersShare');
@@ -233,8 +233,8 @@ export const topgainersShare = async () => {
 
 //top loosers// sharesansar
 export const topLosersShare = async () => {
-
-  const url = "http://localhost:5000/TopLosers";
+  const url = NEPSE_ACTIVE_API_URL+ '/TopLosers';
+  //const url = "http://localhost:5000/TopLosers";
   try {
     const cachedData = await fetchFromCache('topLosersShare');
     if (cachedData) {
@@ -261,7 +261,8 @@ export const topLosersShare = async () => {
 };
 
 export const topTurnoversShare = async () => {
-  const url = "http://localhost:5000/TopTenTurnoverScrips";
+ // const url = "http://localhost:5000/TopTenTurnoverScrips";
+  const url = NEPSE_ACTIVE_API_URL+ '/TopTenTurnoverScrips';
 
   try {
     const cachedData = await fetchFromCache('topTurnoversShare');
@@ -288,7 +289,8 @@ export const topTurnoversShare = async () => {
 
 //top volume
 export const topTradedShares = async () => {
-  const url = "http://localhost:5000/TopTenTradeScrips";
+  //const url = "http://localhost:5000/TopTenTradeScrips";
+  const url = NEPSE_ACTIVE_API_URL+ '/TopTenTradeScrips';
   try {
     const cachedData = await fetchFromCache('topTradedShares');
     if (cachedData) {
@@ -314,7 +316,8 @@ export const topTradedShares = async () => {
 
 //top transaction
 export const topTransactions = async () => {
-  const url = "http://localhost:5000/TopTenTransactionScrips";
+  //const url = "http://localhost:5000/TopTenTransactionScrips";
+  const url = NEPSE_ACTIVE_API_URL+ '/TopTenTransactionScrips';
   try {
     const cachedData = await fetchFromCache('topTransactions');
     if (cachedData) {
@@ -341,7 +344,6 @@ export const topTransactions = async () => {
 //used for machine learning model
 export async function fetchIndexes() { //to do switch to self made python api
   try {
-
     const cachedData = await fetchFromCache('allindices_sourcedata');
     if (cachedData !== null) {
       return cachedData;
@@ -402,8 +404,8 @@ export async function getIndexIntraday() {
 
     const [response1, response2, response3] = await Promise.all([
       axios.get('https://www.sharesansar.com/live-trading'),
-      axios.get('https://nepseapi.zorsha.com.np/DailyNepseIndexGraph'),
-      axios.get('https://nepseapi.zorsha.com.np/IsNepseOpen')
+      axios.get(NEPSE_ACTIVE_API_URL+'/DailyNepseIndexGraph'),
+      axios.get(NEPSE_ACTIVE_API_URL+'/IsNepseOpen')
     ]);
 
     const $ = cheerio.load(response1.data);
