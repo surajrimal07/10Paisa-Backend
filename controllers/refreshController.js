@@ -4,9 +4,6 @@ import { FetchOldData, FetchSingularDataOfAsset, fetchIndexes, getIndexIntraday,
 import { notifyClients } from '../server/websocket.js';
 import { getPreviousIndexData, setIsMarketOpen, setPreviousIndexData } from '../state/StateManager.js';
 
-//'metalprices', -- to be refreshed using chron job
-//'CommodityData' -- to be refreshed using chron job
-
 const CACHE_KEYS = [
   'FetchSingularDataOfAssets',
   'FetchOldData',
@@ -32,7 +29,7 @@ export async function isNepseOpen() {
       setIsMarketOpen(true);
       return true;
     } else {
-      console.log('Error fetching Nepse status:', response.data);
+      console.log('Error fetching Nepse status: Aync Error', response.data);
       return false;
     }
 }

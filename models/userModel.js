@@ -76,9 +76,7 @@ newSchema.methods.isPasswordExpired = function () {
   return differenceInDays > expirationDays;
 };
 
-//single code to compare password, update other code too
 newSchema.methods.comparePassword = async function(candidatePassword) {
-  //return bcrypt.compare(candidatePassword, this.password);
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
