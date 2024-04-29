@@ -1,43 +1,41 @@
-let state = {
-    isMarketOpen: false,
-    previousIndexData: [],
-    todayAllIndexData: [],
-    dailyIndexData: [],
-    loggedInUsers: [],
-  };
+import {saveToCache, fetchFromCache} from '../controllers/savefetchCache.js';
 
-  export function setIsMarketOpen(value) {
-    state.isMarketOpen = value;
-  }
+export async function setIsMarketOpen(value) {
+  await saveToCache('isMarketOpen', value);
+}
 
-  export function setPreviousIndexData(data) {
-    state.previousIndexData = data;
-  }
+export async function setPreviousIndexData(data) {
+  await saveToCache('previousIndexData', data);
+}
 
-  export function setTodayAllIndexData(data) {
-    state.todayAllIndexData = data;
-  }
+export async function setTodayAllIndexData(data) {
+  await saveToCache('todayAllIndexData', data);
+}
 
-  export function setLoggedInUsers(users) {
-    state.loggedInUsers = users;
-  }
+export async function setLoggedInUsers(users) {
+  await saveToCache('loggedInUsers', users);
+}
 
-  export function getIsMarketOpen() {
-    return state.isMarketOpen;
-  }
+export async function setIntradayGraph(indexData) {
+  await saveToCache('intradayGraph', indexData);
+}
 
-  export function getPreviousIndexData() {
-    return state.previousIndexData;
-  }
+export async function getIsMarketOpen() {
+  return await fetchFromCache('isMarketOpen');
+}
 
-  export function getTodayAllIndexData() {
-    return state.todayAllIndexData;
-  }
+export async function getPreviousIndexData() {
+  return await fetchFromCache('previousIndexData');
+}
 
-  export function getLoggedInUsers() {
-    return state.loggedInUsers;
-  }
+export async function getTodayAllIndexData() {
+  return await fetchFromCache('todayAllIndexData');
+}
 
-  export function getState() {
-    return { ...state };
-  }
+export async function getIntradayGraph() {
+  return await fetchFromCache('intradayGraph');
+}
+
+export async function getLoggedInUsers() {
+  return await fetchFromCache('loggedInUsers');
+}

@@ -99,7 +99,9 @@ app.get('/', (req, res) => { //serving index.html
   });
 });
 
-//connect to redis server
+//connect to redis server //if redis is enabled
+const useRedis = process.env.USEREDIS
+if (useRedis == 'true') {
 await redisclient.connect();
 console.log(redisclient.isOpen?'Connected to Redis Server':'Not connected to Redis Server');
 
@@ -107,12 +109,14 @@ redisclient.on('error', error => {
   console.error(`Redis client error:`, error);
 });
 
+app.on('close', () => {
+  redisclient.disconnect();
+});
+}
+
 initializeRefreshMechanism();
 startWebSocketServer();
 startNewsServer(app);
 
-app.on('close', () => {
-  redisclient.disconnect();
-});
 
 export default app;

@@ -71,9 +71,19 @@
 //   }
 // }
 
-
+s
 
 
 // getIndexIntraday()
 //   .then(data => console.log(data))
 //   .catch(error => console.error('Error:', error.message));
+
+
+import { createCache } from 'simple-in-memory-cache';
+
+const { set, get } = createCache({defaultSecondsUntilExpiration: Infinity});
+set('meaning of life', 42);
+set('meaning of life', 90);
+set('meaning of life', 8);
+console.log(get('meaning of life'));
+

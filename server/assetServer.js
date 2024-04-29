@@ -3,6 +3,7 @@ import cheerio from 'cheerio';
 import { JSDOM } from 'jsdom';
 import { NEPSE_ACTIVE_API_URL } from '../controllers/refreshController.js';
 import { fetchFromCache, saveToCache } from '../controllers/savefetchCache.js';
+import { getIntradayGraph, getIsMarketOpen, setIntradayGraph, setPreviousIndexData } from '../state/StateManager.js';
 
 //preparing to switch to sharesansar as data provider
 export async function FetchSingularDataOfAsset() {
@@ -394,61 +395,158 @@ export async function fetchIndexes() { //to do switch to self made python api
   }
 
 //replacement of intraday index above
-export async function getIndexIntraday() {
-  try {
+// export async function getIndexIntraday() {
+//   try {
+//     const cachedData = await fetchFromCache('intradayIndexData');
+//     if (cachedData) {
+//       return cachedData;
+//     }
 
+//     const [response1, response2, response3] = await Promise.all([
+//       axios.get('https://www.sharesansar.com/live-trading'),
+//       axios.get(NEPSE_ACTIVE_API_URL+'/DailyNepseIndexGraph'),
+//       axios.get(NEPSE_ACTIVE_API_URL+'/IsNepseOpen')
+//     ]);
+
+//     const $ = cheerio.load(response1.data);
+
+//     const nepseIndexContainer = $('h4:contains("NEPSE Index")').closest('.mu-list');
+//     const turnover = parseFloat(nepseIndexContainer.find('.mu-price').text().replace(/,/g, ''));
+//     const close = parseFloat(nepseIndexContainer.find('.mu-value').text().replace(/,/g, ''));
+//     const percentageChange = parseFloat(nepseIndexContainer.find('.mu-percent').text().replace(/,/g, ''))
+
+//     const currentDate = new Date();
+//     const formattedDate = currentDate.getFullYear() + '/' +
+//                          (currentDate.getMonth() + 1).toString().padStart(2, '0') + '/' +
+//                          currentDate.getDate().toString().padStart(2, '0');
+
+//     const jsonData = response2.data;
+//     const valuesArray = jsonData.map(item => item[1]);
+//     const open = valuesArray[0];
+//     const high = Math.max(...valuesArray);
+//     const low = Math.min(...valuesArray);
+//     const change = parseFloat((valuesArray[valuesArray.length - 1] - open).toFixed(2), 10);
+
+//     const { isOpen } = response3.data;
+
+//     const nepseIndexData = {
+//       date: formattedDate,
+//       open,
+//       high,
+//       low,
+//       close,
+//       change,
+//       percentageChange,
+//       turnover,
+//       isOpen
+//     };
+
+//     await saveToCache('intradayIndexData', nepseIndexData);
+
+//     return nepseIndexData;
+//   } catch (error) {
+//     console.error('Error fetching or parsing the data:', error.message);
+//     throw error;
+//   }
+// }
+
+//intraday index using NepseAPI
+export async function getIndexIntraday() {
+  const url = NEPSE_ACTIVE_API_URL + '/NepseIndex';
+  const url2 = NEPSE_ACTIVE_API_URL + '/Summary';
+
+  try {
     const cachedData = await fetchFromCache('intradayIndexData');
-    if (cachedData) {
+    if (cachedData !== null && cachedData !== undefined) {
       return cachedData;
     }
 
-    const [response1, response2, response3] = await Promise.all([
-      axios.get('https://www.sharesansar.com/live-trading'),
-      axios.get(NEPSE_ACTIVE_API_URL+'/DailyNepseIndexGraph'),
-      axios.get(NEPSE_ACTIVE_API_URL+'/IsNepseOpen')
+    const [nepseIndexData, nepseSummaryData] = await Promise.all([
+      fetch(url).then(response => response.json()),
+      fetch(url2).then(response => response.json())
     ]);
 
-    const $ = cheerio.load(response1.data);
+    if (!nepseIndexData || !nepseIndexData) {
+      throw new Error('NEPSE Index data is missing or undefined.');
+    }
 
-    const nepseIndexContainer = $('h4:contains("NEPSE Index")').closest('.mu-list');
-    const turnover = parseFloat(nepseIndexContainer.find('.mu-price').text().replace(/,/g, ''));
-    const close = parseFloat(nepseIndexContainer.find('.mu-value').text().replace(/,/g, ''));
-    const percentageChange = parseFloat(nepseIndexContainer.find('.mu-percent').text().replace(/,/g, ''))
-    //const percentageChange = parseFloat(nepseIndexContainer.find('.mu-percent').text().match(/\d+\.\d+/)[0]) / 100;
-
-    const currentDate = new Date();
-    const formattedDate = currentDate.getFullYear() + '/' +
-                         (currentDate.getMonth() + 1).toString().padStart(2, '0') + '/' +
-                         currentDate.getDate().toString().padStart(2, '0');
-
-    const jsonData = response2.data;
-    const valuesArray = jsonData.map(item => item[1]);
-    const open = valuesArray[0];
-    const high = Math.max(...valuesArray);
-    const low = Math.min(...valuesArray);
-    const change = parseFloat((valuesArray[valuesArray.length - 1] - open).toFixed(2), 10);
-
-    const { isOpen } = response3.data;
-
-    const nepseIndexData = {
-      date: formattedDate,
-      open,
-      high,
-      low,
-      close,
-      change,
-      percentageChange,
-      turnover,
-      isOpen
+    const nepseIndex = nepseIndexData['NEPSE Index'];
+    const nepseIndexDataObj = {
+      date: nepseIndex.generatedTime,
+      open: (await getIntradayGraph())[0].index,
+      high: nepseIndex.high,
+      low: nepseIndex.low,
+      close: nepseIndex.currentValue,
+      change: nepseIndex.change,
+      percentageChange: nepseIndex.perChange,
+      turnover: nepseSummaryData['Total Turnover Rs:'],
+      isOpen: await getIsMarketOpen(),
+      fiftyTwoWeekHigh: nepseIndex.fiftyTwoWeekHigh,
+      fiftyTwoWeekLow: nepseIndex.fiftyTwoWeekLow,
+      previousClose: nepseIndex.previousClose
     };
 
-    await saveToCache('intradayIndexData', nepseIndexData);
+    await saveToCache('intradayIndexData', nepseIndexDataObj);
+    setPreviousIndexData(nepseIndexDataObj);
 
-    return nepseIndexData;
+    return nepseIndexDataObj;
   } catch (error) {
     console.error('Error fetching or parsing the data:', error.message);
     throw error;
   }
 }
 
-export default {getIndexIntraday,fetchIndexes, FetchSingularDataOfAsset,GetDebentures,FetchOldData, topgainersShare, topLosersShare, topTradedShares, topTurnoversShare, topTransactions};
+export async function intradayIndexGraph() {
+  const url = NEPSE_ACTIVE_API_URL + '/DailyNepseIndexGraph';
+  try {
+    const cachedData = await fetchFromCache('intradayIndexGraph');
+    //console.log('data fetched from untradayIndexGraph is '+ cachedData);
+    if (cachedData !== null && cachedData !== undefined) {
+      return cachedData;
+    }
+    console.log('we are not here because cache is serving');
+
+    const data = await fetch(url).then(response => response.json());
+
+    const processedData = data.map(entry => ({
+      //date: new Date(entry[0] * 1000).toLocaleDateString(),
+      time: new Date(entry[0] * 1000).toLocaleTimeString('en-US', { hour: 'numeric', minute: 'numeric', second: 'numeric', hour12: true }),
+      index: entry[1]
+    }));
+
+    await saveToCache('intradayIndexGraph', processedData);
+    await setIntradayGraph(processedData);
+
+    return processedData;
+  } catch (error) {
+    console.error('Error fetching or parsing the data:', error.message);
+    throw error;
+  }
+}
+
+
+export async function fetchSummary() {
+  const url = NEPSE_ACTIVE_API_URL+ '/Summary';
+  try {
+    const cachedData = await fetchFromCache('Nepsesummary');
+    if (cachedData) {
+      return cachedData;
+    }
+
+  const data = await fetch(url).then(response => response.json());
+  await saveToCache('Nepsesummary', data);
+
+  return data;
+  } catch {
+      console.log('Error fetching nepse summary data');
+      return null;
+  }
+};
+
+
+export async function fetchAndMergeDailyNepsePrice() {
+  //this is to be used in chron jobs to refetch latest daily closing data and save in in the
+  //json we have to make it latest always
+}
+
+export default {fetchSummary,intradayIndexGraph,getIndexIntraday,fetchIndexes, FetchSingularDataOfAsset,GetDebentures,FetchOldData, topgainersShare, topLosersShare, topTradedShares, topTurnoversShare, topTransactions};

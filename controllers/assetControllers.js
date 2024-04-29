@@ -2,12 +2,13 @@ import fs from 'fs';
 import storage from 'node-persist';
 import path from 'path';
 import { deleteFromCache, fetchFromCache, saveToCache } from '../controllers/savefetchCache.js';
-import { FetchOldData, FetchSingularDataOfAsset, fetchIndexes, getIndexIntraday, topLosersShare, topTradedShares, topTransactions, topTurnoversShare, topgainersShare } from '../server/assetServer.js';
+import { FetchOldData, FetchSingularDataOfAsset, fetchIndexes, fetchSummary, getIndexIntraday, intradayIndexGraph, topLosersShare, topTradedShares, topTransactions, topTurnoversShare, topgainersShare } from '../server/assetServer.js';
 import { commodityprices } from '../server/commodityServer.js';
 import { metalPriceExtractor } from '../server/metalServer.js';
 import { oilExtractor } from '../server/oilServer.js';
 import topCompanies from '../server/top_capitalization.js';
 import { extractWorldMarketData } from '../server/worldmarketServer.js';
+import { getIsMarketOpen } from '../state/StateManager.js';
 import { respondWithData, respondWithError, respondWithSuccess } from '../utils/response_utils.js';
 await storage.init();
 
@@ -380,27 +381,22 @@ export const AllIndicesData = async (req, res) => {
 //new cache mechanism fixed and added
 export const IndexData = async (req, res) => {
   console.log("Index Data Requested");
-
   try {
     const refreshParam = req.query.refresh || '';
     if (refreshParam.toLowerCase() === "refresh") {
-
-      if (!getIsMarketOpen()){
+      if (await getIsMarketOpen() == false){
         const cachedData = await fetchFromCache('intradayIndexData');
         return respondWithData(res,'SUCCESS','Data Fetched Successfully',cachedData);
       }
-
       console.log('Refreshing index data');
       await deleteFromCache('intradayIndexData');
-
-      const indexData = await getIndexIntraday();
-      if (!indexData) {
-        return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'Failed to fetch index data.');
-      }
-      return respondWithData(res,'SUCCESS','Data Refrehed Successfully',indexData);
     };
 
     const indexData = await getIndexIntraday();
+    if (!indexData) {
+      return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'Failed to fetch index data.');
+    }
+
     console.log('Returning index data');
     return respondWithData(res,'SUCCESS','Data Fetched Successfully',indexData);
 
@@ -567,6 +563,47 @@ export const WorldMarketData = async (req, res) => {
   }
 };
 
+export const nepseSummary = async (req, res) => {
+  console.log("Nepse Summary Requested");
+  try {
+    const refreshParam = req.query.refresh || '';
+    if (refreshParam.toLowerCase() === "refresh") {
+      console.log('Refreshing Nepse Summary');
+      await deleteFromCache('Nepsesummary');
+    };
+
+    const nepseSummary = await fetchSummary();
+    if (!nepseSummary) {
+      return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'Failed to fetch nepse summary.');
+    }
+    return respondWithData(res, 'SUCCESS', 'Data refreshed Successfully', nepseSummary);
+  } catch (error) {
+    console.error(error);
+    return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'Internal Server Error');
+  }
+};
+
+export const nepseDailyGraphData = async (req, res) => {
+  console.log("Nepse daily graph data Requested");
+  try {
+    const refreshParam = req.query.refresh || '';
+    if (refreshParam.toLowerCase() === "refresh") {
+      console.log('Refreshing Nepse daily graph');
+      await deleteFromCache('intradayIndexGraph');
+    };
+
+    const nepseDailyGraph = await intradayIndexGraph();
+
+    if (!nepseDailyGraph) {
+      return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'Failed to fetch nepse daily graph.');
+    }
+    return respondWithData(res, 'SUCCESS', 'Data fetched Successfully', nepseDailyGraph);
+  } catch (error) {
+    console.error(error);
+    return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'Internal Server Error');
+  }
+};
+
 //this api is to refresh top gainers etc data from sharesansar at EOD by using chron job
 export const refreshMetalsData = async (req, res) => {
   console.log('Refreshing metals data through API');
@@ -605,4 +642,4 @@ export const refreshWorldMarketData = async (req, res) => {
   }
 
 
-export default {refreshMetalsData,refreshWorldMarketData,refreshCommodityData,CombinedIndexData, fetchMetalPrices,TopVolumeData,TopTransData,TopTurnoverData,topLosersShare, AssetMergedData, SingeAssetMergedData, AssetMergedDataBySector, CommodityData, TopGainersData, DashBoardData};
+export default {refreshMetalsData,nepseDailyGraphData,nepseSummary,refreshWorldMarketData,refreshCommodityData,CombinedIndexData, fetchMetalPrices,TopVolumeData,TopTransData,TopTurnoverData,topLosersShare, AssetMergedData, SingeAssetMergedData, AssetMergedDataBySector, CommodityData, TopGainersData, DashBoardData};

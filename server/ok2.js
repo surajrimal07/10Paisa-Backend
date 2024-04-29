@@ -106,3 +106,47 @@
 // }
 
 // fetchDataAndExtract();
+
+
+// export async function fetchSummary() {
+//     const url = NEPSE_ACTIVE_API_URL+ '/Summary';
+//     try {
+//       const cachedData = await fetchFromCache('Nepsesummary');
+//       if (cachedData) {
+//         return cachedData;
+//       }
+
+//     const data = await fetch(url).then(response => response.json());
+//     await storage.setItem('Nepsesummary', data);
+
+//     return data;
+//     } catch {
+//         console.log('Error fetching nepse summary data');
+//         return null;
+//     }
+//   };
+
+export async function intradayIndexGraph() {
+    const url = 'http://192.168.1.3:8000/DailyNepseIndexGraph';
+    try {
+      const cachedData = await fetchFromCache('intradayIndexGraph');
+      if (cachedData) {
+        return cachedData;
+      }
+      const data = await fetch(url).then(response => response.json());
+      const processedData = data.map(entry => ({
+        //date: new Date(entry[0] * 1000).toLocaleDateString(),
+        time: new Date(entry[0] * 1000).toLocaleTimeString('en-US', { hour: 'numeric', minute: 'numeric', second: 'numeric', hour12: true }),
+        index: entry[1]
+      }));
+
+      await saveToCache('intradayIndexGraph', processedData);
+      return processedData;
+    } catch (error) {
+      console.error('Error fetching or parsing the data:', error.message);
+      throw error;
+    }
+  }
+
+    // Example usage:
+    intradayIndexGraph().then(console.log).catch(console.error);
