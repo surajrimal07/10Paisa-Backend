@@ -384,7 +384,7 @@ export const IndexData = async (req, res) => {
   try {
     const refreshParam = req.query.refresh || '';
     if (refreshParam.toLowerCase() === "refresh") {
-      if (await getIsMarketOpen() == false){
+      if (await getIsMarketOpen() === false){
         const cachedData = await fetchFromCache('intradayIndexData');
         return respondWithData(res,'SUCCESS','Data Fetched Successfully',cachedData);
       }
