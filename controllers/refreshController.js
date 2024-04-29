@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { FetchOldData,intradayIndexGraph, FetchSingularDataOfAsset, fetchIndexes, getIndexIntraday, topLosersShare, topTradedShares, topTransactions, topTurnoversShare, topgainersShare } from '../server/assetServer.js';
+import { FetchOldData,intradayIndexGraph,fetchSummary, FetchSingularDataOfAsset, fetchIndexes, getIndexIntraday, topLosersShare, topTradedShares, topTransactions, topTurnoversShare, topgainersShare } from '../server/assetServer.js';
 import { notifyClients } from '../server/websocket.js';
 import { setIsMarketOpen, setPreviousIndexData } from '../state/StateManager.js';
 //import { deleteFromCache } from './savefetchCache.js';
@@ -116,7 +116,8 @@ async function wipeCachesAndRefreshData() {
       topTradedShares(true), //  TopTenTradeScrips = top volume
       topTransactions(true), //  switch to get from nepseapi.zorsha.com.np
       fetchIndexes(true),
-      intradayIndexGraph(true)
+      intradayIndexGraph(true),
+      fetchSummary(true)
     ]);
 
     let newIndexData = await getIndexIntraday(true);

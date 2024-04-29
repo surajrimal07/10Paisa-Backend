@@ -292,8 +292,8 @@ export const topTradedShares = async (refresh) => {
     const processedData = data.map(item => ({
       symbol: item.symbol,
       name: item.securityName,
-      closingPrice: item.closingPrice,
-      shareTraded: item.turnover
+      ltp: item.closingPrice,
+      shareTraded: item.shareTraded
     }));
 
     await saveToCache('topTradedShares', processedData);
@@ -472,7 +472,7 @@ export async function getIndexIntraday(refresh) { //refresh gets bool value
     };
 
     await saveToCache('intradayIndexData', nepseIndexDataObj);
-    setPreviousIndexData(nepseIndexDataObj);
+    await setPreviousIndexData(nepseIndexDataObj);
 
     return nepseIndexDataObj;
   } catch (error) {
@@ -507,11 +507,11 @@ export async function intradayIndexGraph(refresh) {
 }
 
 
-export async function fetchSummary() {
+export async function fetchSummary(refresh) {
   const url = NEPSE_ACTIVE_API_URL+ '/Summary';
   try {
     const cachedData = await fetchFromCache('Nepsesummary');
-    if (cachedData) {
+    if (cachedData !== null && cachedData !== undefined && !refresh) {
       return cachedData;
     }
 

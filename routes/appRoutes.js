@@ -55,10 +55,13 @@ router.get('/topturnover', TopTurnoverData);
 router.get('/topvolume', TopVolumeData);
 router.get('/toptrans', TopTransData);
 router.get('/dashboard', DashBoardData);
+router.get('/nepsesummary', nepseSummary);
+
+//index data
 router.get('/index', IndexData);
 router.get('/intradayindexgraph', nepseDailyGraphData);
 router.get('/nepsedailyindex', CombinedIndexData); //older combinedindex
-router.get('/nepsesummary', nepseSummary);
+
 
 //admin routes
 router.get('/allusers', getAllUsers);

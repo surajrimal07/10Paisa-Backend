@@ -17,19 +17,6 @@ export const redisclient = createClient({
     }
 });
 
-//redisclient.on('error', err => console.log('Redis Client Error', err));
-
-// await redisclient.connect();
-
-// await redisclient.disconnect();
-
-// await redisclient.set('foo', 'bar');
-
-// const value = await redisclient.get('foo');
-
-// console.log(value);
-
-
 export async function saveToRedis(key, value) {
     redisclient.set(key, JSON.stringify(value));
 }

@@ -95,7 +95,7 @@ async function handleMessage(userEmail, message) {
   console.log(`Received message from ${userEmail}: ${message}`);
 
   if (message == "index") {
-    const previousIndexData = getPreviousIndexData();
+    const previousIndexData = await getPreviousIndexData();
     notifySelectedClients(userEmail, { type: 'index', data: previousIndexData });
     return;
   }

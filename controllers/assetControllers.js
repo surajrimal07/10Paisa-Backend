@@ -18,7 +18,7 @@ export const AssetMergedData = async (req, res) => {
 
   try {
     const refreshParam = req.query.refresh || '';
-    if (refreshParam.toLowerCase() != 'refresh') {
+    if (refreshParam.toLowerCase() === 'refresh') {
       await deleteFromCache('FetchSingularDataOfAssets');
       await deleteFromCache('FetchOldData');
     };
@@ -87,7 +87,7 @@ export const AssetMergedDataBySector = async (req, res) => {
 
   try {
     const refreshParam = req.query.refresh || '';
-    if (refreshParam.toLowerCase() != 'refresh') {
+    if (refreshParam.toLowerCase() === 'refresh') {
       await deleteFromCache('FetchSingularDataOfAssets');
       await deleteFromCache('FetchOldData');
     };
@@ -151,13 +151,13 @@ export const fetchMetalPrices = async (req, res) => {
 //commodity
 export const CommodityData = async (req, res) => {
   try {
-    if (req.body.refresh != "refresh") {
+    const refreshParam = req.query.refresh || '';
+    if (refreshParam.toLowerCase() !== "refresh") {
       const cachedData = await fetchFromCache('CommodityData');
-        console.log('Returning cached commodity data');
-        return res.status(200).json({
-          data: cachedData,
-          isCached: true
-        });
+      if (cachedData !== null && cachedData !== undefined) {
+          console.log('Returning cached commodity data');
+          return respondWithData(res, 'SUCCESS', 'Data fetched Successfully', cachedData);
+        }
     }
 
     const commodityTableData = await commodityprices(); //commodityprices

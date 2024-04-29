@@ -8,7 +8,7 @@ const useRedis = process.env.USEREDIS
 const inMemory = process.env.INMEMORYCACHE
 
 export const fetchFromCache = async (cacheKey) => {
-  console.log('Fetching cache of key ' + cacheKey);
+ // console.log('Fetching cache of key ' + cacheKey);
   try {
     if (inMemory == 'true') {
 //      console.log('Fetching from inMemory for key '+ cacheKey);
@@ -44,15 +44,14 @@ export const fetchFromCache = async (cacheKey) => {
     console.log('saving cache of key '+ cacheKey)
     try {
         if (inMemory === 'true') {
-            console.log('Saving to InMemory');
+            //console.log('Saving to InMemory');
             set(cacheKey, data);
-            //console.log(cacheKey, data);
         }
         if (useRedis === 'true') {
-          console.log('saving to redis');
+          //console.log('saving to redis');
           await saveToRedis(cacheKey, data);
         }
-        console.log('Saving to Storage');
+        //console.log('Saving to Storage');
         await storage.setItem(cacheKey, data);
     } catch (error) {
         console.error('Error saving data to cache:', error.message);
@@ -61,6 +60,9 @@ export const fetchFromCache = async (cacheKey) => {
 
   export const deleteFromCache = async (cacheKey) => {
     try {
+      if (inMemory === 'true') {
+        set(cacheKey, null);
+    }
       if (useRedis == 'true') {
         await deleteFromRedis(cacheKey);
       }

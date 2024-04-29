@@ -7,7 +7,7 @@ export async function commodityprices() {
 
     try {
         const cachedData = await fetchFromCache('commodityprices');
-        if (cachedData !== null) {
+        if (cachedData !== null && cachedData !== undefined) {
           return cachedData;
         }
 
