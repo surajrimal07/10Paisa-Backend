@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { FetchOldData, FetchSingularDataOfAsset, fetchIndexes, getIndexIntraday, topLosersShare, topTradedShares, topTransactions, topTurnoversShare, topgainersShare } from '../server/assetServer.js';
+import { FetchOldData,intradayIndexGraph, FetchSingularDataOfAsset, fetchIndexes, getIndexIntraday, topLosersShare, topTradedShares, topTransactions, topTurnoversShare, topgainersShare } from '../server/assetServer.js';
 import { notifyClients } from '../server/websocket.js';
 import { setIsMarketOpen, setPreviousIndexData } from '../state/StateManager.js';
 //import { deleteFromCache } from './savefetchCache.js';
@@ -107,19 +107,19 @@ async function handleApiResponse(response, apiUrl) {
 async function wipeCachesAndRefreshData() {
   try {
     console.log('Refreshing caches');
-    //await Promise.all(CACHE_KEYS.map(key => deleteFromCache(key)));
     await Promise.all([
       FetchSingularDataOfAsset(),
-      FetchOldData(),
-      topgainersShare(), //switch to get from nepseapi.zorsha.com.np
-      topLosersShare(), // switch to get from nepseapi.zorsha.com.np
-      topTurnoversShare(), // switch to get from nepseapi.zorsha.com.np
-      topTradedShares(), //  TopTenTradeScrips = top volume
-      topTransactions(), //  switch to get from nepseapi.zorsha.com.np
-      fetchIndexes(),
+      FetchOldData(true),
+      topgainersShare(true), //switch to get from nepseapi.zorsha.com.np
+      topLosersShare(true), // switch to get from nepseapi.zorsha.com.np
+      topTurnoversShare(true), // switch to get from nepseapi.zorsha.com.np
+      topTradedShares(true), //  TopTenTradeScrips = top volume
+      topTransactions(true), //  switch to get from nepseapi.zorsha.com.np
+      fetchIndexes(true),
+      intradayIndexGraph(true)
     ]);
 
-    let newIndexData = await getIndexIntraday();
+    let newIndexData = await getIndexIntraday(true);
     //if (newIndexData && newIndexData !== getPreviousIndexData) {
     if (newIndexData) {
       notifyClients({ type: 'index', data: newIndexData });

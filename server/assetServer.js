@@ -6,12 +6,12 @@ import { fetchFromCache, saveToCache } from '../controllers/savefetchCache.js';
 import { getIntradayGraph, getIsMarketOpen, setIntradayGraph, setPreviousIndexData } from '../state/StateManager.js';
 
 //preparing to switch to sharesansar as data provider
-export async function FetchSingularDataOfAsset() {
+export async function FetchSingularDataOfAsset(refresh) {
   const liveTradingUrl = 'https://www.sharesansar.com/live-trading';
 
   try {
     const cachedData = await fetchFromCache('FetchSingularDataOfAssets');
-    if (cachedData) {
+    if (cachedData !== null && cachedData !== undefined && !refresh) {
       return cachedData;
     }
       const responseLiveTrading = await axios.get(liveTradingUrl);
@@ -133,12 +133,12 @@ export async function GetDebentures() {
 }
 
 //not live but good and complete
-export async function FetchOldData() {
+export async function FetchOldData(refresh) {
   const hardcodedUrl = 'https://www.sharesansar.com/today-share-price';
 
   try {
     const cachedData = await fetchFromCache('FetchOldDatas');
-    if (cachedData) {
+    if (cachedData !== null && cachedData !== undefined && !refresh) {
       return cachedData;
     }
       const response = await axios.get(hardcodedUrl);
@@ -203,19 +203,16 @@ export async function FetchOldData() {
   }
 }
 //share sansar top gainers
-export const topgainersShare = async () => {
-//  const url = "http://localhost:5000/TopGainers";
+export const topgainersShare = async (refresh) => {
   const url = NEPSE_ACTIVE_API_URL+ '/TopGainers';
 
   try {
     const cachedData = await fetchFromCache('topgainersShare');
-    if (cachedData) {
+    if (cachedData !== null && cachedData !== undefined && !refresh) {
       return cachedData;
     }
 
-    const response = await fetch(url);
-    const data = await response.json();
-
+    const data = await fetch(url).then(response => response.json());
     const processedData = data.map(item => ({
       symbol: item.symbol,
       name: item.securityName,
@@ -233,18 +230,15 @@ export const topgainersShare = async () => {
 
 
 //top loosers// sharesansar
-export const topLosersShare = async () => {
+export const topLosersShare = async (refresh) => {
   const url = NEPSE_ACTIVE_API_URL+ '/TopLosers';
-  //const url = "http://localhost:5000/TopLosers";
   try {
     const cachedData = await fetchFromCache('topLosersShare');
-    if (cachedData) {
+    if (cachedData !== null && cachedData !== undefined && !refresh) {
       return cachedData;
     }
 
-    const response = await fetch(url);
-    const data = await response.json();
-
+    const data = await fetch(url).then(response => response.json());
     const processedData = data.map(item => ({
       symbol: item.symbol,
       name: item.securityName,
@@ -261,19 +255,16 @@ export const topLosersShare = async () => {
   }
 };
 
-export const topTurnoversShare = async () => {
- // const url = "http://localhost:5000/TopTenTurnoverScrips";
+export const topTurnoversShare = async (refresh) => {
   const url = NEPSE_ACTIVE_API_URL+ '/TopTenTurnoverScrips';
 
   try {
     const cachedData = await fetchFromCache('topTurnoversShare');
-    if (cachedData) {
+    if (cachedData !== null && cachedData !== undefined && !refresh) {
       return cachedData;
     }
 
-    const response = await fetch(url);
-    const data = await response.json();
-
+    const data = await fetch(url).then(response => response.json());
     const processedData = data.map(item => ({
       symbol: item.symbol,
       name: item.securityName,
@@ -289,18 +280,15 @@ export const topTurnoversShare = async () => {
 };
 
 //top volume
-export const topTradedShares = async () => {
-  //const url = "http://localhost:5000/TopTenTradeScrips";
+export const topTradedShares = async (refresh) => {
   const url = NEPSE_ACTIVE_API_URL+ '/TopTenTradeScrips';
   try {
     const cachedData = await fetchFromCache('topTradedShares');
-    if (cachedData) {
+    if (cachedData !== null && cachedData !== undefined && !refresh) {
       return cachedData;
     }
 
-    const response = await fetch(url);
-    const data = await response.json();
-
+    const data = await fetch(url).then(response => response.json());
     const processedData = data.map(item => ({
       symbol: item.symbol,
       name: item.securityName,
@@ -316,18 +304,15 @@ export const topTradedShares = async () => {
 };
 
 //top transaction
-export const topTransactions = async () => {
-  //const url = "http://localhost:5000/TopTenTransactionScrips";
+export const topTransactions = async (refresh) => {
   const url = NEPSE_ACTIVE_API_URL+ '/TopTenTransactionScrips';
   try {
     const cachedData = await fetchFromCache('topTransactions');
-    if (cachedData) {
+    if (cachedData !== null && cachedData !== undefined && !refresh) {
       return cachedData;
     }
 
-    const response = await fetch(url);
-    const data = await response.json();
-
+    const data = await fetch(url).then(response => response.json());
     const processedData = data.map(item => ({
       symbol: item.symbol,
       name: item.securityName,
@@ -343,10 +328,10 @@ export const topTransactions = async () => {
 };
 
 //used for machine learning model
-export async function fetchIndexes() { //to do switch to self made python api
+export async function fetchIndexes(refresh) { //to do switch to self made python api
   try {
     const cachedData = await fetchFromCache('allindices_sourcedata');
-    if (cachedData !== null) {
+    if (cachedData !== null && cachedData !== undefined && !refresh) {
       return cachedData;
     }
 
@@ -451,13 +436,13 @@ export async function fetchIndexes() { //to do switch to self made python api
 // }
 
 //intraday index using NepseAPI
-export async function getIndexIntraday() {
+export async function getIndexIntraday(refresh) { //refresh gets bool value
   const url = NEPSE_ACTIVE_API_URL + '/NepseIndex';
   const url2 = NEPSE_ACTIVE_API_URL + '/Summary';
 
   try {
     const cachedData = await fetchFromCache('intradayIndexData');
-    if (cachedData !== null && cachedData !== undefined) {
+    if (cachedData !== null && cachedData !== undefined && !refresh) {
       return cachedData;
     }
 
@@ -496,18 +481,15 @@ export async function getIndexIntraday() {
   }
 }
 
-export async function intradayIndexGraph() {
+export async function intradayIndexGraph(refresh) {
   const url = NEPSE_ACTIVE_API_URL + '/DailyNepseIndexGraph';
   try {
     const cachedData = await fetchFromCache('intradayIndexGraph');
-    //console.log('data fetched from untradayIndexGraph is '+ cachedData);
-    if (cachedData !== null && cachedData !== undefined) {
+    if (cachedData !== null && cachedData !== undefined && !refresh) {
       return cachedData;
     }
-    console.log('we are not here because cache is serving');
 
     const data = await fetch(url).then(response => response.json());
-
     const processedData = data.map(entry => ({
       //date: new Date(entry[0] * 1000).toLocaleDateString(),
       time: new Date(entry[0] * 1000).toLocaleTimeString('en-US', { hour: 'numeric', minute: 'numeric', second: 'numeric', hour12: true }),

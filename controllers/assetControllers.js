@@ -385,6 +385,7 @@ export const IndexData = async (req, res) => {
     const refreshParam = req.query.refresh || '';
     if (refreshParam.toLowerCase() === "refresh") {
       if (await getIsMarketOpen() === false){
+        console.log('serving from cache of controller');
         const cachedData = await fetchFromCache('intradayIndexData');
         return respondWithData(res,'SUCCESS','Data Fetched Successfully',cachedData);
       }
@@ -392,7 +393,7 @@ export const IndexData = async (req, res) => {
       await deleteFromCache('intradayIndexData');
     };
 
-    const indexData = await getIndexIntraday();
+    const indexData = await getIndexIntraday(false);
     if (!indexData) {
       return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'Failed to fetch index data.');
     }
