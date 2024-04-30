@@ -962,7 +962,8 @@ export const fetchAndMergeDailyNepsePrice = async (req, res) => {
   try {
     const __dirname = path.resolve();
     let message = "";
-    const todayOHLC = await getIndexIntraday();
+    const todayOHLC = await fetchFromCache("intradayIndexData");
+
     const jsonfilePath = path.join(
       __dirname,
       "public",
@@ -985,23 +986,28 @@ export const fetchAndMergeDailyNepsePrice = async (req, res) => {
     let csvUpdated = false;
 
     //update json
-    const formattedDate = new Date(todayOHLC.date);
+    const formattedDate = new Date(todayOHLC.time);
     const todayDate = `${formattedDate.getFullYear()}-${String(
       formattedDate.getMonth() + 1
     ).padStart(2, "0")}-${String(formattedDate.getDate()).padStart(2, "0")}`;
+
     const isNewDate = !parsedData.some((item) => item.date === todayDate);
 
     if (isNewDate) {
-      // Backup old files
-      const backupJsonFilePath = path.join(
+      const backupDirPath = path.join(
         __dirname,
         "public",
         "index_data",
-        `_backup`
+        "backup"
       );
+      if (!fs.existsSync(backupDirPath)) {
+        fs.mkdirSync(backupDirPath, { recursive: true });
+      }
+      const backupJsonFilePath = path.join(backupDirPath, "index_daily.json");
+      const backupCsvFilePath = path.join(backupDirPath, "index_daily.csv");
       fs.copyFileSync(jsonfilePath, backupJsonFilePath);
-      fs.copyFileSync(csvFilePath, backupJsonFilePath);
-      console.log("JSON & CSV backup created:");
+      fs.copyFileSync(csvFilePath, backupCsvFilePath);
+      console.log("JSON & CSV backup created in backup folder:", backupDirPath);
 
       // Add new data
       parsedData.push({
@@ -1014,6 +1020,7 @@ export const fetchAndMergeDailyNepsePrice = async (req, res) => {
       });
       message = "New data added for date: " + todayDate;
       console.log(message);
+      fs.writeFileSync(jsonfilePath, JSON.stringify(parsedData, null, 2), "utf8");
     } else {
       // Update existing data if there's a change in volume
       const existingIndex = parsedData.findIndex(
@@ -1064,7 +1071,6 @@ export const fetchAndMergeDailyNepsePrice = async (req, res) => {
     if (!csvUpdated) {
       const newRow = `${newIndex},${todayDate},${todayOHLC.open},${todayOHLC.high},${todayOHLC.low},${todayOHLC.close},${todayOHLC.turnover}`;
       csvRows.push(newRow);
-      console.log("New data added to CSV for date:", todayDate);
     }
 
     const updatedCsvData = `${csvHeaders.join(",")}\n${csvRows.join("\n")}`;

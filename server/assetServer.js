@@ -4,10 +4,7 @@ import { JSDOM } from "jsdom";
 import { NEPSE_ACTIVE_API_URL } from "../controllers/refreshController.js";
 import { fetchFromCache, saveToCache } from "../controllers/savefetchCache.js";
 import {
-  getIntradayGraph,
-  getIsMarketOpen,
-  setIntradayGraph,
-  setPreviousIndexData,
+  setIntradayGraph
 } from "../state/StateManager.js";
 
 //preparing to switch to sharesansar as data provider
@@ -514,24 +511,31 @@ export async function getIndexIntraday(refresh) {
       throw new Error("NEPSE Index data is missing or undefined.");
     }
 
+    const [open, isOpen] = await Promise.all([
+      fetchFromCache('intradayGraph'),
+      fetchFromCache('isMarketOpen')
+    ]);
+
     const nepseIndex = nepseIndexData["NEPSE Index"];
     const nepseIndexDataObj = {
       time: nepseIndex.generatedTime,
-      open: (await getIntradayGraph())[0].index,
+      open: open[0].index,
       high: nepseIndex.high,
       low: nepseIndex.low,
       close: nepseIndex.currentValue,
       change: nepseIndex.change,
       percentageChange: nepseIndex.perChange,
       turnover: nepseSummaryData["Total Turnover Rs:"],
-      isOpen: await getIsMarketOpen(),
+      isOpen: isOpen,
       fiftyTwoWeekHigh: nepseIndex.fiftyTwoWeekHigh,
       fiftyTwoWeekLow: nepseIndex.fiftyTwoWeekLow,
       previousClose: nepseIndex.previousClose,
     };
 
-    await saveToCache("intradayIndexData", nepseIndexDataObj);
-    await setPreviousIndexData(nepseIndexDataObj);
+    await Promise.all([
+      saveToCache("intradayIndexData", nepseIndexDataObj),
+      saveToCache('previousIndexData', nepseIndexDataObj)
+    ]);
 
     return nepseIndexDataObj;
   } catch (error) {
