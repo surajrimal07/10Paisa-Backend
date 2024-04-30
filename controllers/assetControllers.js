@@ -679,9 +679,8 @@ export const getCompanyOHLCNepseAlpha = async (req, res) => {
       );
     }
 
-    const jsonData = await response.json();
-    console.log("Response:", jsonData);
-    return res.status(200).json(jsonData);
+    //const jsonData = await response.json();
+    return res.status(200).json(await response.json());
   } catch (error) {
     console.error(error);
     respondWithError(res, "INTERNAL_SERVER_ERROR", "Internal Server Error");

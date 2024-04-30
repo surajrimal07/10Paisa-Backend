@@ -5,7 +5,6 @@ import multipart from "connect-multiparty";
 import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
-import fs from "fs";
 import httpsOptions from "./certificate/httpOptions.js";
 
 //
@@ -20,6 +19,7 @@ import { startNewsServer } from "./server/newsserver.js";
 import { redisclient } from "./server/redisServer.js";
 import { startWebSocketServer } from "./server/websocket.js";
 import { initializeStorage } from "./utils/initilize_storage.js";
+import  dynamicRoutes  from "./utils/routesforIndex.js";
 
 dotenv.config();
 
@@ -90,19 +90,19 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
 app.use("/api", userRouter);
+app.get("/", dynamicRoutes);
 
-app.get("/", (req, res) => {
-  //serving index.html
 
-  fs.readFile("./utils/index.html", "utf8", (err, data) => {
-    if (err) {
-      console.error("Error reading HTML file:", err.message);
-      res.status(500).send("Error reading HTML file");
-      return;
-    }
-    res.send(data);
-  });
-});
+// app.get("/", (req, res) => {
+//   fs.readFile("./utils/index.html", "utf8", (err, data) => {
+//     if (err) {
+//       console.error("Error reading HTML file:", err.message);
+//       res.status(500).send("Error reading HTML file");
+//       return;
+//     }
+//     res.send(data);
+//   });
+// });
 
 //connect to redis server //if redis is enabled
 const useRedis = process.env.USEREDIS;
