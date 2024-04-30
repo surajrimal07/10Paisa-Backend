@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { deleteUserByEmail, editUserByEmail, getAllPortfolios, getAllUsers } from '../controllers/adminController.js';
-import { AllIndicesData, AssetMergedData, AssetMergedDataBySector, CombinedIndexData, CommodityData, DashBoardData, IndexData, SingeAssetMergedData, TopGainersData, TopHeavyStocks, TopLoosersData, TopTransData, TopTurnoverData, TopVolumeData, WorldMarketData, fetchMetalPrices, nepseDailyGraphData, nepseSummary, refreshCommodityData, refreshMetalsData, refreshWorldMarketData } from '../controllers/assetControllers.js';
+import { AllIndicesData,getCompanyOHLCNepseAlpha,FetchSingleDatafromAPINepseAlpha,fetchAndMergeDailyNepsePrice,fetchIntradayCompanyGraph, AssetMergedData, AssetMergedDataBySector, CombinedIndexData, CommodityData, DashBoardData, IndexData, SingeAssetMergedData, TopGainersData, TopHeavyStocks, TopLoosersData, TopTransData, TopTurnoverData, TopVolumeData, WorldMarketData, fetchMetalPrices, nepseDailyGraphData, nepseSummary, refreshCommodityData, refreshMetalsData, refreshWorldMarketData } from '../controllers/assetControllers.js';
 import { NrbBankingDataAll, combinedNrbData, nrbForexData, refreshNRBData } from '../controllers/extraDataControllers.js';
 import { sendOTP, verifyOTP } from '../controllers/otpControllers.js';
 import { addStockToPortfolio, createPortfolio, deletePortfolio, getAllPortfoliosForUser, removeStockFromPortfolio, renamePortfolio } from '../controllers/portfolioControllers.js';
@@ -61,6 +61,11 @@ router.get('/nepsesummary', nepseSummary);
 router.get('/index', IndexData);
 router.get('/intradayindexgraph', nepseDailyGraphData);
 router.get('/nepsedailyindex', CombinedIndexData); //older combinedindex
+router.get('/fetchcompanygraphintraday', fetchIntradayCompanyGraph);
+
+//test
+router.get('/getcompanyohlc', getCompanyOHLCNepseAlpha);
+
 
 
 //admin routes
@@ -96,5 +101,7 @@ router.get('/refreshmetals',refreshMetalsData);
 router.get('/refreshworldmarket',refreshWorldMarketData);
 router.get('/refreshcommodity',refreshCommodityData);
 router.get('/refreshnrbdata', refreshNRBData);
+router.get('/adddailyOHLC', fetchAndMergeDailyNepsePrice);
+router.get('/fetchindexdatafromnepsealpha',FetchSingleDatafromAPINepseAlpha);
 
 export default router;

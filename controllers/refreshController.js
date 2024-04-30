@@ -121,7 +121,6 @@ async function wipeCachesAndRefreshData() {
     ]);
 
     let newIndexData = await getIndexIntraday(true);
-    //if (newIndexData && newIndexData !== getPreviousIndexData) {
     if (newIndexData) {
       notifyClients({ type: 'index', data: newIndexData });
       setPreviousIndexData(newIndexData);

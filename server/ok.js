@@ -4,7 +4,6 @@
 // import { fetchFromCache } from '../controllers/assetControllers.js';
 // import { getIsMarketOpen } from '../state/StateManager.js';
 
-
 // export async function getIndexIntraday() {
 //   try {
 //     if (getIsMarketOpen()) {
@@ -36,7 +35,6 @@
 //     const formattedDate = currentDate.getFullYear() + '/' +
 //                          (currentDate.getMonth() + 1).toString().padStart(2, '0') + '/' +
 //                          currentDate.getDate().toString().padStart(2, '0');
-
 
 //     // Extract data from the second URL's response
 //     const jsonData = response2.data;
@@ -71,19 +69,46 @@
 //   }
 // }
 
-s
-
-
 // getIndexIntraday()
 //   .then(data => console.log(data))
 //   .catch(error => console.error('Error:', error.message));
 
+export async function FetchSingleDatafromAPINepseAlpha(refresh, symbol) {
+  try {
+    const response = await fetch(
+      "https://www.nepsealpha.com/trading/1/history?force_key=vfgfhdhththhhnhjhjhj&symbol=NEPSE&from=767664000&to=1714521600&resolution=1D&pass=ok&fs=vfgfhdhththhhnhjhjhj&shouldCache=1",
+      {
+        headers: {
+          accept: "application/json, text/plain, */*",
+          "sec-ch-ua":
+            '"Chromium";v="124", "Microsoft Edge";v="124", "Not-A.Brand";v="99"',
+          "sec-ch-ua-arch": '"x86"',
+          "sec-ch-ua-bitness": '"64"',
+          "sec-ch-ua-full-version": '"124.0.2478.67"',
+          "sec-ch-ua-full-version-list":
+            '"Chromium";v="124.0.6367.91", "Microsoft Edge";v="124.0.2478.67", "Not-A.Brand";v="99.0.0.0"',
+          "sec-ch-ua-mobile": "?0",
+          "sec-ch-ua-model": '""',
+          "sec-ch-ua-platform": '"Windows"',
+          "sec-ch-ua-platform-version": '"15.0.0"',
+          "x-requested-with": "XMLHttpRequest",
+          Referer: "https://www.nepsealpha.com/trading/chart?symbol=NEPSE",
+          "Referrer-Policy": "strict-origin-when-cross-origin",
+        },
+        body: null,
+        method: "GET",
+      }
+    );
 
-import { createCache } from 'simple-in-memory-cache';
+    if (!response) {
+      return null;
+    }
 
-const { set, get } = createCache({defaultSecondsUntilExpiration: Infinity});
-set('meaning of life', 42);
-set('meaning of life', 90);
-set('meaning of life', 8);
-console.log(get('meaning of life'));
+    const jsonData = await response.json();
+    return jsonData;
+  } catch (error) {
+    console.error(error);
+  }
+}
 
+await FetchSingleDatafromAPI(true).then(console.log).catch(console.error);

@@ -7,7 +7,6 @@
 //     const targetUrl2 = 'https://nepseapi.zorsha.com.np/DailyNepseIndexGraph';
 //     const targetUrl3 = 'https://nepseapi.zorsha.com.np/IsNepseOpen';
 
-
 //     //targeturl
 //     const response = await axios.get(targetUrl);
 //     const html = response.data;
@@ -57,8 +56,6 @@
 // //run above code
 // extractIndex().then(console.log).catch(console.error);
 
-
-
 // import axios from 'axios';
 // import cheerio from 'cheerio';
 
@@ -107,7 +104,6 @@
 
 // fetchDataAndExtract();
 
-
 // export async function fetchSummary() {
 //     const url = NEPSE_ACTIVE_API_URL+ '/Summary';
 //     try {
@@ -126,27 +122,108 @@
 //     }
 //   };
 
-export async function intradayIndexGraph() {
-    const url = 'http://192.168.1.3:8000/DailyNepseIndexGraph';
-    try {
-      const cachedData = await fetchFromCache('intradayIndexGraph');
-      if (cachedData) {
-        return cachedData;
-      }
-      const data = await fetch(url).then(response => response.json());
-      const processedData = data.map(entry => ({
-        //date: new Date(entry[0] * 1000).toLocaleDateString(),
-        time: new Date(entry[0] * 1000).toLocaleTimeString('en-US', { hour: 'numeric', minute: 'numeric', second: 'numeric', hour12: true }),
-        index: entry[1]
-      }));
+// export async function intradayIndexGraph() {
+//     const url = 'http://192.168.1.3:8000/DailyNepseIndexGraph';
+//     try {
+//       const cachedData = await fetchFromCache('intradayIndexGraph');
+//       if (cachedData) {
+//         return cachedData;
+//       }
+//       const data = await fetch(url).then(response => response.json());
+//       const processedData = data.map(entry => ({
+//         //date: new Date(entry[0] * 1000).toLocaleDateString(),
+//         time: new Date(entry[0] * 1000).toLocaleTimeString('en-US', { hour: 'numeric', minute: 'numeric', second: 'numeric', hour12: true }),
+//         index: entry[1]
+//       }));
 
-      await saveToCache('intradayIndexGraph', processedData);
-      return processedData;
-    } catch (error) {
-      console.error('Error fetching or parsing the data:', error.message);
-      throw error;
+//       await saveToCache('intradayIndexGraph', processedData);
+//       return processedData;
+//     } catch (error) {
+//       console.error('Error fetching or parsing the data:', error.message);
+//       throw error;
+//     }
+//   }
+
+//below function sends following data
+// {
+//   companyName: 'Kisan Lagubitta Bittiya Sanstha Limited',
+//   symbol: 'KLBSL',
+//   status: 'A',
+//   companyEmail: 'secretorykisanmf079@gmail.com',
+//   website: '',
+//   regulatoryBody: 'Nepal Rastra Bank',
+//   instrumentType: 'Equity',
+//   sectorName: 'Microfinance',
+//   totalTurnover: 193240,
+//   totalTrades: 8,
+//   totalTradeQuantity: 218,
+//   pointChange: 0,
+//   percentageChange: 0,
+//   ltp: 0
+// },
+
+export async function FetchSingularDataOfAssetFromAPI(refresh) {
+  const url = "http://localhost:8000/CompanyList";
+  const url2 = "http://localhost:8000/TradeTurnoverTransactionSubindices";
+
+  try {
+    const data = await fetch(url).then((response) => response.json());
+    const data2 = await fetch(url2).then((response) => response.json());
+
+    if (!data || !data2) {
+      return null;
     }
-  }
 
-    // Example usage:
-    intradayIndexGraph().then(console.log).catch(console.error);
+    const filteredData = data
+      .filter((company) => company.status === "A")
+      .map(({ id, sectorName, securityName, ...rest }) => rest);
+
+    const mergedData = filteredData.map((company) => {
+      const symbol = company.symbol;
+      const extraInfo = data2.scripsDetails[symbol];
+      if (extraInfo) {
+        return { ...company, ...extraInfo };
+      } else {
+        return company;
+      }
+    });
+
+    return mergedData;
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+export async function FetchSingleDatafromAPI(refresh, symbol) {
+  const url = "https://localhost:8000/CompanyDetails?symbol=" + symbol;
+
+  try {
+    const data = await fetch(url).then((response) => response.json());
+
+    if (!data) {
+      return null;
+    }
+
+    // const filteredData = data
+    //   .filter((company) => company.status === "A")
+    //   .map(({ id, sectorName, securityName, ...rest }) => rest);
+
+    // const mergedData = filteredData.map((company) => {
+    //   const symbol = company.symbol;
+    //   const extraInfo = data2.scripsDetails[symbol];
+    //   if (extraInfo) {
+    //     return { ...company, ...extraInfo };
+    //   } else {
+    //     return company;
+    //   }
+    // });
+
+    return data;
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+// Example usage:
+//FetchSingularDataOfAssetFromAPI(true).then(console.log).catch(console.error);
+FetchSingularDataOfAssetFromAPI(true).then(console.log).catch(console.error);
