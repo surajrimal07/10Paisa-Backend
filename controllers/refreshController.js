@@ -1,146 +1,147 @@
-import axios from 'axios';
-import { FetchOldData,intradayIndexGraph,fetchSummary, FetchSingularDataOfAsset, fetchIndexes, getIndexIntraday, topLosersShare, topTradedShares, topTransactions, topTurnoversShare, topgainersShare } from '../server/assetServer.js';
-import { notifyClients } from '../server/websocket.js';
-import { setIsMarketOpen, setPreviousIndexData } from '../state/StateManager.js';
-//import { deleteFromCache } from './savefetchCache.js';
+import axios from "axios";
+import storage from 'node-persist';
+import {
+  FetchOldData,
+  FetchSingularDataOfAsset,
+  fetchIndexes,
+  fetchSummary,
+  getIndexIntraday,
+  intradayIndexGraph,
+  topLosersShare,
+  topTradedShares,
+  topTransactions,
+  topTurnoversShare,
+  topgainersShare,
+} from "../server/assetServer.js";
+import { notifyClients } from "../server/websocket.js";
+import { nepseLogger } from '../utils/logger/logger.js';
+import { fetchFromCache, saveToCache } from "./savefetchCache.js";
 
-// const CACHE_KEYS = [
-//   'FetchSingularDataOfAssets',
-//   'FetchOldData',
-//   'topgainersShare',
-//   'topLosersShare',
-//   'topTurnoversShare',
-//   'topTradedShares',
-//   'topTransactions',
-//   'intradayIndexData',
-//   'allindices_sourcedata',
-//   'Nepsesummary'
-// ];
+//initilizing storage here to prevent code racing
+const defaultDirectory = '/tmp/.node-persist';
 
-export let NEPSE_ACTIVE_API_URL = process.env.NEPSE_API_URL;
-// //const refreshInterval =  getIsMarketOpen ?60 * 1000 : 5 * 60 * 1000;
-const refreshInterval =  60 * 1000;
-const Url1 = process.env.NEPSE_API_URL
-const url2 = process.env.NEPSE_API_URL_BACKUP
+await storage.init({
+  dir: defaultDirectory,
+  forgiveParseErrors: true,
+  writeQueue: true,
+});
 
-// export async function isNepseOpen() {
-//   console.log('Checking if Nepse is open...');
-//   try {
-//     const response = await axios.get(Url1+'/IsNepseOpen');
-//     if (response.data.isOpen === 'CLOSE') {
-//       console.log('Nepse is closed (Primary URL).');
-//       setIsMarketOpen(false);
-//       NEPSE_ACTIVE_API_URL = Url1;
-//       return false;
-//     } else if (response.data.isOpen === 'OPEN') {
-//       console.log('Nepse is open (Primary URL).');
-//       setIsMarketOpen(true);
-//       NEPSE_ACTIVE_API_URL = Url1;
-//       return true;
-//     } else {
-//       console.log('Error fetching Nepse status from API1:', response.data);
-//       return false;
-//     }
-//   } catch (error) {
-//     try {
-//       const responseBackup = await axios.get(url2 + '/IsNepseOpen');
-//       if (responseBackup.data.isOpen === 'CLOSE') {
-//         console.log('Nepse is closed (Backup URL).');
-//         setIsMarketOpen(false);
-//         NEPSE_ACTIVE_API_URL = url2;
-//         return false;
-//       } else if (responseBackup.data.isOpen === 'OPEN') {
-//         console.log('Nepse is open (Backup URL).');
-//         setIsMarketOpen(true);
-//         NEPSE_ACTIVE_API_URL = url2;
-//         return true;
-//       } else {
-//         console.log('Error fetching Nepse status from backup URL:', responseBackup.data);
-//         return false;
-//       }
-//     } catch (errorBackup) {
-//       console.log('Error fetching Nepse status from backup URL:', errorBackup.message);
-//       return false;
-//     }
-//   }
-// }
+const refreshInterval = (await fetchFromCache("isMarketOpen"))
+  ? 60 * 1000 // 1 minute
+  : 5 * 60 * 1000; // 5 minutes
 
-export async function isNepseOpen() {
-  console.log('Checking if Nepse is open...');
+
+const NEPSE_API_URL1 = process.env.NEPSE_API_URL;
+const NEPSE_API_URL2 = process.env.NEPSE_API_URL_BACKUP;
+export let NEPSE_ACTIVE_API_URL = process.env.NEPSE_API_URL1;
+
+export async function ActiveServer() {
   try {
-    const primaryResponse = await axios.get(Url1 + '/IsNepseOpen');
-    return await handleApiResponse(primaryResponse, Url1);
-  } catch (error) {
-    console.error('Error fetching Nepse status from primary URL:', error.message);
+    const url1Response = await axios.get(NEPSE_API_URL1);
+
+    if (url1Response.status === 200) {
+      NEPSE_ACTIVE_API_URL = NEPSE_API_URL1;
+      nepseLogger.info(`Nepse API Server 1 is active. ${NEPSE_ACTIVE_API_URL}`);
+    }
+  } catch {
     try {
-      const backupResponse = await axios.get(url2 + '/IsNepseOpen');
-      return await handleApiResponse(backupResponse, url2);
-    } catch (errorBackup) {
-      console.error('Error fetching Nepse status from backup URL:', errorBackup.message);
-      return false;
+      const url2Response = await axios.get(NEPSE_API_URL2);
+      if (url2Response.status === 200) {
+        NEPSE_ACTIVE_API_URL = NEPSE_API_URL2;
+        nepseLogger.info(`Nepse API Server 2 is active. ${NEPSE_ACTIVE_API_URL}`);
+      }
+    } catch {
+      nepseLogger.error("Warning both servers are down.");
     }
   }
 }
 
-async function handleApiResponse(response, apiUrl) {
-  if (response.data.isOpen === 'CLOSE') {
-    console.log(`Nepse is closed (${apiUrl}).`);
-    await setIsMarketOpen(false);
+
+export async function isNepseOpen() {
+  try {
+    const initialResponse = await axios.get(NEPSE_ACTIVE_API_URL + "/IsNepseOpen");
+    return await handleisNepseOpenResponse(initialResponse, NEPSE_ACTIVE_API_URL);
+  } catch (error) {
+    nepseLogger.error(
+      `Error fetching Nepse status from Active URL: ${error.message}`
+    );
+    try {
+      const primaryResponse = await axios.get(NEPSE_API_URL1 + "/IsNepseOpen");
+      return await handleisNepseOpenResponse(primaryResponse, NEPSE_API_URL1);
+    } catch (error) {
+      nepseLogger.error(
+        `Error fetching Nepse status from primary URL: ${error.message}`
+      );
+      try {
+        const backupResponse = await axios.get(NEPSE_API_URL2 + "/IsNepseOpen");
+        return await handleisNepseOpenResponse(backupResponse, NEPSE_API_URL2);
+      } catch (errorBackup) {
+        nepseLogger.error(
+          `Error fetching Nepse status from primary URL: ${errorBackup.message}`
+        );
+        return false;
+      }
+    }
+  }
+}
+
+async function handleisNepseOpenResponse(response, apiUrl) {
+  if (response.data.isOpen === "CLOSE") {
+    nepseLogger.info(`Nepse is closed (${apiUrl}).`);
+    await saveToCache("isMarketOpen", false);
     NEPSE_ACTIVE_API_URL = apiUrl;
     return false;
-  } else if (response.data.isOpen === 'OPEN') {
-    console.log(`Nepse is open (${apiUrl}).`);
-    await setIsMarketOpen(true);
+  } else if (response.data.isOpen === "OPEN" || response.data.isOpen === "Pre Open") {
+    nepseLogger.info(`Nepse is open (${apiUrl}).`);
+    await saveToCache("isMarketOpen", true);
     NEPSE_ACTIVE_API_URL = apiUrl;
     return true;
-  } else if (response.data.isOpen == 'Pre Open CLOSE') {
-    console.log(`Nepse is Pre Open CLOSE (${apiUrl}).`);
-    NEPSE_ACTIVE_API_URL = apiUrl;
-    return true; //we are setting true for pre open too
-  }
-  else {
-    console.log(`Error fetching Nepse status from ${apiUrl}:`, response.data);
+  } else {
+    nepseLogger.info(`Error fetching Nepse status from ${apiUrl}:`, response.data);
     return false;
   }
 }
 
 async function wipeCachesAndRefreshData() {
   try {
-    console.log('Refreshing caches');
-    await Promise.all([
-      FetchSingularDataOfAsset(),
-      FetchOldData(true),
-      topgainersShare(true), //switch to get from nepseapi.zorsha.com.np
-      topLosersShare(true), // switch to get from nepseapi.zorsha.com.np
-      topTurnoversShare(true), // switch to get from nepseapi.zorsha.com.np
-      topTradedShares(true), //  TopTenTradeScrips = top volume
-      topTransactions(true), //  switch to get from nepseapi.zorsha.com.np
-      fetchIndexes(true),
-      intradayIndexGraph(true),
-      fetchSummary(true)
-    ]);
+    const fetchFunctions = [
+      FetchSingularDataOfAsset,
+      FetchOldData,
+      topgainersShare,
+      topLosersShare,
+      topTurnoversShare,
+      topTradedShares,
+      topTransactions,
+      fetchIndexes,
+      intradayIndexGraph,
+      fetchSummary,
+    ];
+
+    for (const fetchFunction of fetchFunctions) {
+      await fetchFunction(true);
+      await new Promise(resolve => setTimeout(resolve, 5000));
+    }
 
     let newIndexData = await getIndexIntraday(true);
     if (newIndexData) {
-      notifyClients({ type: 'index', data: newIndexData });
-      setPreviousIndexData(newIndexData);
+      notifyClients({ type: "index", data: newIndexData });
+      await saveToCache("previousIndexData", newIndexData);
     }
-    console.log(`Data wipe and refresh successful.`);
-
+    nepseLogger.info(`Refresh Successful at ${new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })}`);
   } catch (error) {
-    console.error('Error wiping caches or refreshing data:', error.message);
+    nepseLogger.error(`Error refreshing Nepse data: ${error.message}`);
   }
 }
 
 export default async function initializeRefreshMechanism() {
   try {
-    console.log('Initializing refresh mechanism...');
+    nepseLogger.info("Initializing Nepse refresh mechanism.");
     setInterval(async () => {
       if (await isNepseOpen()) {
         await wipeCachesAndRefreshData();
       }
     }, refreshInterval);
   } catch (error) {
-    console.error('Error initializing refresh mechanism:', error.message);
+    nepseLogger.error(`Error initializing Nepse refresh mechanism ${error.message}`);
   }
 }

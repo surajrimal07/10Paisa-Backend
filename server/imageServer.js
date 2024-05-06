@@ -1,217 +1,195 @@
 import axios from 'axios';
 import cheerio from 'cheerio';
-import fs from 'fs';
 import newsSources from '../middleware/newsUrl.js';
 import { headers } from '../utils/headers.js';
-
-let errorDetails = [];
+import { newsLogger } from '../utils/logger/logger.js';
 
 async function extractFeaturedImage(url, publisher) {
-    try {
-      const response = await axios.get(url, { headers });
-      const html = response.data;
+  try {
+    const response = await axios.get(url, { headers });
+    const html = response.data;
 
-      const $ = cheerio.load(html);
+    const $ = cheerio.load(html);
 
-      let featuredImageUrl;
+    let featuredImageUrl;
 
-      if (publisher === newsSources[5].source) {
-        featuredImageUrl = await extractImageSetopati($);
-      } else if (publisher === newsSources[1].source) {
-        featuredImageUrl = await extractImageOnlineKhabar($);
-      } else if (publisher == newsSources[0].source) {
-        featuredImageUrl = await extractImageOnlineKhabarEnglish($);
-      } else if  (publisher ==newsSources[2].source) {
-        featuredImageUrl = await ratoen($);
-      }else if  (publisher ==newsSources[3].source) {
-        featuredImageUrl = await ratoen($);
-      }else if  (publisher ==newsSources[6].source) {
-        featuredImageUrl = await ratoen($);
-      }else if  (publisher ==newsSources[7].source) {
-        featuredImageUrl = await ratoen($);
-      }else if  (publisher ==newsSources[8].source) {
-        featuredImageUrl = ratoen($);
-      }else if  (publisher ==newsSources[9].source) {
-        featuredImageUrl = await ratoen($);
-      }else if  (publisher ==newsSources[10].source) {
-        featuredImageUrl = await arthasa($);
-      }else if  (publisher ==newsSources[11].source) {
-        featuredImageUrl = await karobardaily($);
-      }else if  (publisher ==newsSources[12].source) {
-        featuredImageUrl = await ratoen($);
-      }else if  (publisher ==newsSources[13].source) {
-        featuredImageUrl = await himal($);
-      }else if  (publisher ==newsSources[14].source) {
-        featuredImageUrl = await ratoen($);
-      }else if  (publisher ==newsSources[15].source) {
-        featuredImageUrl = await arthapathex($);
-      }else if  (publisher ==newsSources[16].source) {
-        featuredImageUrl = await ratoen($);
-      }else if  (publisher ==newsSources[17].source) {
-        featuredImageUrl = await ratoen($);
-      }else if  (publisher ==newsSources[18].source) {
-        featuredImageUrl = await clickmandu($);
-      }else if  (publisher ==newsSources[4].source) {
-        featuredImageUrl = await setoen($); //seto eng
-      }
-
-      if (featuredImageUrl) {
-        //console.log(featuredImageUrl);
-
-        return featuredImageUrl;
-      } else {
-        console.log('Featured image failed '+ publisher);
-        console.log(url)
-
-        const errorInfo = {
-          error: 'image extraction failed',
-          publisher,
-          url,
-        };
-
-        try {
-          fs.writeFileSync('errorDetails.json', JSON.stringify(errorInfo, null, 2));
-        } catch (error) {
-          console.error('Error writing json:', error);
-        }
-        return null;
-      }
-    } catch (error) {
-
-      console.error('Error:', error.message);
-      return error;
+    if (publisher === newsSources[5].source) {
+      featuredImageUrl = await extractImageSetopati($);
+    } else if (publisher === newsSources[1].source) {
+      featuredImageUrl = await extractImageOnlineKhabar($);
+    } else if (publisher == newsSources[0].source) {
+      featuredImageUrl = await extractImageOnlineKhabarEnglish($);
+    } else if (publisher == newsSources[2].source) {
+      featuredImageUrl = await ratoen($);
+    } else if (publisher == newsSources[3].source) {
+      featuredImageUrl = await ratoen($);
+    } else if (publisher == newsSources[6].source) {
+      featuredImageUrl = await ratoen($);
+    } else if (publisher == newsSources[7].source) {
+      featuredImageUrl = await ratoen($);
+    } else if (publisher == newsSources[8].source) {
+      featuredImageUrl = ratoen($);
+    } else if (publisher == newsSources[9].source) {
+      featuredImageUrl = await ratoen($);
+    } else if (publisher == newsSources[10].source) {
+      featuredImageUrl = await arthasa($);
+    } else if (publisher == newsSources[11].source) {
+      featuredImageUrl = await karobardaily($);
+    } else if (publisher == newsSources[12].source) {
+      featuredImageUrl = await ratoen($);
+    } else if (publisher == newsSources[13].source) {
+      featuredImageUrl = await himal($);
+    } else if (publisher == newsSources[14].source) {
+      featuredImageUrl = await ratoen($);
+    } else if (publisher == newsSources[15].source) {
+      featuredImageUrl = await arthapathex($);
+    } else if (publisher == newsSources[16].source) {
+      featuredImageUrl = await ratoen($);
+    } else if (publisher == newsSources[17].source) {
+      featuredImageUrl = await ratoen($);
+    } else if (publisher == newsSources[18].source) {
+      featuredImageUrl = await clickmandu($);
+    } else if (publisher == newsSources[4].source) {
+      featuredImageUrl = await setoen($); //seto eng
     }
+
+    if (featuredImageUrl) {
+      return featuredImageUrl;
+    } else {
+      newsLogger.error(`Featured image extraction failed for the specified publisher. ${publisher}`);
+      return null;
+    }
+  } catch (error) {
+    newsLogger.error(`Error fetching article data from the specified URL: ${error}`);
+    return null;
   }
+}
 
 async function extractImageSetopati($) {
-    const featuredImageElement = $('.new-featured-image img');
-    return featuredImageElement.attr('src');
-  }
+  const featuredImageElement = $('.new-featured-image img');
+  return featuredImageElement.attr('src');
+}
 
-  async function extractImageOnlineKhabar($) {
-    const featuredImageElement = $('.ok-post-detail-featured-img .post-thumbnail img');
-    return featuredImageElement.attr('src');
-  }
+async function extractImageOnlineKhabar($) {
+  const featuredImageElement = $('.ok-post-detail-featured-img .post-thumbnail img');
+  return featuredImageElement.attr('src');
+}
 
 
 async function extractImageOnlineKhabarEnglish($) {
-    const ogImageTag = $('meta[property="og:image"]');
+  const ogImageTag = $('meta[property="og:image"]');
 
-    if (ogImageTag.length > 0) {
-      return ogImageTag.attr('content');
-    } else {
-      console.log('og:image meta tag not found on the page.');
-      return null;
-    }
+  if (ogImageTag.length > 0) {
+    return ogImageTag.attr('content');
+  } else {
+    newsLogger.error('og:image meta tag not found on the page for Online Khabar English.');
+    return null;
   }
+}
 
 async function ratoen($) {
-    const ogImageTag = $('meta[property="og:image"]');
+  const ogImageTag = $('meta[property="og:image"]');
 
-    if (ogImageTag.length > 0) {
-      return ogImageTag.attr('content');
-    } else {
-      console.log('og:image meta tag not found on the page for Publisher 4.');
-      return null;
-    }
+  if (ogImageTag.length > 0) {
+    return ogImageTag.attr('content');
+  } else {
+    newsLogger.error('og:image meta tag not found on the page for Rato Pati English.');
+    return null;
+  }
 }
 
 async function arthasa($) {
-    const ogImageMeta = $('meta[property="og:image"]');
+  const ogImageMeta = $('meta[property="og:image"]');
 
-    if (ogImageMeta.length > 0) {
-      const imageUrl = ogImageMeta.attr('content');
+  if (ogImageMeta.length > 0) {
+    const imageUrl = ogImageMeta.attr('content');
 
-      const cleanedImageUrl = imageUrl.replace(/\?.*$/, '');
+    const cleanedImageUrl = imageUrl.replace(/\?.*$/, '');
 
-      return cleanedImageUrl;
-    } else {
-      console.log('og:image meta tag not found for Publisher with additional code.');
-    }
-
-    console.log('Featured image extraction failed for the specified publisher.');
-    return null;
+    return cleanedImageUrl;
+  } else {
+    newsLogger.error('og:image meta tag not found for Publisher with additional code.');
   }
+
+  newsLogger.error('Featured image extraction failed for Artha Sansar');
+  return null;
+}
 
 
 async function karobardaily($) {
-const featuredImageElement = $('.single-content-section img');
+  const featuredImageElement = $('.single-content-section img');
 
-if (featuredImageElement.length > 0) {
+  if (featuredImageElement.length > 0) {
     const imageUrl = featuredImageElement.attr('src');
 
     return imageUrl;
-} else {
-    console.log('Image element not found for karobardaily');
-}
-
-console.log('Featured image extraction failed for karobardaily');
-return null;
+  } else {
+    newsLogger.error('Image element not found for karobardaily');
+  }
+  newsLogger.error('Featured image extraction failed for karobardaily');
+  return null;
 }
 
 async function himal($) {
-    const featuredImageElement = $('.content-main-block img');
+  const featuredImageElement = $('.content-main-block img');
 
-    if (featuredImageElement.length > 0) {
-      const imageUrl = featuredImageElement.attr('src');
-
-      return imageUrl;
-    } else {
-      console.log('Image element not found for the new publisher.');
-    }
-
-    console.log('Featured image extraction failed for the specified publisher.');
-    return null;
-  }
-
-async function arthapathex($) {
-const featuredImageElement = $('img[class="attachment-full size-full wp-post-image"]');
-
-if (featuredImageElement.length > 0) {
+  if (featuredImageElement.length > 0) {
     const imageUrl = featuredImageElement.attr('src');
 
     return imageUrl;
-} else {
-    console.log('Image element not found for the new publisher.');
+  } else {
+    newsLogger.error('Image element not found for himalkhabar');
+  }
+  newsLogger.error('Featured image extraction failed for himalkhabar');
+  return null;
 }
 
-console.log('Featured image extraction failed for the specified publisher.');
-return null;
+async function arthapathex($) {
+  const featuredImageElement = $('img[class="attachment-full size-full wp-post-image"]');
+
+  if (featuredImageElement.length > 0) {
+    const imageUrl = featuredImageElement.attr('src');
+
+    return imageUrl;
+  } else {
+    newsLogger.error('Image element not found for arthapath');
+  }
+
+  newsLogger.error('Featured image extraction failed for arthapath');
+  return null;
 }
 
 async function clickmandu($) {
 
-    const featuredImageElement = $('figure.wp-block-image img');
+  const featuredImageElement = $('figure.wp-block-image img');
 
-    if (featuredImageElement.length >= 3) {
-      const imageUrl = featuredImageElement.eq(2).attr('src');
-      const cleanedImageUrl = imageUrl.replace(/\?.*$/, '');
-      //console.log('Featured Image URL:', imageUrl);
+  if (featuredImageElement.length >= 3) {
+    const imageUrl = featuredImageElement.eq(2).attr('src');
+    const cleanedImageUrl = imageUrl.replace(/\?.*$/, '');
 
-      return cleanedImageUrl;
-    } else {
-      console.log('Image element not found for the new publisher.');
-    }
+    return cleanedImageUrl;
+  } else {
+    newsLogger.error('Image element not found for clickmandu');
+  }
 
-    console.log('Featured image extraction failed for the specified publisher.');
-    return null;
-    }
+  newsLogger.error('Featured image extraction failed for clickmandu');
+  return null;
+}
 
 async function setoen($) {
-    const featuredImageElement = $('.featured-images img');
+  const featuredImageElement = $('.featured-images img');
 
-    if (featuredImageElement.length > 0) {
-      const imageUrl = featuredImageElement.attr('src');
-      //console.log('Featured Image URL:', imageUrl);
+  if (featuredImageElement.length > 0) {
+    const imageUrl = featuredImageElement.attr('src');
 
-        return imageUrl;
-    } else {
-        console.log('Featured image element not found for the new publisher.');
-    }
+    return imageUrl;
+  } else {
+    newsLogger.error('Featured image element not found for Setopati English');
+  }
 
-    console.log('Featured image extraction failed for the specified publisher.');
-    return null;
-    }
+  newsLogger.error('Featured image extraction failed for Setopati English');
+  return null;
+}
 
 
 export default extractFeaturedImage;
@@ -264,9 +242,9 @@ export default extractFeaturedImage;
 // const karobarsrc = newsSources[11].source
 // extractFeaturedImage(karobarart,karobarsrc);
 
-const khabaren = 'https://english.khabarhub.com/2023/20/326826/';
-const khabarensrc = newsSources[12].source
-extractFeaturedImage(khabaren,khabarensrc);
+// const khabaren = 'https://english.khabarhub.com/2023/20/326826/';
+// const khabarensrc = newsSources[12].source
+// extractFeaturedImage(khabaren, khabarensrc);
 
 // const himalart = 'https://www.himalkhabar.com/news/138843';
 // const himalsrc = "himalkhabar"

@@ -1,27 +1,30 @@
 import axios from "axios";
 import cheerio from "cheerio";
+import fs from 'fs';
 import { JSDOM } from "jsdom";
+import path from 'path';
 import { NEPSE_ACTIVE_API_URL } from "../controllers/refreshController.js";
 import { fetchFromCache, saveToCache } from "../controllers/savefetchCache.js";
-import {
-  setIntradayGraph
-} from "../state/StateManager.js";
+
+import { assetLogger } from '../utils/logger/logger.js';
 
 //preparing to switch to sharesansar as data provider
 export async function FetchSingularDataOfAsset(refresh) {
   const liveTradingUrl = "https://www.sharesansar.com/live-trading";
 
   try {
-    const cachedData = await fetchFromCache("FetchSingularDataOfAssets");
-    if (cachedData !== null && cachedData !== undefined && !refresh) {
-      return cachedData;
+    if (!refresh) {
+      const cachedData = await fetchFromCache("FetchSingularDataOfAssets");
+      if (cachedData != null) {
+        return cachedData;
+      }
     }
+
     const responseLiveTrading = await axios.get(liveTradingUrl);
 
     if (!responseLiveTrading.data) {
-      throw new Error(
-        `Failed to fetch live trading data. Status: ${responseLiveTrading.status}`
-      );
+      assetLogger.error(`Failed to fetch live trading data. Status: ${responseLiveTrading.status}`);
+      return null;
     }
 
     const domLiveTrading = new JSDOM(responseLiveTrading.data);
@@ -66,11 +69,13 @@ export async function FetchSingularDataOfAsset(refresh) {
     await saveToCache("FetchSingularDataOfAssets", stockDataWithoutName);
     return stockDataWithoutName;
   } catch (error) {
-    console.error(error);
-    throw error;
+    assetLogger.error(`Error at FetchSingularDataOfAsset : ${error.message}`);
+    //throw error;
+    return null;
   }
 }
 
+//not used in controller
 export async function FetchSingularDataOfAssetFromAPI(refresh) {
   const url = NEPSE_ACTIVE_API_URL + "/CompanyList";
 
@@ -85,7 +90,7 @@ export async function FetchSingularDataOfAssetFromAPI(refresh) {
 
     return data;
   } catch (error) {
-    console.error(error);
+    assetLogger.error(`Error fetching or parsing the data: ${error.message}`);
   }
 }
 
@@ -185,14 +190,18 @@ export async function FetchOldData(refresh) {
   const hardcodedUrl = "https://www.sharesansar.com/today-share-price";
 
   try {
-    const cachedData = await fetchFromCache("FetchOldDatas");
-    if (cachedData !== null && cachedData !== undefined && !refresh) {
-      return cachedData;
+    if (!refresh) {
+      const cachedData = await fetchFromCache("FetchOldDatas");
+      if (cachedData != null) {
+        return cachedData;
+      }
     }
+
     const response = await axios.get(hardcodedUrl);
 
     if (!response.data) {
-      throw new Error(`Failed to fetch data. Status: ${response.status}`);
+      assetLogger.error(`Failed to fetch data at FetchOldData. Status: ${response.status}`);
+      return null;
     }
 
     const dom = new JSDOM(response.data);
@@ -247,8 +256,7 @@ export async function FetchOldData(refresh) {
 
     return enrichedData;
   } catch (error) {
-    console.error(error);
-    throw error;
+    assetLogger.error(`Error at FetchOldData : ${error.message}`);
   }
 }
 //share sansar top gainers
@@ -256,9 +264,11 @@ export const topgainersShare = async (refresh) => {
   const url = NEPSE_ACTIVE_API_URL + "/TopGainers";
 
   try {
-    const cachedData = await fetchFromCache("topgainersShare");
-    if (cachedData !== null && cachedData !== undefined && !refresh) {
-      return cachedData;
+    if (!refresh) {
+      const cachedData = await fetchFromCache("topgainersShare");
+      if (cachedData != null) {
+        return cachedData;
+      }
     }
 
     const data = await fetch(url).then((response) => response.json());
@@ -273,7 +283,7 @@ export const topgainersShare = async (refresh) => {
     await saveToCache("topgainersShare", processedData);
     return processedData;
   } catch (error) {
-    console.error(error);
+    assetLogger.error(`Error at topgainersShare : ${error.message}`);
   }
 };
 
@@ -281,9 +291,11 @@ export const topgainersShare = async (refresh) => {
 export const topLosersShare = async (refresh) => {
   const url = NEPSE_ACTIVE_API_URL + "/TopLosers";
   try {
-    const cachedData = await fetchFromCache("topLosersShare");
-    if (cachedData !== null && cachedData !== undefined && !refresh) {
-      return cachedData;
+    if (!refresh) {
+      const cachedData = await fetchFromCache("topLosersShare");
+      if (cachedData != null) {
+        return cachedData;
+      }
     }
 
     const data = await fetch(url).then((response) => response.json());
@@ -299,7 +311,7 @@ export const topLosersShare = async (refresh) => {
 
     return processedData;
   } catch (error) {
-    console.error(error);
+    assetLogger.error(`Error at topLosersShare : ${error.message}`);
   }
 };
 
@@ -307,9 +319,11 @@ export const topTurnoversShare = async (refresh) => {
   const url = NEPSE_ACTIVE_API_URL + "/TopTenTurnoverScrips";
 
   try {
-    const cachedData = await fetchFromCache("topTurnoversShare");
-    if (cachedData !== null && cachedData !== undefined && !refresh) {
-      return cachedData;
+    if (!refresh) {
+      const cachedData = await fetchFromCache("topTurnoversShare");
+      if (cachedData != null) {
+        return cachedData;
+      }
     }
 
     const data = await fetch(url).then((response) => response.json());
@@ -323,7 +337,7 @@ export const topTurnoversShare = async (refresh) => {
     await saveToCache("topTurnoversShare", processedData);
     return processedData;
   } catch (error) {
-    console.error(error);
+    assetLogger.error(`Error at topTurnoversShare : ${error.message}`);
   }
 };
 
@@ -331,9 +345,11 @@ export const topTurnoversShare = async (refresh) => {
 export const topTradedShares = async (refresh) => {
   const url = NEPSE_ACTIVE_API_URL + "/TopTenTradeScrips";
   try {
-    const cachedData = await fetchFromCache("topTradedShares");
-    if (cachedData !== null && cachedData !== undefined && !refresh) {
-      return cachedData;
+    if (!refresh) {
+      const cachedData = await fetchFromCache("topTradedShares");
+      if (cachedData != null) {
+        return cachedData;
+      }
     }
 
     const data = await fetch(url).then((response) => response.json());
@@ -347,7 +363,7 @@ export const topTradedShares = async (refresh) => {
     await saveToCache("topTradedShares", processedData);
     return processedData;
   } catch (error) {
-    console.error(error);
+    assetLogger.error(`Error at topTradedShares : ${error.message}`);
   }
 };
 
@@ -355,9 +371,11 @@ export const topTradedShares = async (refresh) => {
 export const topTransactions = async (refresh) => {
   const url = NEPSE_ACTIVE_API_URL + "/TopTenTransactionScrips";
   try {
-    const cachedData = await fetchFromCache("topTransactions");
-    if (cachedData !== null && cachedData !== undefined && !refresh) {
-      return cachedData;
+    if (!refresh) {
+      const cachedData = await fetchFromCache("topTransactions");
+      if (cachedData != null) {
+        return cachedData;
+      }
     }
 
     const data = await fetch(url).then((response) => response.json());
@@ -371,7 +389,7 @@ export const topTransactions = async (refresh) => {
     await saveToCache("topTransactions", processedData);
     return processedData;
   } catch (error) {
-    console.error(error);
+    assetLogger.error(`Error at topTransactions : ${error.message}`);
   }
 };
 
@@ -379,9 +397,11 @@ export const topTransactions = async (refresh) => {
 export async function fetchIndexes(refresh) {
   //to do switch to self made python api
   try {
-    const cachedData = await fetchFromCache("allindices_sourcedata");
-    if (cachedData !== null && cachedData !== undefined && !refresh) {
-      return cachedData;
+    if (!refresh) {
+      const cachedData = await fetchFromCache("allindices_sourcedata");
+      if (cachedData != null) {
+        return cachedData;
+      }
     }
 
     const url = "https://www.sharesansar.com/live-trading";
@@ -431,231 +451,247 @@ export async function fetchIndexes(refresh) {
     await saveToCache("allindices_sourcedata", extractedData);
     return extractedData;
   } catch (error) {
-    console.error("Error fetching or parsing the HTML:", error.message);
+    assetLogger.error(`Error at fetchIndexes : ${error.message}`);
   }
 }
 
-//replacement of intraday index above
-// export async function getIndexIntraday() {
-//   try {
-//     const cachedData = await fetchFromCache('intradayIndexData');
-//     if (cachedData) {
-//       return cachedData;
-//     }
-
-//     const [response1, response2, response3] = await Promise.all([
-//       axios.get('https://www.sharesansar.com/live-trading'),
-//       axios.get(NEPSE_ACTIVE_API_URL+'/DailyNepseIndexGraph'),
-//       axios.get(NEPSE_ACTIVE_API_URL+'/IsNepseOpen')
-//     ]);
-
-//     const $ = cheerio.load(response1.data);
-
-//     const nepseIndexContainer = $('h4:contains("NEPSE Index")').closest('.mu-list');
-//     const turnover = parseFloat(nepseIndexContainer.find('.mu-price').text().replace(/,/g, ''));
-//     const close = parseFloat(nepseIndexContainer.find('.mu-value').text().replace(/,/g, ''));
-//     const percentageChange = parseFloat(nepseIndexContainer.find('.mu-percent').text().replace(/,/g, ''))
-
-//     const currentDate = new Date();
-//     const formattedDate = currentDate.getFullYear() + '/' +
-//                          (currentDate.getMonth() + 1).toString().padStart(2, '0') + '/' +
-//                          currentDate.getDate().toString().padStart(2, '0');
-
-//     const jsonData = response2.data;
-//     const valuesArray = jsonData.map(item => item[1]);
-//     const open = valuesArray[0];
-//     const high = Math.max(...valuesArray);
-//     const low = Math.min(...valuesArray);
-//     const change = parseFloat((valuesArray[valuesArray.length - 1] - open).toFixed(2), 10);
-
-//     const { isOpen } = response3.data;
-
-//     const nepseIndexData = {
-//       date: formattedDate,
-//       open,
-//       high,
-//       low,
-//       close,
-//       change,
-//       percentageChange,
-//       turnover,
-//       isOpen
-//     };
-
-//     await saveToCache('intradayIndexData', nepseIndexData);
-
-//     return nepseIndexData;
-//   } catch (error) {
-//     console.error('Error fetching or parsing the data:', error.message);
-//     throw error;
-//   }
-// }
-
-//intraday index using NepseAPI
-export async function getIndexIntraday(refresh) {
-  const url = NEPSE_ACTIVE_API_URL + "/NepseIndex";
-  const url2 = NEPSE_ACTIVE_API_URL + "/Summary";
-
+//NEW fetchIndexes
+export async function fetchIndexess(refresh) {
   try {
-    const cachedData = await fetchFromCache("intradayIndexData");
-    if (cachedData !== null && cachedData !== undefined && !refresh) {
-      return cachedData;
+    if (!refresh) {
+      const cachedData = await fetchFromCache("allindices_sourcedata");
+      if (cachedData != null) {
+        return cachedData;
+      }
     }
-
-    const [nepseIndexData, nepseSummaryData] = await Promise.all([
-      fetch(url).then((response) => response.json()),
-      fetch(url2).then((response) => response.json()),
-    ]);
-
-    if (!nepseIndexData || !nepseIndexData) {
-      throw new Error("NEPSE Index data is missing or undefined.");
-    }
-
-    const [open, isOpen] = await Promise.all([
-      fetchFromCache('intradayGraph'),
-      fetchFromCache('isMarketOpen')
-    ]);
-
-    const nepseIndex = nepseIndexData["NEPSE Index"];
-    const nepseIndexDataObj = {
-      time: nepseIndex.generatedTime,
-      open: open[0].index,
-      high: nepseIndex.high,
-      low: nepseIndex.low,
-      close: nepseIndex.currentValue,
-      change: nepseIndex.change,
-      percentageChange: nepseIndex.perChange,
-      turnover: nepseSummaryData["Total Turnover Rs:"],
-      isOpen: isOpen,
-      fiftyTwoWeekHigh: nepseIndex.fiftyTwoWeekHigh,
-      fiftyTwoWeekLow: nepseIndex.fiftyTwoWeekLow,
-      previousClose: nepseIndex.previousClose,
-    };
-
-    await Promise.all([
-      saveToCache("intradayIndexData", nepseIndexDataObj),
-      saveToCache('previousIndexData', nepseIndexDataObj)
-    ]);
-
-    return nepseIndexDataObj;
-  } catch (error) {
-    console.error("Error fetching or parsing the data:", error.message);
-    throw error;
+  }
+  catch (error) {
+    assetLogger.error(`Error at fetchIndexes : ${error.message}`);
   }
 }
 
-export async function intradayIndexGraph(refresh) {
-  const url = NEPSE_ACTIVE_API_URL + "/DailyNepseIndexGraph";
-  try {
-    const cachedData = await fetchFromCache("intradayIndexGraph");
-    if (cachedData !== null && cachedData !== undefined && !refresh) {
-      return cachedData;
-    }
 
-    const data = await fetch(url).then((response) => response.json());
-    const processedData = data.map((entry) => ({
-      //date: new Date(entry[0] * 1000).toLocaleDateString(),
-      time: new Date(entry[0] * 1000).toLocaleTimeString("en-US", {
-        hour: "numeric",
-        minute: "numeric",
-        second: "numeric",
-        hour12: true,
-      }),
-      index: entry[1],
-    }));
+  //intraday index using NepseAPI
+  export async function getIndexIntraday(refresh) {
+    const url = NEPSE_ACTIVE_API_URL + "/NepseIndex";
+    const url2 = NEPSE_ACTIVE_API_URL + "/Summary";
 
-    await saveToCache("intradayIndexGraph", processedData);
-    await setIntradayGraph(processedData);
+    try {
+      const cachedData = await fetchFromCache("intradayIndexData");
+      if (cachedData !== null && cachedData !== undefined && !refresh) {
+        return cachedData;
+      }
 
-    return processedData;
-  } catch (error) {
-    console.error("Error fetching or parsing the data:", error.message);
-    throw error;
-  }
-}
+      const [nepseIndexData, nepseSummaryData] = await Promise.all([
+        fetch(url).then((response) => response.json()),
+        fetch(url2).then((response) => response.json()),
+      ]);
 
-export async function fetchSummary(refresh) {
-  const url = NEPSE_ACTIVE_API_URL + "/Summary";
-  try {
-    const cachedData = await fetchFromCache("Nepsesummary");
-    if (cachedData !== null && cachedData !== undefined && !refresh) {
-      return cachedData;
-    }
+      if (!nepseIndexData || !nepseIndexData) {
+        assetLogger.error("NEPSE Index data is missing or undefined.");
+        return null;
+        //      throw new Error("NEPSE Index data is missing or undefined.");
+      }
 
-    const data = await fetch(url).then((response) => response.json());
-    await saveToCache("Nepsesummary", data);
-    return data;
-  } catch {
-    console.log("Error fetching nepse summary data");
-    return null;
-  }
-}
+      const [open, isOpen] = await Promise.all([
+        fetchFromCache('intradayGraph'),
+        fetchFromCache('isMarketOpen')
+      ]);
 
-export async function fetchCompanyIntradayGraph(company) {
-  const url = NEPSE_ACTIVE_API_URL + "/DailyScripPriceGraph?symbol=" + company;
-
-  try {
-    const data = await fetch(url).then((response) => response.json());
-    const modifiedData = data.map((item) => {
-      const utcTime = new Date(item.time * 1000);
-      const kathmanduTime = new Date(
-        utcTime.toLocaleString("en-US", { timeZone: "Asia/Kathmandu" })
-      );
-      const timeString = kathmanduTime.toLocaleTimeString("en-US", {
-        hour12: false,
-      });
-      return {
-        ltp: item.contractRate,
-        time: timeString,
+      const nepseIndex = nepseIndexData["NEPSE Index"];
+      const nepseIndexDataObj = {
+        time: nepseIndex.generatedTime,
+        open: open[0].index,
+        high: nepseIndex.high,
+        low: nepseIndex.low,
+        close: nepseIndex.currentValue,
+        change: nepseIndex.change,
+        percentageChange: nepseIndex.perChange,
+        turnover: nepseSummaryData["Total Turnover Rs:"],
+        isOpen: isOpen,
+        fiftyTwoWeekHigh: nepseIndex.fiftyTwoWeekHigh,
+        fiftyTwoWeekLow: nepseIndex.fiftyTwoWeekLow,
+        previousClose: nepseIndex.previousClose,
       };
-    });
-    return modifiedData;
-  } catch (error) {
-    console.log("Error fetching company intraday graph data " + error);
-    return null;
+
+      await Promise.all([
+        saveToCache("intradayIndexData", nepseIndexDataObj),
+        saveToCache('previousIndexData', nepseIndexDataObj)
+      ]);
+
+      return nepseIndexDataObj;
+    } catch (error) {
+      assetLogger.error(`Error at getIndexIntraday : ${error.message}`);
+      return null;
+      //throw error;
+    }
   }
-}
 
-export async function fetchCompanyDailyOHLC(company) {
-  const url = NEPSE_ACTIVE_API_URL + "/DailyScripPriceGraph?symbol=" + company;
+  export async function intradayIndexGraph(refresh) {
+    const url = NEPSE_ACTIVE_API_URL + "/DailyNepseIndexGraph";
+    try {
+      //this if effficent because we are not retreving from cacha suru mai
+      if (!refresh) {
+        const cachedData = await fetchFromCache("intradayIndexGraph");
+        if (cachedData != null) {
+          return cachedData;
+        }
+      }
 
-  try {
-    const data = await fetch(url).then((response) => response.json());
-    const modifiedData = data.map((item) => {
-      const utcTime = new Date(item.time * 1000);
-      const kathmanduTime = new Date(
-        utcTime.toLocaleString("en-US", { timeZone: "Asia/Kathmandu" })
-      );
-      const timeString = kathmanduTime.toLocaleTimeString("en-US", {
-        hour12: false,
+      const data = await fetch(url).then((response) => response.json());
+      const processedData = data.map((entry) => ({
+        time: new Date(entry[0] * 1000).toLocaleTimeString("en-US", {
+          hour: "numeric",
+          minute: "numeric",
+          second: "numeric",
+          hour12: true,
+        }),
+        index: entry[1],
+      }));
+
+      await saveToCache("intradayIndexGraph", processedData);
+      await saveToCache("intradayGraph", processedData);
+
+      return processedData;
+    } catch (error) {
+      assetLogger.error(`Error at intradayIndexGraph : ${error.message}`);
+      return null;
+    }
+  }
+
+  export async function fetchSummary(refresh) {
+    const url = NEPSE_ACTIVE_API_URL + "/Summary";
+    try {
+
+      if (!refresh) {
+        const cachedData = await fetchFromCache("Nepsesummary");
+        if (cachedData != null) {
+          return cachedData;
+        }
+      }
+
+      const data = await fetch(url).then((response) => response.json());
+      await saveToCache("Nepsesummary", data);
+      return data;
+    } catch {
+      assetLogger.error(`Error at fetchSummary : ${error.message}`);
+      return null;
+    }
+  }
+
+  //aauta company ko din vari ko data of today
+  export async function fetchCompanyIntradayGraph(company) {
+    const url = NEPSE_ACTIVE_API_URL + "/DailyScripPriceGraph?symbol=" + company;
+
+    try {
+      const data = await fetch(url).then((response) => response.json());
+      const modifiedData = data.map((item) => {
+        const utcTime = new Date(item.time * 1000);
+        const kathmanduTime = new Date(
+          utcTime.toLocaleString("en-US", { timeZone: "Asia/Kathmandu" })
+        );
+        const timeString = kathmanduTime.toLocaleTimeString("en-US", {
+          hour12: false,
+        });
+        return {
+          ltp: item.contractRate,
+          time: timeString,
+        };
       });
-      return {
-        open: item.open,
-        high: item.high,
-        low: item.low,
-        close: item.close,
-        time: timeString,
-      };
-    });
-    return modifiedData;
-  } catch (error) {
-    console.log("Error fetching company intraday graph data " + error);
-    return null;
+      return modifiedData;
+    } catch (error) {
+      assetLogger.error(`Error at fetchCompanyIntradayGraph : ${error.message}`);
+      return null;
+    }
   }
-}
 
-export default {
-  fetchSummary,
-  fetchCompanyIntradayGraph,
-  intradayIndexGraph,
-  getIndexIntraday,
-  fetchIndexes,
-  FetchSingularDataOfAsset,
-  GetDebentures,
-  FetchOldData,
-  topgainersShare,
-  topLosersShare,
-  topTradedShares,
-  topTurnoversShare,
-  topTransactions,
-};
+
+  //good, returns dfull details of single company, general, ohlc etc
+  export async function fetchCompanyDailyOHLC(company) {
+    const url = NEPSE_ACTIVE_API_URL + "/CompanyDetails?symbol=" + company;
+    try {
+      const data = await fetch(url).then((response) => response.json());
+      console.log(data);
+
+      return modifiedData;
+    } catch (error) {
+      assetLogger.error(`Error fetching company full details: ${error.message}`);
+      return null;
+    }
+  }
+
+
+  export async function fetchAvailableNepseSymbol(filterdeben = true) {
+    const __dirname = path.resolve();
+    const fileName = path.join(__dirname, `../public/stock/NEPSE_SYMBOLS.json`);
+
+    try {
+      const response = await fetch("https://backendtradingview.systemxlite.com/tv/tv/search?limit=30&query=&type=&exchange=", {
+        "headers": {
+          "accept": "*/*",
+          "accept-language": "en-US,en;q=0.9,ne;q=0.8",
+          "if-none-match": "W/\"107d7-CkFswx0Zr81sX6ZUbikPAlgnJBA\"",
+          "sec-ch-ua": "\"Chromium\";v=\"124\", \"Microsoft Edge\";v=\"124\", \"Not-A.Brand\";v=\"99\"",
+          "sec-ch-ua-mobile": "?0",
+          "sec-ch-ua-platform": "\"Windows\"",
+          "sec-fetch-dest": "empty",
+          "sec-fetch-mode": "cors",
+          "sec-fetch-site": "same-site",
+          "sec-gpc": "1",
+          "Referer": "https://tradingview.systemxlite.com/",
+          "Referrer-Policy": "strict-origin-when-cross-origin"
+        },
+        "body": null,
+        "method": "GET"
+      });
+
+
+      if (!response || !response.ok) {
+        const fileData = await fs.promises.readFile(fileName, 'utf8').catch(err => null);
+        if (fileData) {
+          return JSON.parse(fileData);
+        }
+      }
+
+      const jsonData = await response.json();
+      let symbols = jsonData.map(entry => entry.symbol);
+
+      //const symbols = filterdeben ? jsonData.filter(entry => !/\d/.test(entry.companyName) && !entry.companyName.includes('/')).map(entry => entry.symbol) : jsonData.map(entry => entry.symbol);
+
+      await fs.promises.mkdir(path.dirname(fileName), { recursive: true });
+      await fs.promises.writeFile(fileName, JSON.stringify(symbols));
+
+      if (filterdeben) {
+        symbols = symbols.filter(symbol => !/\d/.test(symbol) && !symbol.includes('/'));
+      }
+
+      return symbols;
+
+    } catch (error) {
+      const fileData = await fs.promises.readFile(fileName, 'utf8').catch(err => null);
+      if (fileData) {
+        return JSON.parse(fileData);
+      }
+      assetLogger.error(`Error at fetchAvailableNepseSymbol ${error.message}`);
+      return null;
+    }
+  }
+
+
+
+  export default {
+    fetchSummary,
+    fetchCompanyIntradayGraph,
+    intradayIndexGraph,
+    getIndexIntraday,
+    fetchIndexes,
+    FetchSingularDataOfAsset,
+    GetDebentures,
+    FetchOldData,
+    topgainersShare,
+    topLosersShare,
+    topTradedShares,
+    topTurnoversShare,
+    topTransactions,
+    fetchAvailableNepseSymbol
+  };

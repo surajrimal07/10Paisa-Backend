@@ -1,23 +1,16 @@
-import dotenv from 'dotenv';
 import mongoose from 'mongoose';
+import { mainLogger } from '../utils/logger/logger.js';
 
-dotenv.config();
+const clientOptions = { serverApi: { version: '1', strict: true, deprecationErrors: true } };
 
-export const mainDB = async () => {
+export async function Database() {
   try {
-
-    const mongooseOptions = {
-      socketTimeoutMS: 30000,
-      connectTimeoutMS: 30000,
-    };
-
-    const mainDBConnection = mongoose.connect(process.env.DB_URL,mongooseOptions);
-    console.log('Connected to the database');
-    return mainDBConnection;
+    await mongoose.connect(process.env.DB_URL, clientOptions);
+    mainLogger.info('Connected to the database. ReadyState is: '+ mongoose.connection.readyState);
+    return mongoose.connection;
   } catch (error) {
-    console.error('Error connecting to the database:', error);
-    throw error;
+    mainLogger.info('Error connecting to the database:', error);
   }
 };
 
-export default {mainDB};
+export default { Database };

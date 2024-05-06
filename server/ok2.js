@@ -1,168 +1,4 @@
-// import axios from 'axios';
-// import cheerio from 'cheerio';
-
-// export async function extractIndex() {
-//   try {
-//     const targetUrl = 'https://www.sharesansar.com/live-trading';
-//     const targetUrl2 = 'https://nepseapi.zorsha.com.np/DailyNepseIndexGraph';
-//     const targetUrl3 = 'https://nepseapi.zorsha.com.np/IsNepseOpen';
-
-//     //targeturl
-//     const response = await axios.get(targetUrl);
-//     const html = response.data;
-//     const $ = cheerio.load(html);
-
-//     //targeturl2
-//     const response2 = await axios.get(targetUrl2);
-//     const jsonData = response2.data;
-
-//     //targeturl3
-//     const response3 = await axios.get(targetUrl3);
-//     const jsonData2 = response3.data;
-
-//     //target1
-//     const nepseIndexContainer = $('h4:contains("NEPSE Index")').closest('.mu-list');
-//     const turnover = parseFloat(nepseIndexContainer.find('.mu-price').text().replace(/,/g, ''));
-//     const close = parseFloat(nepseIndexContainer.find('.mu-value').text().replace(/,/g, ''));
-//     const percentageChange = parseFloat(nepseIndexContainer.find('.mu-percent').text().replace(/,/g, ''));
-
-//     //target2
-//     const valuesArray = jsonData.map(item => item[1]);
-//     const open = valuesArray[0];
-//     const high = Math.max(...valuesArray);
-//     const low = Math.min(...valuesArray);
-//     const change = (valuesArray[valuesArray.length - 1] - open).toFixed(2);
-
-//     //target3
-//     const isOpen = jsonData2.isOpen;
-
-//     const nepseIndexData = {
-//       open,
-//       high,
-//       low,
-//       close,
-//       change,
-//       percentageChange,
-//       turnover,
-//       isOpen
-//     };
-
-//     return nepseIndexData;
-//   } catch (error) {
-//     console.error('Error fetching or parsing the HTML:', error.message);
-//   }
-// }
-
-// //run above code
-// extractIndex().then(console.log).catch(console.error);
-
-// import axios from 'axios';
-// import cheerio from 'cheerio';
-
-// async function extractBullionPrices() {
-//     const url = 'https://www.sharesansar.com/bullion';
-
-//     try {
-//         const response = await axios.get(url);
-//         const html = response.data;
-//         const $ = cheerio.load(html);
-
-//         const bullionData = [];
-
-//         $('td').each((index, element) => {
-//             const symbol = $(element).find('h3 u').text().trim();
-//             const name = $(element).find('h3 u').text().trim();
-//             const category = 'Metals';
-//             const sector = 'Precious Metals';
-//             const unit = 'Tola';
-//             const ltp = parseInt($(element).find('h4 p').text().trim().replace(/[^0-9]/g, ''), 10);
-//             const change = parseInt($(element).find('font').text().trim().replace(/\(([^)]+)\)/, '$1'), 10);
-
-//             bullionData.push({
-//                 name,
-//                 ltp,
-//                 change,
-//                 category,
-//                 sector,
-//                 symbol,
-//                 unit
-//             });
-//         });
-
-//         return bullionData;
-//     } catch (error) {
-//         console.error('Error fetching or parsing data:', error.message);
-//         return null;
-//     }
-// }
-
-// // Example usage:
-// async function fetchDataAndExtract() {
-//     const extractedData = await extractBullionPrices();
-//     console.log(extractedData);
-// }
-
-// fetchDataAndExtract();
-
-// export async function fetchSummary() {
-//     const url = NEPSE_ACTIVE_API_URL+ '/Summary';
-//     try {
-//       const cachedData = await fetchFromCache('Nepsesummary');
-//       if (cachedData) {
-//         return cachedData;
-//       }
-
-//     const data = await fetch(url).then(response => response.json());
-//     await storage.setItem('Nepsesummary', data);
-
-//     return data;
-//     } catch {
-//         console.log('Error fetching nepse summary data');
-//         return null;
-//     }
-//   };
-
-// export async function intradayIndexGraph() {
-//     const url = 'http://192.168.1.3:8000/DailyNepseIndexGraph';
-//     try {
-//       const cachedData = await fetchFromCache('intradayIndexGraph');
-//       if (cachedData) {
-//         return cachedData;
-//       }
-//       const data = await fetch(url).then(response => response.json());
-//       const processedData = data.map(entry => ({
-//         //date: new Date(entry[0] * 1000).toLocaleDateString(),
-//         time: new Date(entry[0] * 1000).toLocaleTimeString('en-US', { hour: 'numeric', minute: 'numeric', second: 'numeric', hour12: true }),
-//         index: entry[1]
-//       }));
-
-//       await saveToCache('intradayIndexGraph', processedData);
-//       return processedData;
-//     } catch (error) {
-//       console.error('Error fetching or parsing the data:', error.message);
-//       throw error;
-//     }
-//   }
-
-//below function sends following data
-// {
-//   companyName: 'Kisan Lagubitta Bittiya Sanstha Limited',
-//   symbol: 'KLBSL',
-//   status: 'A',
-//   companyEmail: 'secretorykisanmf079@gmail.com',
-//   website: '',
-//   regulatoryBody: 'Nepal Rastra Bank',
-//   instrumentType: 'Equity',
-//   sectorName: 'Microfinance',
-//   totalTurnover: 193240,
-//   totalTrades: 8,
-//   totalTradeQuantity: 218,
-//   pointChange: 0,
-//   percentageChange: 0,
-//   ltp: 0
-// },
-
-export async function FetchSingularDataOfAssetFromAPI(refresh) {
+export async function FetchSingularDataOfAssetFromAPI() {
   const url = "http://localhost:8000/CompanyList";
   const url2 = "http://localhost:8000/TradeTurnoverTransactionSubindices";
 
@@ -194,36 +30,66 @@ export async function FetchSingularDataOfAssetFromAPI(refresh) {
   }
 }
 
-export async function FetchSingleDatafromAPI(refresh, symbol) {
-  const url = "https://localhost:8000/CompanyDetails?symbol=" + symbol;
+async function FetchSingleDatafromAPI(symbol) {
+  const url = `http://localhost:8000/CompanyDetails?symbol=${symbol}`;
 
   try {
-    const data = await fetch(url).then((response) => response.json());
+    const response = await fetch(url);
+    const data = await response.json();
 
     if (!data) {
       return null;
     }
 
-    // const filteredData = data
-    //   .filter((company) => company.status === "A")
-    //   .map(({ id, sectorName, securityName, ...rest }) => rest);
+    data.securityDailyTradeDto.open = data.securityDailyTradeDto.openPrice;
+    delete data.securityDailyTradeDto.openPrice;
 
-    // const mergedData = filteredData.map((company) => {
-    //   const symbol = company.symbol;
-    //   const extraInfo = data2.scripsDetails[symbol];
-    //   if (extraInfo) {
-    //     return { ...company, ...extraInfo };
-    //   } else {
-    //     return company;
-    //   }
-    // });
+    data.securityDailyTradeDto.high = data.securityDailyTradeDto.highPrice;
+    delete data.securityDailyTradeDto.highPrice;
+
+    data.securityDailyTradeDto.low = data.securityDailyTradeDto.lowPrice;
+    delete data.securityDailyTradeDto.lowPrice;
+
+    data.securityDailyTradeDto.close = data.securityDailyTradeDto.closePrice;
+    delete data.securityDailyTradeDto.closePrice;
+
+    delete data.securityDailyTradeDto.securityId;
+    delete data.security.id;
+    delete data.security.isin;
+    delete data.security.creditRating;
+    delete data.security.meInstanceNumber;
+    delete data.security.recordType;
+    delete data.security.shareGroupId;
+    delete data.security.cdsStockRefId;
+    delete data.security.securityTradeCycle;
+    delete data.security.companyId;
+    delete data.security.instrumentType;
+    delete data.security.sectorMaster;
+    delete data.security.highRangeDPR;
+    delete data.security.issuerName;
+    delete data.security.parentId;
+    delete data.security.schemeDescription;
+    delete data.security.schemeName;
+    delete data.security.series;
+    delete data.security.divisor;
+    delete data.security.secured;
+
+    if (data.security.companyId) {
+      delete data.security.companyId.companyShortName;
+      delete data.security.companyId.companyWebsite;
+      delete data.security.companyId.companyRegistrationNumber;
+      delete data.security.companyId.modifiedBy;
+      delete data.security.companyId.modifiedDate;
+    }
+
+    delete data.updatedDate;
+    delete data.securityId;
 
     return data;
   } catch (error) {
-    console.error(error);
+    console.error("Fetch error:", error);
+    return null;
   }
 }
 
-// Example usage:
-//FetchSingularDataOfAssetFromAPI(true).then(console.log).catch(console.error);
-FetchSingularDataOfAssetFromAPI(true).then(console.log).catch(console.error);
+FetchSingularDataOfAssetFromAPI().then(console.log).catch(console.error);

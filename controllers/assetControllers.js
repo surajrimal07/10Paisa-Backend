@@ -1,5 +1,4 @@
 import fs from "fs";
-import storage from "node-persist";
 import path from "path";
 import {
   deleteFromCache,
@@ -9,6 +8,7 @@ import {
 import {
   FetchOldData,
   FetchSingularDataOfAsset,
+  fetchAvailableNepseSymbol,
   fetchCompanyIntradayGraph,
   fetchIndexes,
   fetchSummary,
@@ -30,12 +30,11 @@ import {
   respondWithError,
   respondWithSuccess,
 } from "../utils/response_utils.js";
-await storage.init();
+
+import { assetLogger } from '../utils/logger/logger.js';
 
 // // single stopmic data from sharesansar
 export const AssetMergedData = async (req, res) => {
-  console.log("Sharesansar Asset Data Requested");
-
   try {
     const refreshParam = req.query.refresh || "";
     if (refreshParam.toLowerCase() === "refresh") {
@@ -119,8 +118,6 @@ export const SingeAssetMergedData = async (req, res) => {
 export const AssetMergedDataBySector = async (req, res) => {
   console.log("Sharesansar Asset Data Requested by Sector");
 
-  console.log("Request sector:", req.body.sector);
-
   const sector = req.body.sector;
   const assettype = req.body.category;
 
@@ -196,12 +193,12 @@ export const AssetMergedDataBySector = async (req, res) => {
 
 //get metal
 export const fetchMetalPrices = async (req, res) => {
-  console.log("Metal data requested");
+  assetLogger.info("Metal data requested");
 
   try {
     const refreshParam = req.query.refresh || "";
     if (refreshParam.toLowerCase() === "refresh") {
-      console.log("Refreshing metal prices");
+      assetLogger.info("Refreshing metal prices");
       deleteFromCache("metalprices");
     }
     const metalData = await metalPriceExtractor();
@@ -215,7 +212,7 @@ export const fetchMetalPrices = async (req, res) => {
 
     return res.status(200).json({ metalData });
   } catch (error) {
-    console.error("Error fetching or logging metal prices:", error.message);
+    assetLogger.error("Error fetching or logging metal prices:", error.message);
     return respondWithError(
       res,
       "INTERNAL_SERVER_ERROR",
@@ -498,9 +495,6 @@ export const DashBoardData = async (req, res) => {
       },
     };
 
-    await saveToCache("DashBoardData", dashboardData);
-    console.log("Returning live dashboard data");
-
     return res.status(200).json({
       data: dashboardData,
       isCached: false,
@@ -531,11 +525,9 @@ export const AllIndicesData = async (req, res) => {
       return respondWithError(
         res,
         "INTERNAL_SERVER_ERROR",
-        "Failed to fetch all indices datas."
       );
     }
 
-    await saveToCache("AllIndicesDatas", allIndicesData);
     return respondWithData(
       res,
       "SUCCESS",
@@ -641,49 +633,160 @@ export const CombinedIndexData = async (req, res) => {
 };
 
 //https://localhost:4000/api/getcompanyohlc?company=nepse
-export const getCompanyOHLCNepseAlpha = async (req, res) => {
-  const company = req.query.company.toUpperCase();
-  try {
-    const response = await fetch(
-      "https://www.nepsealpha.com/trading/1/history?force_key=vfgfhdhththhhnhjhjhj&symbol=" +
-        company +
-        "&from=767664000&to=1714521600&resolution=1D&pass=ok&fs=vfgfhdhththhhnhjhjhj&shouldCache=1",
-      {
-        headers: {
-          accept: "application/json, text/plain, */*",
-          "sec-ch-ua":
-            '"Chromium";v="124", "Microsoft Edge";v="124", "Not-A.Brand";v="99"',
-          "sec-ch-ua-arch": '"x86"',
-          "sec-ch-ua-bitness": '"64"',
-          "sec-ch-ua-full-version": '"124.0.2478.67"',
-          "sec-ch-ua-full-version-list":
-            '"Chromium";v="124.0.6367.91", "Microsoft Edge";v="124.0.2478.67", "Not-A.Brand";v="99.0.0.0"',
-          "sec-ch-ua-mobile": "?0",
-          "sec-ch-ua-model": '""',
-          "sec-ch-ua-platform": '"Windows"',
-          "sec-ch-ua-platform-version": '"15.0.0"',
-          "x-requested-with": "XMLHttpRequest",
-          Referer: "https://www.nepsealpha.com/trading/chart?symbol=NEPSE",
-          "Referrer-Policy": "strict-origin-when-cross-origin",
-        },
-        body: null,
-        method: "GET",
-      }
-    );
+//company ko aaile samma ko complete daily OHLC data //from nepsealpha or systemxlite
+//accept timeframe too, used for python chart
+function getIndexName(index) {
+  switch (index) {
+    case 'BANKING':
+      return 'BANKING_index';
+    case 'DEVELOPMENT BANK':
+      return 'DEVELOPMENT BANK_index';
+    case 'FINANCE':
+      return 'FINANCE_index';
+    case 'FLOAT':
+      return 'FLOAT_index';
+    case 'HOTELS AND TOURISM':
+      return 'HOTELS AND TOURISM_index';
+    case 'HYDROPOWER':
+      return 'HYDROPOWER_index';
+    case 'INSURANCE':
+      return 'INSURANCE_index';
+    case 'LIFE INSURANCE':
+      return 'LIFE INSURANCE_index';
+    case 'MANU.& PRO.':
+      return 'MANU.& PRO._index';
+    case 'MICROFINANCE':
+      return 'MICROFINANCE_index';
+    case 'NEPSE':
+      return 'NEPSE_index';
+    case 'NON LIFE INSURANCE':
+      return 'NON LIFE INSURANCE_index';
+    case 'OTHERS':
+      return 'OTHERS_index';
+    case 'SEN. FLOAT':
+      return 'SEN. FLOAT_index';
+    case 'SENSITIVE':
+      return 'SENSITIVE_index';
+    case 'TRADING':
+      return 'TRADING_index';
+    case 'MUTUAL FUND':
+      return 'MUTUAL FUND_index';
+    case 'INVESTMENT':
+      return 'INVESTMENT_index';
+    default:
+      return index;
+  }
+}
 
-    if (!response) {
-      return respondWithError(
-        res,
-        "INTERNAL_SERVER_ERROR",
-        "Internal Server Error"
+//this is to check for empty data that systemxlite.com returns when symbol name is incorrect.
+function isValidData(data) {
+  if (!data || typeof data !== 'object' ||
+    !data.s || !Array.isArray(data.t) || !Array.isArray(data.c) ||
+    !Array.isArray(data.o) || !Array.isArray(data.h) ||
+    !Array.isArray(data.l) || !Array.isArray(data.v)) {
+    return false;
+  }
+
+  return data.s !== 'no_data' && data.t.length > 0 &&
+    data.c.length > 0 && data.o.length > 0 &&
+    data.h.length > 0 && data.l.length > 0 && data.v.length > 0;
+}
+
+export const getCompanyOHLCNepseAlpha = async (req, res) => {
+  const requestedSymbol = (req.query.symbol ? req.query.symbol.toUpperCase() : 'NEPSE');
+  const timeFrame = (req.query.timeFrame ? req.query.timeFrame : '1D');
+  const force_key = (req.query.force_key ? req.query.force_key : 'rrfdwdwdsdfdg');
+
+  assetLogger.info(`Requested Historical OHLC for symbol: ${requestedSymbol}, ${timeFrame}`);
+
+  const __dirname = path.resolve();
+  const fileName = path.join(__dirname, `./public/stock/${requestedSymbol}/${requestedSymbol}_${timeFrame}.json`);
+  const currentEpochTime = Math.floor(Date.now() / 1000);
+
+  try {
+    assetLogger.info('Fetching data from systemxlite.com');
+    const symbolIndex = await getIndexName(requestedSymbol);
+    let response = await fetch(`https://backendtradingview.systemxlite.com/tv/tv/history?symbol=${symbolIndex}&resolution=${timeFrame}&from=768009600&to=${currentEpochTime}&countback=88`, {
+      "headers": {
+        "accept": "*/*",
+        "accept-language": "en-US,en;q=0.9,ne;q=0.8",
+        "if-none-match": "W/\"107d7-CkFswx0Zr81sX6ZUbikPAlgnJBA\"",
+        "sec-ch-ua": "\"Chromium\";v=\"124\", \"Microsoft Edge\";v=\"124\", \"Not-A.Brand\";v=\"99\"",
+        "sec-ch-ua-mobile": "?0",
+        "sec-ch-ua-platform": "\"Windows\"",
+        "sec-fetch-dest": "empty",
+        "sec-fetch-mode": "cors",
+        "sec-fetch-site": "same-site",
+        "sec-gpc": "1",
+        "Referer": "https://tradingview.systemxlite.com/",
+        "Referrer-Policy": "strict-origin-when-cross-origin"
+      },
+      "method": "GET"
+    }).then((response) => response.json());
+
+    if (!response || !isValidData(response)) {
+      assetLogger.error('Fetching data from systemxlite.com failed. Trying nepsealpha.com');
+      response = await fetch(
+        `https://www.nepsealpha.com/trading/1/history?${force_key}=rrfdwdwdsdfdg&symbol=${requestedSymbol}&from=768009600&to=1714867200&resolution=${timeFrame}&pass=ok&fs=${force_key}&shouldCache=1`,
+        {
+          headers: {
+            accept: "application/json, text/plain, */*",
+            "sec-ch-ua":
+              '"Chromium";v="124", "Microsoft Edge";v="124", "Not-A.Brand";v="99"',
+            "sec-ch-ua-arch": '"x86"',
+            "sec-ch-ua-bitness": '"64"',
+            "sec-ch-ua-full-version": '"124.0.2478.67"',
+            "sec-ch-ua-full-version-list":
+              '"Chromium";v="124.0.6367.91", "Microsoft Edge";v="124.0.2478.67", "Not-A.Brand";v="99.0.0.0"',
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-model": '""',
+            "sec-ch-ua-platform": '"Windows"',
+            "sec-ch-ua-platform-version": '"15.0.0"',
+            "x-requested-with": "XMLHttpRequest",
+            Referer: "https://www.nepsealpha.com/trading/chart?symbol=NEPSE",
+            "Referrer-Policy": "strict-origin-when-cross-origin",
+          },
+          "method": "GET",
+        }
       );
     }
 
-    //const jsonData = await response.json();
-    return res.status(200).json(await response.json());
+    if (!response || !isValidData(response)) {
+      assetLogger.error('Failed to fetch data from both nepsealpha.com and systemxlite.com, trying to read from file.');
+      const fileData = await fs.promises.readFile(fileName, 'utf8').catch(err => null);
+      if (fileData) {
+        return res.status(200).json(JSON.parse(fileData));
+      }
+      assetLogger.error('Failed to fetch data from both nepsealpha.com and systemxlite.com and file does not exist');
+      return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'Failed to fetch data from both nepsealpha.com and systemxlite, probably invalid symbol');
+    }
+
+    await fs.promises.mkdir(path.dirname(fileName), { recursive: true });
+    await fs.promises.writeFile(fileName, JSON.stringify(response));
+    return res.status(200).json(response);
   } catch (error) {
-    console.error(error);
-    respondWithError(res, "INTERNAL_SERVER_ERROR", "Internal Server Error");
+    assetLogger.error(`Error fetching data: ${error.message}`);
+    const fileData = await fs.promises.readFile(fileName, 'utf8').catch(err => null);
+    if (fileData) {
+      return res.status(200).json(fileData);
+    }
+    respondWithError(res, 'INTERNAL_SERVER_ERROR', 'Internal Server Error');
+  }
+}
+
+export const AvailableNepseSymbols = async (req, res) => {
+  assetLogger.info('Available Nepse Symbols Requested');
+
+  try {
+    const symbols = await fetchAvailableNepseSymbol();
+    if (!symbols) {
+      return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'Failed to fetch available symbols.');
+    }
+    assetLogger.info('Returning available symbols');
+    return respondWithData(res, 'SUCCESS', 'Data Fetched Successfully', symbols);
+  } catch (error) {
+    assetLogger.error(`Error fetching data: ${error.message}`);
+    return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'Internal Server Error');
   }
 };
 
@@ -881,8 +984,6 @@ export const nepseDailyGraphData = async (req, res) => {
       console.log("Refreshing Nepse daily graph");
       await deleteFromCache("intradayIndexGraph");
     }
-
-    //if query params is csv then convert to csv and send the data
 
     const nepseDailyGraph = await intradayIndexGraph();
 
@@ -1188,4 +1289,5 @@ export default {
   TopGainersData,
   DashBoardData,
   FetchSingleDatafromAPINepseAlpha,
+  AvailableNepseSymbols,
 };

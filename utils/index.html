@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,16 +12,20 @@
       text-align: center;
       margin-top: 50px;
     }
+
     h1 {
       color: #333;
     }
+
     p {
       color: #666;
     }
-    .route-container {
+
+    .Main {
       margin-top: 50px;
       text-align: left;
     }
+
     .route {
       background-color: #fff;
       border: 1px solid #ccc;
@@ -28,23 +33,33 @@
       padding: 10px;
       margin-bottom: 10px;
     }
+
     .route-method {
-      font-weight: bold;
+      font-weight: normal;
       margin-bottom: 5px;
+    }
+
+    .route-path {
+      color: #333;
+      cursor: pointer;
     }
   </style>
 </head>
+
 <body>
   <h1>Welcome to the 10Paisa API!</h1>
-  <p>This API is running live<span class="emoji">🥳</span></p>
+  <h3>This API is running live<span class="emoji">🥳</span></h3>
 
-  <div id="DYNAMIC_ROUTES" style="float: left;"></div><div class="route-container">
+  <h3>Available Routes:</h3>
+  <p>Click on a route to navigate to it.</p>
+  <div id="Main" style="float: middle">
+    <div id="DYNAMIC_ROUTES"></div>
   </div>
-
   <script>
     function navigateToRoute(routePath) {
       window.location.href = routePath;
     }
   </script>
 </body>
+
 </html>
