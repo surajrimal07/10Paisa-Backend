@@ -43,7 +43,8 @@ export async function ActiveServer() {
       NEPSE_ACTIVE_API_URL = NEPSE_API_URL1;
       nepseLogger.info(`Nepse API Server 1 is active. ${NEPSE_ACTIVE_API_URL}`);
     }
-  } catch {
+  } catch (error) {
+    console.log(error.message);
     try {
       const url2Response = await axios.get(NEPSE_API_URL2);
       if (url2Response.status === 200) {
