@@ -27,8 +27,9 @@ await storage.init({
 });
 
 const refreshInterval = (await fetchFromCache("isMarketOpen"))
-  ? 60 * 1000 // 1 minute
-  : 5 * 60 * 1000; // 5 minutes
+  ? 120 * 1000 // 2 minute, because individual delay is around 10 sec * 10 = 1Min,
+  //so let's wait another 1 minute, total 2 min delay
+  : 30 * 60 * 1000; // 30 mins because no point in refreshing data when market is closed
 
 
 const NEPSE_API_URL1 = process.env.NEPSE_API_URL;
@@ -38,7 +39,6 @@ export let NEPSE_ACTIVE_API_URL = process.env.NEPSE_API_URL1;
 export async function ActiveServer() {
   try {
     const url1Response = await axios.get(NEPSE_API_URL1);
-
     if (url1Response.status === 200) {
       NEPSE_ACTIVE_API_URL = NEPSE_API_URL1;
       nepseLogger.info(`Nepse API Server 1 is active. ${NEPSE_ACTIVE_API_URL}`);
@@ -55,7 +55,6 @@ export async function ActiveServer() {
     }
   }
 }
-
 
 export async function isNepseOpen() {
   try {
@@ -77,7 +76,7 @@ export async function isNepseOpen() {
         return await handleisNepseOpenResponse(backupResponse, NEPSE_API_URL2);
       } catch (errorBackup) {
         nepseLogger.error(
-          `Error fetching Nepse status from primary URL: ${errorBackup.message}`
+          `Error fetching Nepse status from backuo URL: ${errorBackup.message}`
         );
         return false;
       }
@@ -119,13 +118,12 @@ async function wipeCachesAndRefreshData() {
 
     for (const fetchFunction of fetchFunctions) {
       await fetchFunction(true);
-      await new Promise(resolve => setTimeout(resolve, 5000));
+      await new Promise(resolve => setTimeout(resolve, 10000));
     }
 
     let newIndexData = await getIndexIntraday(true);
     if (newIndexData) {
       notifyClients({ type: "index", data: newIndexData });
-      await saveToCache("previousIndexData", newIndexData);
     }
     nepseLogger.info(`Refresh Successful at ${new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })}`);
   } catch (error) {
@@ -133,12 +131,28 @@ async function wipeCachesAndRefreshData() {
   }
 }
 
+//solved the the refresh and 1 minute gap issue when nepse is closed
+//making sure we have last data
 export default async function initializeRefreshMechanism() {
   try {
+    await new Promise(resolve => setTimeout(resolve, 5000));
     nepseLogger.info("Initializing Nepse refresh mechanism.");
+    let isNepseOpenPrevious = await isNepseOpen(); // Store the initial state
+    if (isNepseOpenPrevious) {
+      await wipeCachesAndRefreshData(); // Refresh data if Nepse is initially open
+    }
+
     setInterval(async () => {
-      if (await isNepseOpen()) {
-        await wipeCachesAndRefreshData();
+      const isNepseOpenNow = await isNepseOpen(); // Check the current state
+      if (isNepseOpenNow !== isNepseOpenPrevious) {
+        if (!isNepseOpenNow) {
+          await wipeCachesAndRefreshData(); // Refresh data last time when Nepse closes
+        }
+        isNepseOpenPrevious = isNepseOpenNow; // Update previous state
+      }
+
+      if (isNepseOpenNow) {
+        await wipeCachesAndRefreshData(); // Refresh data if Nepse is currently open
       }
     }, refreshInterval);
   } catch (error) {

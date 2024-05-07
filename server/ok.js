@@ -327,7 +327,7 @@ export async function fetchAvailableNepseSymbol() {
   }
 }
 
-await fetchAvailableNepseSymbol()
+//await fetchAvailableNepseSymbol()
 
 // async function processSymbols() {
 //   try {
@@ -349,3 +349,27 @@ await fetchAvailableNepseSymbol()
 // }
 
 //processSymbols();
+
+function checkEpochTime(dateString, epochTime) {
+  // Extract the date from epoch time
+  const epochDate = new Date(epochTime * 1000);
+  console.log('Epoch Date:', epochDate.toDateString()); // Print epoch date
+
+  const inputDate = new Date(dateString);
+  console.log('Input Date:', inputDate.toDateString()); // Print input date
+
+  return inputDate.toDateString() === epochDate.toDateString();
+}
+
+const formattedDate = new Date(new Date().getTime() + (5 * 60 * 60 * 1000) + (45 * 60 * 1000)).toISOString().split('T')[0];
+console.log("current formatted date " + formattedDate);
+const epochTime = Math.floor((Date.now() + (5 * 60 * 60 * 1000 + 45 * 60 * 1000)) / 1000);
+
+const result = checkEpochTime(formattedDate, '1714899603');
+console.log(result);
+console.log(epochTime);
+
+
+// log is
+// false
+// 1714992011

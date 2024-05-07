@@ -1,11 +1,10 @@
 import winston from "winston";
 /* eslint-disable */
-import { MongoDB } from "winston-mongodb";
 
 const consoleLogEnabled = process.env.CONSOLE_LOG_ENABLED === 'true';
 
 const transports = [
-  new winston.transports.MongoDB({ db: process.env.NEW_DB_URL, collection: 'mainlogs', level: 'info',tryReconnect: true, storeHost: true }),
+  new winston.transports.MongoDB({ db: process.env.NEW_DB_URL, collection: 'mainlogs', level: 'info', tryReconnect: true, storeHost: true, poolSize: 50 }),
 ];
 
 if (consoleLogEnabled) {

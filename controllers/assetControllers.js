@@ -692,6 +692,26 @@ function isValidData(data) {
     data.h.length > 0 && data.l.length > 0 && data.v.length > 0;
 }
 
+//use new technique to only fetch short data if first load is off
+//challange remains is how do we save this part data and merge it?
+// export const getCompanyOHLCNepseAlpha = async (req, res) => {
+//   const requestedSymbol = (req.query.symbol ? req.query.symbol.toUpperCase() : 'NEPSE');
+//   const timeFrame = (req.query.timeFrame ? req.query.timeFrame : '1D');
+//   const force_key = (req.query.force_key ? req.query.force_key : 'rrfdwdwdsdfdg');
+//   const is_firstload = (req.query.firstload ? req.query.firstload : 'true');
+
+//   //is_firstload !== 'true' then do this
+//   //const start_epoch =
+//   //if timeFrame = 1 then substract 10 minutes from currentEpochTime
+//   //if timeFrame = 5 then substract 50 minutes from currentEpochTime
+//   //if timeFrame = 15 then substract 150 minutes from currentEpochTime
+//   // if timeFrame = 10 then substract 100 minutes from currentEpochTime
+
+//   const currentEpochTime = Math.floor(Date.now() / 1000);
+//   const start_date = (is_firstload === 'true' ? 768009600 : 0); //add start_epoch here
+
+
+
 export const getCompanyOHLCNepseAlpha = async (req, res) => {
   const requestedSymbol = (req.query.symbol ? req.query.symbol.toUpperCase() : 'NEPSE');
   const timeFrame = (req.query.timeFrame ? req.query.timeFrame : '1D');
@@ -704,6 +724,21 @@ export const getCompanyOHLCNepseAlpha = async (req, res) => {
   const currentEpochTime = Math.floor(Date.now() / 1000);
 
   try {
+    if (!await fetchFromCache('isMarketOpen')) {
+      const fileData = await fs.promises.readFile(fileName, 'utf8').catch(err => null);
+      if (fileData) {
+        const epochTime = new Date(new Date().getTime() + (5 * 60 * 60 * 1000) + (45 * 60 * 1000)).toISOString().split('T')[0];
+        const jsonData = JSON.parse(fileData);
+        const lastEpochTime = jsonData.t[jsonData.t.length - 1];
+        const lastDateString = new Date(lastEpochTime * 1000).toISOString().slice(0, 10);
+        if (epochTime === lastDateString) {
+          assetLogger.info(`${requestedSymbol} ${timeFrame} data found in cache, returning cached data`);
+          return res.status(200).json(JSON.parse(fileData));
+        }
+      }
+      assetLogger.info(`${requestedSymbol} ${timeFrame} data not found in cache, returning live data`);
+    }
+
     assetLogger.info('Fetching data from systemxlite.com');
     const symbolIndex = await getIndexName(requestedSymbol);
     let response = await fetch(`https://backendtradingview.systemxlite.com/tv/tv/history?symbol=${symbolIndex}&resolution=${timeFrame}&from=768009600&to=${currentEpochTime}&countback=88`, {
@@ -775,14 +810,15 @@ export const getCompanyOHLCNepseAlpha = async (req, res) => {
 }
 
 export const AvailableNepseSymbols = async (req, res) => {
-  assetLogger.info('Available Nepse Symbols Requested');
+
+  const refreshParam = req.query.refresh || "";
 
   try {
-    const symbols = await fetchAvailableNepseSymbol();
+    const symbols = await fetchAvailableNepseSymbol(true, refreshParam.toLowerCase() === "refresh");
     if (!symbols) {
       return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'Failed to fetch available symbols.');
     }
-    assetLogger.info('Returning available symbols');
+
     return respondWithData(res, 'SUCCESS', 'Data Fetched Successfully', symbols);
   } catch (error) {
     assetLogger.error(`Error fetching data: ${error.message}`);
