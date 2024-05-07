@@ -37,7 +37,7 @@ const NEPSE_API_URL2 = process.env.NEPSE_API_URL_BACKUP;
 export let NEPSE_ACTIVE_API_URL = process.env.NEPSE_API_URL1;
 
 export async function ActiveServer() {
-  await new Promise(resolve => setTimeout(resolve, 5)); //wait for python unicorn server to start
+  await new Promise(resolve => setTimeout(resolve, 5000)); //wait for python unicorn server to start
   try {
     const url1Response = await axios.get(NEPSE_API_URL1);
     if (url1Response.status === 200) {
