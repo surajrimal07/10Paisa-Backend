@@ -568,7 +568,6 @@ export async function intradayIndexGraph(refresh) {
     }
 
     const data = await fetch(url).then((response) => response.json());
-    console.log(`intradayIndexGraph ${data}`);
 
     if (!Array.isArray(data)) {
       assetLogger.error("Invalid data received from the API in DailyNepseIndexGraph.");
@@ -590,7 +589,6 @@ export async function intradayIndexGraph(refresh) {
 
     return processedData;
   } catch (error) {
-    console.log(error.message);
     assetLogger.error(`Error at intradayIndexGraph : ${error.message}`);
     return null;
   }
@@ -647,7 +645,6 @@ export async function fetchCompanyDailyOHLC(company) {
   const url = NEPSE_ACTIVE_API_URL + "/CompanyDetails?symbol=" + company;
   try {
     const data = await fetch(url).then((response) => response.json());
-    console.log(data);
 
     return modifiedData;
   } catch (error) {

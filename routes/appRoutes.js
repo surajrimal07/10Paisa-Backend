@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { deleteUserByEmail, editUserByEmail, getAllPortfolios, getAllUsers } from '../controllers/adminController.js';
-import { AllIndicesData, AssetMergedData, AssetMergedDataBySector, AvailableNepseSymbols, CombinedIndexData, CommodityData, DashBoardData, FetchSingleDatafromAPINepseAlpha, IndexData, SingeAssetMergedData, TopGainersData, TopHeavyStocks, TopLoosersData, TopTransData, TopTurnoverData, TopVolumeData, WorldMarketData, fetchAndMergeDailyNepsePrice, fetchIntradayCompanyGraph, fetchMetalPrices, getCompanyOHLCNepseAlpha, nepseDailyGraphData, nepseSummary, refreshCommodityData, refreshMetalsData, refreshWorldMarketData } from '../controllers/assetControllers.js';
+import { AllIndicesData, AssetMergedData, AssetMergedDataBySector, AvailableNepseSymbols, CombinedIndexData, CommodityData, DashBoardData, IndexData, SingeAssetMergedData, TopGainersData, TopHeavyStocks, TopLoosersData, TopTransData, TopTurnoverData, TopVolumeData, WorldMarketData, fetchAndMergeDailyNepsePrice, fetchIntradayCompanyGraph, fetchMetalPrices, getCompanyOHLCNepseAlpha, nepseDailyGraphData, nepseSummary, refreshCommodityData, refreshMetalsData, refreshWorldMarketData } from '../controllers/assetControllers.js';
 import { NrbBankingDataAll, combinedNrbData, nrbForexData, refreshNRBData } from '../controllers/extraDataControllers.js';
 import { sendOTP, verifyOTP } from '../controllers/otpControllers.js';
 import { addStockToPortfolio, createPortfolio, deletePortfolio, getAllPortfoliosForUser, removeStockFromPortfolio, renamePortfolio } from '../controllers/portfolioControllers.js';
@@ -114,7 +114,7 @@ router.get('/refreshworldmarket', allowOnly(['GET']), refreshWorldMarketData);
 router.get('/refreshcommodity', allowOnly(['GET']), refreshCommodityData);
 router.get('/refreshnrbdata', allowOnly(['GET']), refreshNRBData);
 router.get('/adddailyOHLC', allowOnly(['GET']), fetchAndMergeDailyNepsePrice);
-router.get('/fetchindexdatafromnepsealpha', allowOnly(['GET']), FetchSingleDatafromAPINepseAlpha);
+//router.get('/fetchindexdatafromnepsealpha', allowOnly(['GET']), FetchSingleDatafromAPINepseAlpha);
 
 router.get('/active-users', (req, res) => {
     const activeUsersCount = Object.keys(req.session.activeUsers).length;

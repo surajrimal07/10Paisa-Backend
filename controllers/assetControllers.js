@@ -31,7 +31,7 @@ import {
   respondWithSuccess,
 } from "../utils/response_utils.js";
 
-import { assetLogger } from '../utils/logger/logger.js';
+import { apiLogger, assetLogger, nepseLogger } from '../utils/logger/logger.js';
 
 // // single stopmic data from sharesansar
 export const AssetMergedData = async (req, res) => {
@@ -61,7 +61,7 @@ export const AssetMergedData = async (req, res) => {
       mergedData
     );
   } catch (error) {
-    console.error(error);
+    apiLogger.error(`Error fetching asset data: ${error.message}`);
     return respondWithError(
       res,
       "INTERNAL_SERVER_ERROR",
@@ -72,11 +72,11 @@ export const AssetMergedData = async (req, res) => {
 
 //single asset from sharesanasar like upcl
 export const SingeAssetMergedData = async (req, res) => {
-  console.log("Sharesansar Single Asset Data Requested");
+  apiLogger.info("Sharesansar Single Asset Data Requested");
   const symbol = req.body.symbol;
 
   if (!symbol) {
-    console.error("No symbol provided in the request");
+    apiLogger.error("No symbol provided in the request");
     return respondWithError(
       res,
       "BAD_REQUEST",
@@ -105,7 +105,7 @@ export const SingeAssetMergedData = async (req, res) => {
       isCached: false,
     });
   } catch (error) {
-    console.error(error);
+    apiLogger.error(`Error fetching single asset data: ${error.message}`);
     return respondWithError(
       res,
       "INTERNAL_SERVER_ERROR",
@@ -116,7 +116,7 @@ export const SingeAssetMergedData = async (req, res) => {
 
 //filtering based on sector
 export const AssetMergedDataBySector = async (req, res) => {
-  console.log("Sharesansar Asset Data Requested by Sector");
+  apiLogger.info("Sharesansar Asset Data Requested by Sector");
 
   const sector = req.body.sector;
   const assettype = req.body.category;
@@ -182,7 +182,7 @@ export const AssetMergedDataBySector = async (req, res) => {
       filteredData
     );
   } catch (error) {
-    console.error(error);
+    apiLogger.error(`Error fetching asset data by sector: ${error.message}`);
     return respondWithError(
       res,
       "INTERNAL_SERVER_ERROR",
@@ -228,7 +228,7 @@ export const CommodityData = async (req, res) => {
     if (refreshParam.toLowerCase() !== "refresh") {
       const cachedData = await fetchFromCache("CommodityData");
       if (cachedData !== null && cachedData !== undefined) {
-        console.log("Returning cached commodity data");
+        assetLogger.info("Returning cached commodity data");
         return respondWithData(
           res,
           "SUCCESS",
@@ -274,7 +274,7 @@ export const CommodityData = async (req, res) => {
       mergedData
     );
   } catch (error) {
-    console.error(error);
+    assetLogger.error(`Error fetching or logging commodity data: ${error.message}`);
     return respondWithError(
       res,
       "INTERNAL_SERVER_ERROR",
@@ -285,11 +285,11 @@ export const CommodityData = async (req, res) => {
 
 //top gainers //share sansar
 export const TopGainersData = async (req, res) => {
-  console.log("Top gainers data requested");
+  assetLogger.info("Top Gainers Data Requested");
   try {
     const refreshParam = req.query.refresh || "";
     if (refreshParam.toLowerCase() === "refresh") {
-      console.log("Refreshing top gainers data");
+      assetLogger.info("Refreshing top gainers data");
       deleteFromCache("topgainersShare");
     }
     const topGainersData = await topgainersShare();
@@ -309,7 +309,7 @@ export const TopGainersData = async (req, res) => {
       topGainersData
     );
   } catch (error) {
-    console.error(error);
+    apiLogger.error(`Error fetching top gainers data: ${error.message}`);
     return respondWithError(
       res,
       "INTERNAL_SERVER_ERROR",
@@ -320,12 +320,12 @@ export const TopGainersData = async (req, res) => {
 
 //toploosers
 export const TopLoosersData = async (req, res) => {
-  console.log("Top loosers data requested");
+  assetLogger.info("Top Loosers Data Requested");
 
   try {
     const refreshParam = req.query.refresh || "";
     if (refreshParam.toLowerCase() === "refresh") {
-      console.log("Refreshing top loosers data");
+      assetLogger.info("Refreshing top loosers data");
       deleteFromCache("topLosersShare");
     }
 
@@ -345,7 +345,7 @@ export const TopLoosersData = async (req, res) => {
       topGainersData
     );
   } catch (error) {
-    console.error(error);
+    assetLogger.error(`Error fetching top loosers data: ${error.message}`);
     return respondWithError(
       res,
       "INTERNAL_SERVER_ERROR",
@@ -356,11 +356,11 @@ export const TopLoosersData = async (req, res) => {
 
 //top turnover
 export const TopTurnoverData = async (req, res) => {
-  console.log("Top turnover data requested");
+  apiLogger.info("Top Turnover Data Requested");
   try {
     const refreshParam = req.query.refresh || "";
     if (refreshParam.toLowerCase() === "refresh") {
-      console.log("Refreshing top turnover data");
+      apiLogger.info("Refreshing top turnover data");
       deleteFromCache("topTurnoversShare");
     }
     const topGainersData = await topTurnoversShare();
@@ -379,7 +379,7 @@ export const TopTurnoverData = async (req, res) => {
       topGainersData
     );
   } catch (error) {
-    console.error(error);
+    apiLogger.error(`Error fetching top turnover data: ${error.message}`);
     return respondWithError(
       res,
       "INTERNAL_SERVER_ERROR",
@@ -390,12 +390,12 @@ export const TopTurnoverData = async (req, res) => {
 
 //top volume
 export const TopVolumeData = async (req, res) => {
-  console.log("Top volume data requested");
+  apiLogger.info("Top Volume Data Requested");
 
   try {
     const refreshParam = req.query.refresh || "";
     if (refreshParam.toLowerCase() === "refresh") {
-      console.log("Refreshing top volume data");
+      apiLogger.info("Refreshing top volume data");
       deleteFromCache("topTradedShares");
     }
 
@@ -415,7 +415,7 @@ export const TopVolumeData = async (req, res) => {
       topGainersData
     );
   } catch (error) {
-    console.error(error);
+    apiLogger.error(`Error fetching top volume data: ${error.message}`);
     return respondWithError(
       res,
       "INTERNAL_SERVER_ERROR",
@@ -425,12 +425,12 @@ export const TopVolumeData = async (req, res) => {
 };
 
 export const TopTransData = async (req, res) => {
-  console.log("Top Transaction data requested");
+  apiLogger.info("Top Transaction Data Requested");
 
   try {
     const refreshParam = req.query.refresh || "";
     if (refreshParam.toLowerCase() === "refresh") {
-      console.log("Refreshing top transaction data");
+      apiLogger.info("Refreshing top transaction data");
       deleteFromCache("topTransactions");
     }
 
@@ -450,7 +450,7 @@ export const TopTransData = async (req, res) => {
       topGainersData
     );
   } catch (error) {
-    console.error(error);
+    apiLogger.error(`Error fetching top transaction data: ${error.message}`);
     return respondWithError(
       res,
       "INTERNAL_SERVER_ERROR",
@@ -463,7 +463,7 @@ export const DashBoardData = async (req, res) => {
   try {
     const refreshParam = req.query.refresh || "";
     if (refreshParam.toLowerCase() === "refresh") {
-      console.log("Refreshing dashboard data");
+      apiLogger.info("Refreshing dashboard data");
       deleteFromCache("topgainersShare");
       deleteFromCache("topLosersShare");
       deleteFromCache("topTurnoversShare");
@@ -500,7 +500,7 @@ export const DashBoardData = async (req, res) => {
       isCached: false,
     });
   } catch (error) {
-    console.error(error);
+    apiLogger.error(`Error fetching dashboard data: ${error.message}`);
     return respondWithError(
       res,
       "INTERNAL_SERVER_ERROR",
@@ -511,12 +511,12 @@ export const DashBoardData = async (req, res) => {
 
 //new all indices data //returns all sub indexes
 export const AllIndicesData = async (req, res) => {
-  console.log("All Indices Data Requested");
+  apiLogger.info("All Indices Data Requested");
 
   try {
     const refreshParam = req.query.refresh || "";
     if (refreshParam.toLowerCase() === "refresh") {
-      console.log("Refreshing all indices data");
+      apiLogger.info("Refreshing all indices data");
       deleteFromCache("allindices_sourcedata");
     }
 
@@ -535,7 +535,7 @@ export const AllIndicesData = async (req, res) => {
       allIndicesData
     );
   } catch (error) {
-    console.error(error);
+    apiLogger.error(`Error fetching all indices data: ${error.message}`);
     return respondWithError(
       res,
       "INTERNAL_SERVER_ERROR",
@@ -546,7 +546,7 @@ export const AllIndicesData = async (req, res) => {
 
 //new cache mechanism fixed and added
 export const IndexData = async (req, res) => {
-  console.log("Index Data Requested");
+  apiLogger.info("Index Data Requested");
   try {
     const refreshParam = req.query.refresh || "";
     if (refreshParam.toLowerCase() === "refresh") {
@@ -555,7 +555,7 @@ export const IndexData = async (req, res) => {
       //   const cachedData = await fetchFromCache('intradayIndexData');
       //   return respondWithData(res,'SUCCESS','Data Fetched Successfully',cachedData);
       // }
-      console.log("Refreshing index data");
+      apiLogger.info("Refreshing index data");
       await deleteFromCache("intradayIndexData");
     }
 
@@ -568,7 +568,7 @@ export const IndexData = async (req, res) => {
       );
     }
 
-    console.log("Returning index data");
+    apiLogger.info("Returning index data");
     return respondWithData(
       res,
       "SUCCESS",
@@ -576,7 +576,7 @@ export const IndexData = async (req, res) => {
       indexData
     );
   } catch (error) {
-    console.error(error);
+    apiLogger.error(`Error fetching index data: ${error.message}`);
     return respondWithError(
       res,
       "INTERNAL_SERVER_ERROR",
@@ -587,7 +587,7 @@ export const IndexData = async (req, res) => {
 
 //daily index data of aaile samma ko
 export const CombinedIndexData = async (req, res) => {
-  console.log("Combined Index Data Requested");
+  apiLogger.info("Combined Index Data Requested");
   try {
     const format = req.query.format || "json";
     const __dirname = path.resolve();
@@ -623,7 +623,7 @@ export const CombinedIndexData = async (req, res) => {
       return respondWithError(res, "BAD_REQUEST", "Invalid format specified");
     }
   } catch (error) {
-    console.error("Error handling request:", error.message);
+    apiLogger.error(`Error fetching combined index data: ${error.message}`);
     return respondWithError(
       res,
       "INTERNAL_SERVER_ERROR",
@@ -828,7 +828,7 @@ export const AvailableNepseSymbols = async (req, res) => {
 
 //index prediction //6th sem
 export const TopHeavyStocks = async (req, res) => {
-  console.log("Top Impacting stocks data requested");
+  apiLogger.info("Top Impacting stocks data requested");
 
   try {
     const topStocks = topCompanies();
@@ -875,7 +875,7 @@ export const TopHeavyStocks = async (req, res) => {
 
     res.json(jsonResponse);
   } catch (error) {
-    console.error("Error fetching data:", error);
+    apiLogger.error(`Error fetching data: ${error.message}`);
     respondWithError(res, "INTERNAL_SERVER_ERROR", "Internal Server Error");
   }
 };
@@ -946,11 +946,11 @@ function calculateOverallPrediction(overallStrength) {
 
 //
 export const WorldMarketData = async (req, res) => {
-  console.log("World Index Data Requested");
+  apiLogger.info("World Index Data Requested");
   try {
     const refreshParam = req.query.refresh || "";
     if (refreshParam.toLowerCase() === "refresh") {
-      console.log("Refreshing worldmarket data");
+      apiLogger.info("Refreshing world market data");
       await deleteFromCache("worldmarket");
     }
 
@@ -970,7 +970,7 @@ export const WorldMarketData = async (req, res) => {
       worlddata
     );
   } catch (error) {
-    console.error(error);
+    apiLogger.error(`Error fetching world market data: ${error.message}`);
     return respondWithError(
       res,
       "INTERNAL_SERVER_ERROR",
@@ -980,11 +980,11 @@ export const WorldMarketData = async (req, res) => {
 };
 
 export const nepseSummary = async (req, res) => {
-  console.log("Nepse Summary Requested");
+  apiLogger.info("Nepse Summary Requested");
   try {
     const refreshParam = req.query.refresh || "";
     if (refreshParam.toLowerCase() === "refresh") {
-      console.log("Refreshing Nepse Summary");
+      apiLogger.info("Refreshing nepse summary");
       await deleteFromCache("Nepsesummary");
     }
 
@@ -1003,7 +1003,7 @@ export const nepseSummary = async (req, res) => {
       nepseSummary
     );
   } catch (error) {
-    console.error(error);
+    apiLogger.error(`Error fetching nepse summary: ${error.message}`);
     return respondWithError(
       res,
       "INTERNAL_SERVER_ERROR",
@@ -1013,11 +1013,11 @@ export const nepseSummary = async (req, res) => {
 };
 
 export const nepseDailyGraphData = async (req, res) => {
-  console.log("Nepse daily graph data Requested");
+  nepseLogger.info("Nepse daily graph data requested");
   try {
     const refreshParam = req.query.refresh || "";
     if (refreshParam.toLowerCase() === "refresh") {
-      console.log("Refreshing Nepse daily graph");
+      nepseLogger.info("Refreshing Nepse daily graph");
       await deleteFromCache("intradayIndexGraph");
     }
 
@@ -1037,7 +1037,7 @@ export const nepseDailyGraphData = async (req, res) => {
       nepseDailyGraph
     );
   } catch (error) {
-    console.error(error);
+    nepseLogger.error(`Error fetching or logging nepse daily graph: ${error.message}`);
     return respondWithError(
       res,
       "INTERNAL_SERVER_ERROR",
@@ -1048,7 +1048,7 @@ export const nepseDailyGraphData = async (req, res) => {
 
 //this api is to refresh top gainers etc data from sharesansar at EOD by using chron job
 export const refreshMetalsData = async (req, res) => {
-  console.log("Refreshing metals data through API");
+  apiLogger.info("Refreshing metals data through API");
   await deleteFromCache("metalprices");
   const metalPrices = await metalPriceExtractor();
 
@@ -1063,7 +1063,7 @@ export const refreshMetalsData = async (req, res) => {
 };
 
 export const refreshCommodityData = async (req, res) => {
-  console.log("Refreshing commodity data through API");
+  apiLogger.info("Refreshing commodity data through API");
   await deleteFromCache("CommodityData");
   const commodityData = await commodityprices();
 
@@ -1079,7 +1079,7 @@ export const refreshCommodityData = async (req, res) => {
 };
 
 export const refreshWorldMarketData = async (req, res) => {
-  console.log("Refreshing world market data through API");
+  apiLogger.info("Refreshing world market data through API");
   await deleteFromCache("worldmarket");
   const worlddata = await extractWorldMarketData();
 
@@ -1143,7 +1143,7 @@ export const fetchAndMergeDailyNepsePrice = async (req, res) => {
       const backupCsvFilePath = path.join(backupDirPath, "index_daily.csv");
       fs.copyFileSync(jsonfilePath, backupJsonFilePath);
       fs.copyFileSync(csvFilePath, backupCsvFilePath);
-      console.log("JSON & CSV backup created in backup folder:", backupDirPath);
+      nepseLogger.info(`JSON & CSV backup created in backup folder: ${backupDirPath}`);
 
       // Add new data
       parsedData.push({
@@ -1155,7 +1155,7 @@ export const fetchAndMergeDailyNepsePrice = async (req, res) => {
         volume: todayOHLC.turnover.toString(),
       });
       message = "New data added for date: " + todayDate;
-      console.log(message);
+      nepseLogger.info(message);
       fs.writeFileSync(jsonfilePath, JSON.stringify(parsedData, null, 2), "utf8");
     } else {
       // Update existing data if there's a change in volume
@@ -1171,10 +1171,10 @@ export const fetchAndMergeDailyNepsePrice = async (req, res) => {
           volume: todayOHLC.turnover.toString(),
         };
         message = "Data updated for existing date: " + todayDate;
-        console.log(message);
+        nepseLogger.info(message);
       } else {
         message = "No new data exists for today to update: " + todayDate;
-        console.log(message);
+        nepseLogger.info(message);
       }
     }
 
@@ -1199,7 +1199,7 @@ export const fetchAndMergeDailyNepsePrice = async (req, res) => {
           ] = `${newIndex},${todayDate},${todayOHLC.open},${todayOHLC.high},${todayOHLC.low},${todayOHLC.close},${todayOHLC.turnover}`;
           csvUpdated = true;
         } else {
-          console.log("No volume change in CSV for existing date:", todayDate);
+          nepseLogger.info(`No volume change in CSV for existing date: ${todayDate}`);
         }
       }
     });
@@ -1214,7 +1214,7 @@ export const fetchAndMergeDailyNepsePrice = async (req, res) => {
 
     return respondWithSuccess(res, "SUCCESS", message);
   } catch (error) {
-    console.error(error);
+    apiLogger.error(`Error fetching data: ${error.message}`);
     return respondWithError(
       res,
       "INTERNAL_SERVER_ERROR",
@@ -1225,57 +1225,57 @@ export const fetchAndMergeDailyNepsePrice = async (req, res) => {
 
 //update our current daily OHLC data from nepseAlpha //khasai kai farak haina
 //yo data ma epoch time xa ra yo data web ko lagi ramrai kaam garxa.
-export const FetchSingleDatafromAPINepseAlpha = async (req, res) => {
-  try {
-    const response = await fetch(
-      "https://www.nepsealpha.com/trading/1/history?force_key=vfgfhdhththhhnhjhjhj&symbol=NEPSE&from=767664000&to=1714521600&resolution=1D&pass=ok&fs=vfgfhdhththhhnhjhjhj&shouldCache=1",
-      {
-        headers: {
-          accept: "application/json, text/plain, */*",
-          "sec-ch-ua":
-            '"Chromium";v="124", "Microsoft Edge";v="124", "Not-A.Brand";v="99"',
-          "sec-ch-ua-arch": '"x86"',
-          "sec-ch-ua-bitness": '"64"',
-          "sec-ch-ua-full-version": '"124.0.2478.67"',
-          "sec-ch-ua-full-version-list":
-            '"Chromium";v="124.0.6367.91", "Microsoft Edge";v="124.0.2478.67", "Not-A.Brand";v="99.0.0.0"',
-          "sec-ch-ua-mobile": "?0",
-          "sec-ch-ua-model": '""',
-          "sec-ch-ua-platform": '"Windows"',
-          "sec-ch-ua-platform-version": '"15.0.0"',
-          "x-requested-with": "XMLHttpRequest",
-          Referer: "https://www.nepsealpha.com/trading/chart?symbol=NEPSE",
-          "Referrer-Policy": "strict-origin-when-cross-origin",
-        },
-        body: null,
-        method: "GET",
-      }
-    );
+// export const FetchSingleDatafromAPINepseAlpha = async (req, res) => {
+//   try {
+//     const response = await fetch(
+//       "https://www.nepsealpha.com/trading/1/history?force_key=vfgfhdhththhhnhjhjhj&symbol=NEPSE&from=767664000&to=1714521600&resolution=1D&pass=ok&fs=vfgfhdhththhhnhjhjhj&shouldCache=1",
+//       {
+//         headers: {
+//           accept: "application/json, text/plain, */*",
+//           "sec-ch-ua":
+//             '"Chromium";v="124", "Microsoft Edge";v="124", "Not-A.Brand";v="99"',
+//           "sec-ch-ua-arch": '"x86"',
+//           "sec-ch-ua-bitness": '"64"',
+//           "sec-ch-ua-full-version": '"124.0.2478.67"',
+//           "sec-ch-ua-full-version-list":
+//             '"Chromium";v="124.0.6367.91", "Microsoft Edge";v="124.0.2478.67", "Not-A.Brand";v="99.0.0.0"',
+//           "sec-ch-ua-mobile": "?0",
+//           "sec-ch-ua-model": '""',
+//           "sec-ch-ua-platform": '"Windows"',
+//           "sec-ch-ua-platform-version": '"15.0.0"',
+//           "x-requested-with": "XMLHttpRequest",
+//           Referer: "https://www.nepsealpha.com/trading/chart?symbol=NEPSE",
+//           "Referrer-Policy": "strict-origin-when-cross-origin",
+//         },
+//         body: null,
+//         method: "GET",
+//       }
+//     );
 
-    if (!response) {
-      return null;
-    }
+//     if (!response) {
+//       return null;
+//     }
 
-    const jsonData = await response.json();
-    const __dirname = path.resolve();
-    const filePath = path.join(
-      __dirname,
-      "public",
-      "index_data",
-      "index_web.json"
-    );
-    fs.writeFileSync(filePath, JSON.stringify(jsonData, null, 2));
+//     const jsonData = await response.json();
+//     const __dirname = path.resolve();
+//     const filePath = path.join(
+//       __dirname,
+//       "public",
+//       "index_data",
+//       "index_web.json"
+//     );
+//     fs.writeFileSync(filePath, JSON.stringify(jsonData, null, 2));
 
-    return respondWithSuccess(res, "SUCCESS", "Data fetched Successfully");
-  } catch (error) {
-    console.error(error);
-    return respondWithError(
-      res,
-      "INTERNAL_SERVER_ERROR",
-      "Internal Server Error"
-    );
-  }
-};
+//     return respondWithSuccess(res, "SUCCESS", "Data fetched Successfully");
+//   } catch (error) {
+//     apiLogger.error(`Error fetching data: ${error.message}`);
+//     return respondWithError(
+//       res,
+//       "INTERNAL_SERVER_ERROR",
+//       "Internal Server Error"
+//     );
+//   }
+// };
 
 export const fetchIntradayCompanyGraph = async (req, res) => {
   try {
@@ -1295,7 +1295,7 @@ export const fetchIntradayCompanyGraph = async (req, res) => {
       intradayData
     );
   } catch (error) {
-    console.error(error);
+    apiLogger.error(`Error fetching intraday data: ${error.message}`);
     return respondWithError(
       res,
       "INTERNAL_SERVER_ERROR",
@@ -1324,6 +1324,5 @@ export default {
   CommodityData,
   TopGainersData,
   DashBoardData,
-  FetchSingleDatafromAPINepseAlpha,
   AvailableNepseSymbols,
 };
