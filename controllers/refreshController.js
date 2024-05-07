@@ -37,6 +37,7 @@ const NEPSE_API_URL2 = process.env.NEPSE_API_URL_BACKUP;
 export let NEPSE_ACTIVE_API_URL = process.env.NEPSE_API_URL1;
 
 export async function ActiveServer() {
+  await new Promise(resolve => setTimeout(resolve, 10000));
   try {
     const url1Response = await axios.get(NEPSE_API_URL1);
     if (url1Response.status === 200) {
@@ -136,7 +137,7 @@ async function wipeCachesAndRefreshData() {
 //making sure we have last data
 export default async function initializeRefreshMechanism() {
   try {
-    await new Promise(resolve => setTimeout(resolve, 5000));
+    await new Promise(resolve => setTimeout(resolve, 10000));
     nepseLogger.info("Initializing Nepse refresh mechanism.");
     let isNepseOpenPrevious = await isNepseOpen(); // Store the initial state
     if (isNepseOpenPrevious) {
