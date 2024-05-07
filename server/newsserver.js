@@ -107,7 +107,7 @@ export async function startNewsServer(app) {
         newsLogger.error(`Error fetching news data: ${response.status} ${url}`);
       }
     } catch (error) {
-      newsLogger.error(`Error fetching news data: ${error}`);
+      newsLogger.error(`Error fetching news data: ${url} : ${error}`);
     }
   }
 
