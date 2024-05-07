@@ -37,7 +37,7 @@ const NEPSE_API_URL2 = process.env.NEPSE_API_URL_BACKUP;
 export let NEPSE_ACTIVE_API_URL = process.env.NEPSE_API_URL1;
 
 export async function ActiveServer() {
-  await new Promise(resolve => setTimeout(resolve, 10000));
+  await new Promise(resolve => setTimeout(resolve, 5)); //wait for python unicorn server to start
   try {
     const url1Response = await axios.get(NEPSE_API_URL1);
     if (url1Response.status === 200) {
@@ -45,14 +45,13 @@ export async function ActiveServer() {
       nepseLogger.info(`Nepse API Server 1 is active. ${NEPSE_ACTIVE_API_URL}`);
     }
   } catch (error) {
-    console.log(error.message);
     try {
       const url2Response = await axios.get(NEPSE_API_URL2);
       if (url2Response.status === 200) {
         NEPSE_ACTIVE_API_URL = NEPSE_API_URL2;
         nepseLogger.info(`Nepse API Server 2 is active. ${NEPSE_ACTIVE_API_URL}`);
       }
-    } catch {
+    } catch (error2) {
       nepseLogger.error("Warning both servers are down.");
     }
   }
@@ -149,6 +148,8 @@ export default async function initializeRefreshMechanism() {
       if (isNepseOpenNow !== isNepseOpenPrevious) {
         if (!isNepseOpenNow) {
           await wipeCachesAndRefreshData(); // Refresh data last time when Nepse closes
+          //notify clients that market is closed
+          // notifyClients({ type: "marketStatus", data: false });
         }
         isNepseOpenPrevious = isNepseOpenNow; // Update previous state
       }
