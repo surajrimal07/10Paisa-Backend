@@ -10,7 +10,7 @@ const inMemory = process.env.INMEMORYCACHE
 export const fetchFromCache = async (cacheKey) => {
   try {
     if (inMemory == 'true') {
-      mainLogger.info(`fetching cache of key ${cacheKey}`)
+      // mainLogger.info(`fetching cache of key ${cacheKey}`)
       const cachedData = get(cacheKey);
       if (cachedData !== undefined && cachedData !== null) {
         return cachedData;
@@ -37,7 +37,7 @@ export const fetchFromCache = async (cacheKey) => {
 };
 
 export const saveToCache = async (cacheKey, data) => {
-  mainLogger.info(`saving cache of key ${cacheKey}`)
+  //mainLogger.info(`saving cache of key ${cacheKey}`)
   try {
     if (inMemory === 'true') {
       set(cacheKey, data);

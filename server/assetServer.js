@@ -571,14 +571,13 @@ export async function intradayIndexGraph(refresh) {
     }
 
     const data = await fetch(url).then((response) => response.json());
-
     if (!Array.isArray(data)) {
       assetLogger.error("Invalid data received from the API in DailyNepseIndexGraph.");
       return null;
     }
 
     const processedData = data.map((entry) => ({
-      timeepoch: entry[0], //raw epoch time
+      timeepoch: entry[0],
       time: new Date(entry[0] * 1000).toLocaleTimeString("en-US", {
         hour: "numeric",
         minute: "numeric",

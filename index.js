@@ -57,7 +57,7 @@ Database();
 //cors
 app.use(
   cors({
-    origin: "https://localhost:3000",
+    origin: ['https://localhost:3000', 'https://tenpaisa.tech'],
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
   })

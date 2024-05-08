@@ -10,6 +10,7 @@ import { notifySelectedClients } from '../server/websocket.js';
 import { LDAcheck, NameorEmailinPassword, validateEmail, validateName, validatePassword, validatePhoneNumber } from '../utils/dataValidation_utils.js';
 import globalVariables from '../utils/globalVariables.js';
 import { respondWithData, respondWithError, respondWithSuccess } from '../utils/response_utils.js';
+import { userLogger } from '../utils/logger/userlogger.js';
 
 
 function setUserDetails({ name, phone, email }) {
@@ -65,9 +66,9 @@ export const verifyPassword = async (req, res) => {
   }
 
   const validationError = validatePassword(password);
-    if (validationError !== true) {
-        return respondWithError(res, 'BAD_REQUEST', validationError);
-    }
+  if (validationError !== true) {
+    return respondWithError(res, 'BAD_REQUEST', validationError);
+  }
 
   if (!NameorEmailinPassword(name, email, password)) {
     return respondWithError(res, 'BAD_REQUEST', "Password contains name or email.");
@@ -89,11 +90,11 @@ export const verifyPhoneNumber = async (req, res) => {
 
   if (isNaN(phone)) {
     return respondWithError(res, 'BAD_REQUEST', "Phone number should be a number");
-}
+  }
 
-if (!validatePhoneNumber(phone)) {
-  return respondWithError(res, 'BAD_REQUEST', "Invalid phone number. Please provide a 10-digit number.");
-}
+  if (!validatePhoneNumber(phone)) {
+    return respondWithError(res, 'BAD_REQUEST', "Invalid phone number. Please provide a 10-digit number.");
+  }
 
   const phoneUser = await User.findOne({ phone });
 
@@ -122,25 +123,15 @@ export const createUser = async (req, res) => {
 
   if (!name || !email || !password || !phone) {
     return respondWithError(res, 'BAD_REQUEST', "Empty data passed. Please provide all required fields.");
-  }
-
-  if (!validatePhoneNumber(phone)) {
+  } else if (!validatePhoneNumber(phone)) {
     return respondWithError(res, 'BAD_REQUEST', "Invalid phone number. Please provide a 10-digit number.");
-  }
-
-  if (!validateEmail(email)) {
+  } else if (!validateEmail(email)) {
     return respondWithError(res, 'BAD_REQUEST', "Invalid email format. Please provide a valid email address.");
-  }
-
-  if (!validatePassword(password)) {
+  } else if (!validatePassword(password)) {
     return respondWithError(res, 'BAD_REQUEST', "Password should be at least 6 characters long.");
-  }
-
-  if (!validateName(name)) {
+  } else if (!validateName(name)) {
     return respondWithError(res, 'BAD_REQUEST', "Name should be fname and lname format.");
-  }
-
-  if(!LDAcheck(password)){
+  } else if (!LDAcheck(password)) {
     return respondWithError(res, 'BAD_REQUEST', "Password is too common.");
   }
 
@@ -177,32 +168,31 @@ export const createUser = async (req, res) => {
       portfolio: [samplePortfolio._id],
 
     });
-  try {
-    const savedUser = await newUser.save();
-    const populatedPortfolio = await Portfolio.findById(samplePortfolio._id);
+    try {
+      const savedUser = await newUser.save();
+      const populatedPortfolio = await Portfolio.findById(samplePortfolio._id);
+      const formattedPortfolio = formatPortfolioData(populatedPortfolio)
 
-    const formattedPortfolio = formatPortfolioData(populatedPortfolio)
-
-    const userData = {
-      _id: savedUser._id,
-      token: savedUser.token,
-      name: savedUser.name,
-      email: savedUser.email,
-      pass: savedUser.password,
-      phone: savedUser.phone,
-      style: savedUser.style,
-      isAdmin: savedUser.isAdmin,
-      dpImage: savedUser.dpImage,
-      userAmount: savedUser.userAmount,
-      portfolio: [formattedPortfolio],
-      wallets: savedUser.wallets
-    };
-    console.log("Signup Was Success");
-    return respondWithData(res, 'CREATED', "User created successfully", userData);
-  } catch (err) {
-    console.log("Signup failed");
-    return respondWithError(res, 'INTERNAL_SERVER_ERROR', err.toString());
-  }
+      const userData = {
+        _id: savedUser._id,
+        token: savedUser.token,
+        name: savedUser.name,
+        email: savedUser.email,
+        pass: savedUser.password,
+        phone: savedUser.phone,
+        style: savedUser.style,
+        isAdmin: savedUser.isAdmin,
+        dpImage: savedUser.dpImage,
+        userAmount: savedUser.userAmount,
+        portfolio: [formattedPortfolio],
+        wallets: savedUser.wallets
+      };
+      console.log("Signup Was Success");
+      return respondWithData(res, 'CREATED', "User created successfully", userData);
+    } catch (err) {
+      console.log("Signup failed");
+      return respondWithError(res, 'INTERNAL_SERVER_ERROR', err.toString());
+    }
   } catch (err) {
     console.error(err);
     return respondWithError(res, 'INTERNAL_SERVER_ERROR', err.toString());
@@ -234,65 +224,62 @@ const formatSinglePortfolio = (portfolio) => {
 };
 //
 export const loginUser = async (req, res) => {
-    const email = req.body.email;
-    const password = req.body.password;
-    console.log("Email: "+email, "Password: "+password);
-    try {
-      const user = await User.findOne({ email: email.toLowerCase() }).populate('portfolio');
+  const email = req.body.email;
+  const password = req.body.password;
+  try {
+    const user = await User.findOne({ email: email.toLowerCase() }).populate('portfolio');
 
-      if (!user || !(await bcrypt.compare(password, user.password))) {
-        console.log("Invalid email or password.");
-        return respondWithError(res, 'UNAUTHORIZED', "Invalid email or password.");
-      } else {
-        console.log("user found");
+    if (!user || !(await bcrypt.compare(password, user.password))) {
+      userLogger.info("Invalid email or password.");
+      return respondWithError(res, 'UNAUTHORIZED', "Invalid email or password.");
+    } else {
+      const isExpired = user.isPasswordExpired() ?? notifyClients({ type: 'notification', title: 'Password Expired', description: "Your password is expired, please change soon", image: user.dpImage, url: "https://10paisa.com" });
+      // if (isExpired) {
+      //   notifyClients({ type: 'notification', title: 'Password Expired', description: "Your password is expired, please change soon", image: user.dpImage, url: "https://10paisa.com" });
+      // }
 
-        const isExpired = user.isPasswordExpired();
-          if (isExpired) {
-            notifyClients({type:'notification', title: 'Password Expired', description: "Your password is expired, please change soon", image: user.dpImage, url: "https://10paisa.com"});
-        }
+      const token = jwt.sign({ email: email, isAdmin: user.isAdmin }, process.env.JWT_SECRET, { expiresIn: '7d' });
+      await storage.setItem(email + '_token', token);
 
-        const token = jwt.sign({email : email, isAdmin: user.isAdmin},process.env.JWT_SECRET,{expiresIn: '7d'});
-        await storage.setItem(email + '_token', token);
-
-        let userData = {
-          _id: user._id,
-          token: token,
-          name: user.name,
-          email: user.email,
-          pass: user.password,
-          phone: user.phone,
-          premium: user.premium,
-          style: user.style,
-          isAdmin: user.isAdmin,
-          dpImage: user.dpImage,
-          userAmount: user.userAmount,
-          defaultport: user.defaultport,
-          portfolio: user.portfolio,
-          wallets: user.wallets,
-          LastPasswordChangeDate: user.LastPasswordChangeDate
-        };
-        notifySelectedClients(user.email, {type:'notification', title: 'Login', description: "User "+user.name+" logged in", image: user.dpImage, url: "https://10paisa.com"});
-        return respondWithData(res, 'SUCCESS', "Login successful", userData);
-      }
-    } catch (error) {
-      console.log(error.toString());
-      return respondWithError(res, 'INTERNAL_SERVER_ERROR', error.toString());
+      let userData = {
+        _id: user._id,
+        token: token,
+        name: user.name,
+        email: user.email,
+        pass: user.password,
+        phone: user.phone,
+        premium: user.premium,
+        style: user.style,
+        isAdmin: user.isAdmin,
+        dpImage: user.dpImage,
+        userAmount: user.userAmount,
+        defaultport: user.defaultport,
+        portfolio: user.portfolio,
+        wallets: user.wallets,
+        LastPasswordChangeDate: user.LastPasswordChangeDate
+      };
+      notifySelectedClients(user.email, { type: 'notification', title: 'Login', description: "User " + user.name + " logged in", image: user.dpImage, url: "https://10paisa.com" });
+      return respondWithData(res, 'SUCCESS', "Login successful", userData);
     }
+  } catch (error) {
+    userLogger.error(`Error logging in user: ${error.toString}`);
+    return respondWithError(res, 'INTERNAL_SERVER_ERROR', error.toString());
+  }
 };
 
 export const forgetPass = async (req, res) => {
   const email = req.body.email;
   try {
-      const user = await User.findOne({ email });
-      if (user) {
-          const hash = await forgetPassword(email);
-          return respondWithData(res, 'SUCCESS', "OTP Sent successfully", hash);
-      } else {
-        return respondWithError(res, 'NOT_FOUND', "Email Not found");
-      }
+    const user = await User.findOne({ email });
+    if (user) {
+      const hash = await forgetPassword(email);
+      return respondWithData(res, 'SUCCESS', "OTP Sent successfully", hash);
+    } else {
+      return respondWithError(res, 'NOT_FOUND', "Email Not found");
+    }
   } catch (err) {
-      console.error(err);
-      return respondWithError(res, 'INTERNAL_SERVER_ERROR', err.toString());
+    console.error(err);
+    return respondWithError(res, 'INTERNAL_SERVER_ERROR', err.toString());
   }
 };
 
@@ -302,21 +289,22 @@ export const verifyData = async (req, res) => {
   const valueToCheck = req.body.value;
 
   if (fieldToUpdate === 'email') {
-  try {
-    const existingUser = await User.findOne({ email: valueToCheck });
-    if (!existingUser) {
+    try {
+      const existingUser = await User.findOne({ email: valueToCheck });
+      if (!existingUser) {
 
-      console.log("Email is fresh");
-      return respondWithSuccess(res, 'SUCCESS', "Email is fresh");
+        console.log("Email is fresh");
+        return respondWithSuccess(res, 'SUCCESS', "Email is fresh");
 
-    } else {
-      console.log("Email already exists");
-      return respondWithError(res, 'BAD_REQUEST', "Email already exists");
+      } else {
+        console.log("Email already exists");
+        return respondWithError(res, 'BAD_REQUEST', "Email already exists");
+      }
+    } catch (error) {
+      console.error("Error looking for email:", error);
+      return respondWithError(res, 'INTERNAL_SERVER_ERROR', error.toString());
     }
-  } catch (error) {
-    console.error("Error looking for email:", error);
-    return respondWithError(res, 'INTERNAL_SERVER_ERROR', error.toString());
-  }}
+  }
 
   if (fieldToUpdate === 'phone') {
 
@@ -332,7 +320,8 @@ export const verifyData = async (req, res) => {
     } catch (error) {
       console.error("Error checking phone:", error);
       return respondWithError(res, 'INTERNAL_SERVER_ERROR', error.toString());
-    }}
+    }
+  }
 };
 
 const User_token_key = 'user_token';
@@ -651,13 +640,13 @@ export const verifyUser = async (req, res) => {
       const cachedtkn = await storage.getItem(User_token_key);
 
       if (!cachedtkn) {
-        const token = jwt.sign({email : email, isAdmin: user.isAdmin},process.env.JWT_SECRET,{expiresIn: '7d'});
+        const token = jwt.sign({ email: email, isAdmin: user.isAdmin }, process.env.JWT_SECRET, { expiresIn: '7d' });
         await storage.setItem(User_token_key, token);
         user_token = token;
       } else {
         user_token = cachedtkn;
       }
-        let userData = {
+      let userData = {
         _id: user._id,
         name: user.name,
         email: user.email,
@@ -824,9 +813,9 @@ export const googleSignIn = async (req, res) => {
       return respondWithError(res, 'UNAUTHORIZED', "No Account found with this email");
     }
     const token = jwt.sign({ email, isAdmin: user.isAdmin }, process.env.JWT_SECRET, { expiresIn: '7d' });
-     await storage.setItem('user_token', token);
+    await storage.setItem('user_token', token);
 
-     let userData = {
+    let userData = {
       _id: user._id,
       token: token,
       name: user.name,
@@ -896,7 +885,7 @@ export const updateUserData = async (req, res) => {
       }
     }
 
-    if (isAdmin){
+    if (isAdmin) {
       user.isAdmin = isAdmin;
     }
     if (phone) {

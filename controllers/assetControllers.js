@@ -715,28 +715,49 @@ export const getCompanyOHLCNepseAlpha = async (req, res) => {
   const requestedSymbol = (req.query.symbol ? req.query.symbol.toUpperCase() : 'NEPSE');
   const timeFrame = (req.query.timeFrame ? req.query.timeFrame : '1D');
   const force_key = (req.query.force_key ? req.query.force_key : 'rrfdwdwdsdfdg');
+  const is_firstload = (req.query.firstload ? req.query.firstload : 'true'); //rename to data_full
+  //if first load then load full file else only fetch from last time of the file value to current time in epoch
 
   assetLogger.info(`Requested Historical OHLC for symbol: ${requestedSymbol}, ${timeFrame}`);
 
   const __dirname = path.resolve();
+  //does requested symbol exist??
+  const availableSymbols = path.join(__dirname, `./public/stock/NEPSE_SYMBOLS.json`);
+  const availableSymbolData = await fs.promises.readFile(availableSymbols, 'utf8');
+
+  if (!availableSymbolData.includes(requestedSymbol)) {
+    assetLogger.error(`Symbol ${requestedSymbol} not found in available symbols`);
+    return respondWithError(res, 'BAD_REQUEST', 'Symbol not found in available symbols');
+  }
   const fileName = path.join(__dirname, `./public/stock/${requestedSymbol}/${requestedSymbol}_${timeFrame}.json`);
   const lastUpdatedFileName = path.join(__dirname, `./public/stock/${requestedSymbol}/${requestedSymbol}_${timeFrame}_lastupdated.json`);
-  const currentEpochTime = Math.floor(Date.now() / 1000);
 
   try {
-    const fileData = await fs.promises.readFile(fileName, 'utf8').catch(err => null);
-    const lastUpdatedTime = await fs.promises.readFile(lastUpdatedFileName, 'utf8').catch(err => null);
-    const lastIndexUpdatedEpochTime = await fetchFromCache('intradayGraph');
+    // const fileData = await fs.promises.readFile(fileName, 'utf8').catch(err => null);
+    // const lastUpdatedTime = await fs.promises.readFile(lastUpdatedFileName, 'utf8').catch(err => null);
+    // const lastIndexUpdatedEpochTime = await fetchFromCache('intradayGraph');
 
-    if (fileData && lastUpdatedTime && lastIndexUpdatedEpochTime) {
+    const [fileData, lastUpdatedTime, lastIndexUpdatedEpochTime] = await Promise.all([
+      fs.promises.readFile(fileName, 'utf8').catch(err => null),
+      fs.promises.readFile(lastUpdatedFileName, 'utf8').catch(err => null),
+      fetchFromCache('intradayGraph').catch(err => null)
+    ]);
+
+    //console.log(`Last time epoch from index is ` + await fetchFromCache('intradayGraph'));
+
+    const lastTimeEpochFromIndex = lastIndexUpdatedEpochTime && lastIndexUpdatedEpochTime.length ? lastIndexUpdatedEpochTime[lastIndexUpdatedEpochTime.length - 1].timeepoch : Math.floor(Date.now() / 1000);
+    //const lastTimeEpochFromIndex = lastIndexUpdatedEpochTime && lastIndexUpdatedEpochTime.length > 0 ? Math.max(...lastIndexUpdatedEpochTime.map(item => item.timeepoch)) : Math.floor(Date.now() / 1000);
+    //console.log(`Last time epoch from index is ${lastTimeEpochFromIndex}`);
+
+
+    if (fileData && lastUpdatedTime) {
       const lastepochFromFile = JSON.parse(lastUpdatedTime).lastUpdated;
-      const lastTimeEpochFromIndex = Math.max(...lastIndexUpdatedEpochTime.map(item => item.timeepoch));
-
+      //const lastTimeEpochFromIndex = Math.max(...lastIndexUpdatedEpochTime.map(item => item.timeepoch));
       //check time difference between two times
-      const timeDifference = lastTimeEpochFromIndex - lastepochFromFile;
-      console.log(`Time difference for ${requestedSymbol}_${timeFrame} is ${timeDifference}`);
-      if (timeDifference < 50) {
-        assetLogger.info(`${requestedSymbol} ${timeFrame} data found in cache, returning cached data`);
+      //const timeDifference = lastTimeEpochFromIndex - lastepochFromFile;
+      //console.log(`Time difference for ${requestedSymbol}_${timeFrame} is ${timeDifference}`);
+      if (lastTimeEpochFromIndex === lastepochFromFile) {
+        //assetLogger.info(`${requestedSymbol} ${timeFrame} data found in cache, returning cached data`);
         return res.status(200).json(JSON.parse(fileData));
       }
       assetLogger.info(`${requestedSymbol} ${timeFrame} data not found in cache, returning live data`);
@@ -744,6 +765,7 @@ export const getCompanyOHLCNepseAlpha = async (req, res) => {
 
     assetLogger.info('Fetching data from systemxlite.com');
     const symbolIndex = await getIndexName(requestedSymbol);
+    const currentEpochTime = Math.floor(Date.now() / 1000);
     let response = await fetch(`https://backendtradingview.systemxlite.com/tv/tv/history?symbol=${symbolIndex}&resolution=${timeFrame}&from=768009600&to=${currentEpochTime}&countback=88`, {
       "headers": {
         "accept": "*/*",
@@ -799,11 +821,22 @@ export const getCompanyOHLCNepseAlpha = async (req, res) => {
       return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'Failed to fetch data from both nepsealpha.com and systemxlite, probably invalid symbol');
     }
 
-    await fs.promises.mkdir(path.dirname(fileName), { recursive: true });
-    await fs.promises.writeFile(fileName, JSON.stringify(response));
-    //saving last updated time in json too
-    await fs.promises.mkdir(path.dirname(lastUpdatedFileName), { recursive: true });
-    await fs.promises.writeFile(lastUpdatedFileName, JSON.stringify({ lastUpdated: Math.floor(Date.now() / 1000) }));
+    await Promise.all([
+      (async () => {
+        await fs.promises.mkdir(path.dirname(fileName), { recursive: true });
+        await fs.promises.writeFile(fileName, JSON.stringify(response));
+      })(),
+      (async () => {
+        await fs.promises.mkdir(path.dirname(lastUpdatedFileName), { recursive: true });
+        await fs.promises.writeFile(lastUpdatedFileName, JSON.stringify({ lastUpdated: lastTimeEpochFromIndex }));
+      })()
+    ]);
+
+    // await fs.promises.mkdir(path.dirname(fileName), { recursive: true });
+    // await fs.promises.writeFile(fileName, JSON.stringify(response));
+    // //saving last updated time in json too
+    // await fs.promises.mkdir(path.dirname(lastUpdatedFileName), { recursive: true });
+    // await fs.promises.writeFile(lastUpdatedFileName, JSON.stringify({ lastUpdated: Math.floor(Date.now() / 1000) }));
 
     return res.status(200).json(response);
   } catch (error) {
@@ -819,7 +852,6 @@ export const getCompanyOHLCNepseAlpha = async (req, res) => {
 export const AvailableNepseSymbols = async (req, res) => {
 
   const refreshParam = req.query.refresh || "";
-
   try {
     const symbols = await fetchAvailableNepseSymbol(true, refreshParam.toLowerCase() === "refresh");
     if (!symbols) {
