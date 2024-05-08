@@ -54,14 +54,25 @@ app.use(multipart());
 //database
 Database();
 
+var corsOptions = {
+  origin: ['https://localhost:3000', 'https://tenpaisa.tech'],
+  methods: ["GET", "POST", "DELETE", "OPTIONS"],
+  credentials: true,
+
+  allowedHeaders: [
+    "Origin",
+    "X-Requested-With",
+    "Content-Type",
+    "Accept",
+    "Authorization"
+  ],
+};
+
 //cors
 app.use(
-  cors({
-    origin: ['https://localhost:3000', 'https://tenpaisa.tech'],
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    credentials: true,
-  })
+  cors(corsOptions)
 );
+
 
 //session middleware
 app.use(session({
