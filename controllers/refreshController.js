@@ -4,7 +4,6 @@ import {
   FetchOldData,
   FetchSingularDataOfAsset,
   fetchIndexes,
-  fetchSummary,
   getIndexIntraday,
   intradayIndexGraph,
   topLosersShare,
@@ -27,8 +26,7 @@ await storage.init({
 });
 
 const refreshInterval = (await fetchFromCache("isMarketOpen"))
-  ? 120 * 1000 // 2 minute, because individual delay is around 10 sec * 10 = 1Min,
-  //so let's wait another 1 minute, total 2 min delay
+  ? 60 * 1000 // 30s if market is open
   : 30 * 60 * 1000; // 30 mins because no point in refreshing data when market is closed
 
 
@@ -105,21 +103,20 @@ async function handleisNepseOpenResponse(response, apiUrl) {
 async function wipeCachesAndRefreshData() {
   try {
     const fetchFunctions = [
-      FetchSingularDataOfAsset,
-      FetchOldData,
+      fetchIndexes,
+      intradayIndexGraph,
       topgainersShare,
       topLosersShare,
       topTurnoversShare,
       topTradedShares,
       topTransactions,
-      fetchIndexes,
-      intradayIndexGraph,
-      fetchSummary,
+      FetchSingularDataOfAsset,
+      FetchOldData
     ];
 
     for (const fetchFunction of fetchFunctions) {
       await fetchFunction(true);
-      await new Promise(resolve => setTimeout(resolve, 10000));
+      await new Promise(resolve => setTimeout(resolve, 5000));
     }
 
     let newIndexData = await getIndexIntraday(true);
@@ -136,7 +133,7 @@ async function wipeCachesAndRefreshData() {
 //making sure we have last data
 export default async function initializeRefreshMechanism() {
   try {
-    await new Promise(resolve => setTimeout(resolve, 10000));
+    await new Promise(resolve => setTimeout(resolve, 8000));
     nepseLogger.info("Initializing Nepse refresh mechanism.");
     let isNepseOpenPrevious = await isNepseOpen(); // Store the initial state
     if (isNepseOpenPrevious) {

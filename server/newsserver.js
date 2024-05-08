@@ -104,10 +104,10 @@ export async function startNewsServer(app) {
         }
       }
       else {
-        newsLogger.error(`Error fetching news data: ${response.status} ${url}`);
+        //newsLogger.error(`Error fetching news data: ${response.status} ${url}`);
       }
     } catch (error) {
-      newsLogger.error(`Error fetching news data: ${url} : ${error}`);
+      //newsLogger.error(`Error fetching news data: ${url} : ${error}`);
     }
   }
 

@@ -506,28 +506,28 @@ export async function getIndexIntraday(refresh) {
   const url2 = NEPSE_ACTIVE_API_URL + "/Summary";
 
   try {
-    const cachedData = await fetchFromCache("intradayIndexData");
-    if (cachedData !== null && cachedData !== undefined && !refresh) {
-      return cachedData;
+    if (!refresh) {
+      const cachedData = await fetchFromCache("intradayIndexData");
+      if (cachedData != null) {
+        return cachedData;
+      }
     }
 
-    const [nepseIndexData, nepseSummaryData] = await Promise.all([
+    const [nepseIndexData, nepseSummaryData, open, isOpen] = await Promise.all([
       fetch(url).then((response) => response.json()),
       fetch(url2).then((response) => response.json()),
-    ]);
-
-    if (!nepseIndexData || !nepseIndexData) {
-      assetLogger.error("NEPSE Index data is missing or undefined.");
-      return null;
-    }
-
-    const [open, isOpen] = await Promise.all([
       fetchFromCache('intradayGraph'),
       fetchFromCache('isMarketOpen')
     ]);
 
+    if (!nepseIndexData || !nepseSummaryData || open === null || isOpen === null) {
+      assetLogger.error("NEPSE Index data is missing or undefined.");
+      return null;
+    }
+
     const nepseIndex = nepseIndexData["NEPSE Index"];
     console.log(`Generated time is ${nepseIndex.generatedTime}`);
+    const nepseSummaryArray = Object.values(nepseSummaryData);
 
     const nepseIndexDataObj = {
       time: nepseIndex.generatedTime,
@@ -537,7 +537,11 @@ export async function getIndexIntraday(refresh) {
       close: nepseIndex.currentValue,
       change: nepseIndex.change,
       percentageChange: nepseIndex.perChange,
-      turnover: nepseSummaryData["Total Turnover Rs:"],
+      turnover: nepseSummaryArray[0], //first data in json
+      totalTradedShared: nepseSummaryArray[1], //2nd
+      totalTransactions: nepseSummaryArray[2], //3rd
+      totalScripsTraded: nepseSummaryArray[3], //4th
+      totalCapitalization: nepseSummaryArray[4], //5th
       isOpen: isOpen,
       fiftyTwoWeekHigh: nepseIndex.fiftyTwoWeekHigh,
       fiftyTwoWeekLow: nepseIndex.fiftyTwoWeekLow,
@@ -553,7 +557,6 @@ export async function getIndexIntraday(refresh) {
   } catch (error) {
     assetLogger.error(`Error at getIndexIntraday : ${error.message}`);
     return null;
-    //throw error;
   }
 }
 
@@ -575,6 +578,7 @@ export async function intradayIndexGraph(refresh) {
     }
 
     const processedData = data.map((entry) => ({
+      timeepoch: entry[0], //raw epoch time
       time: new Date(entry[0] * 1000).toLocaleTimeString("en-US", {
         hour: "numeric",
         minute: "numeric",
@@ -584,8 +588,10 @@ export async function intradayIndexGraph(refresh) {
       index: entry[1],
     }));
 
-    await saveToCache("intradayIndexGraph", processedData);
-    await saveToCache("intradayGraph", processedData);
+    await Promise.all([
+      saveToCache("intradayIndexGraph", processedData),
+      saveToCache("intradayGraph", processedData)
+    ]);
 
     return processedData;
   } catch (error) {
@@ -594,24 +600,24 @@ export async function intradayIndexGraph(refresh) {
   }
 }
 
-export async function fetchSummary(refresh) {
-  const url = NEPSE_ACTIVE_API_URL + "/Summary";
-  try {
-    if (!refresh) {
-      const cachedData = await fetchFromCache("Nepsesummary");
-      if (cachedData != null) {
-        return cachedData;
-      }
-    }
+// export async function r(refresh) {
+//   const url = NEPSE_ACTIVE_API_URL + "/Summary";
+//   try {
+//     if (!refresh) {
+//       const cachedData = await fetchFromCache("Nepsesummary");
+//       if (cachedData != null) {
+//         return cachedData;
+//       }
+//     }
 
-    const data = await fetch(url).then((response) => response.json());
-    await saveToCache("Nepsesummary", data);
-    return data;
-  } catch {
-    assetLogger.error(`Error at fetchSummary : ${error.message}`);
-    return null;
-  }
-}
+//     const data = await fetch(url).then((response) => response.json());
+//     await saveToCache("Nepsesummary", data);
+//     return data;
+//   } catch {
+//     assetLogger.error(`Error at fetchSummary : ${error.message}`);
+//     return null;
+//   }
+// }
 
 //aauta company ko din vari ko data of today
 export async function fetchCompanyIntradayGraph(company) {
@@ -718,7 +724,6 @@ export async function fetchAvailableNepseSymbol(filterdeben = true, refresh) {
 }
 
 export default {
-  fetchSummary,
   fetchCompanyIntradayGraph,
   intradayIndexGraph,
   getIndexIntraday,

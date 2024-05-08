@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { deleteUserByEmail, editUserByEmail, getAllPortfolios, getAllUsers } from '../controllers/adminController.js';
-import { AllIndicesData, AssetMergedData, AssetMergedDataBySector, AvailableNepseSymbols, CombinedIndexData, CommodityData, DashBoardData, IndexData, SingeAssetMergedData, TopGainersData, TopHeavyStocks, TopLoosersData, TopTransData, TopTurnoverData, TopVolumeData, WorldMarketData, fetchAndMergeDailyNepsePrice, fetchIntradayCompanyGraph, fetchMetalPrices, getCompanyOHLCNepseAlpha, nepseDailyGraphData, nepseSummary, refreshCommodityData, refreshMetalsData, refreshWorldMarketData } from '../controllers/assetControllers.js';
+import { AllIndicesData, AssetMergedData, AssetMergedDataBySector, AvailableNepseSymbols, CombinedIndexData, CommodityData, DashBoardData, IndexData, SingeAssetMergedData, TopGainersData, TopHeavyStocks, TopLoosersData, TopTransData, TopTurnoverData, TopVolumeData, WorldMarketData, fetchAndMergeDailyNepsePrice, fetchIntradayCompanyGraph, fetchMetalPrices, getCompanyOHLCNepseAlpha, nepseDailyGraphData, refreshCommodityData, refreshMetalsData, refreshWorldMarketData } from '../controllers/assetControllers.js';
 import { NrbBankingDataAll, combinedNrbData, nrbForexData, refreshNRBData } from '../controllers/extraDataControllers.js';
 import { sendOTP, verifyOTP } from '../controllers/otpControllers.js';
 import { addStockToPortfolio, createPortfolio, deletePortfolio, getAllPortfoliosForUser, removeStockFromPortfolio, renamePortfolio } from '../controllers/portfolioControllers.js';
@@ -66,7 +66,7 @@ router.get('/topturnover', allowOnly(['GET']), TopTurnoverData);
 router.get('/topvolume', allowOnly(['GET']), TopVolumeData);
 router.get('/toptrans', allowOnly(['GET']), TopTransData);
 router.get('/dashboard', allowOnly(['GET']), DashBoardData);
-router.get('/nepsesummary', allowOnly(['GET']), nepseSummary);
+//router.get('/nepsesummary', allowOnly(['GET']), nepseSummary); //merged to index data
 
 //index data
 router.get('/index', allowOnly(['GET']), IndexData);

@@ -11,7 +11,6 @@ import {
   fetchAvailableNepseSymbol,
   fetchCompanyIntradayGraph,
   fetchIndexes,
-  fetchSummary,
   getIndexIntraday,
   intradayIndexGraph,
   topLosersShare,
@@ -721,20 +720,24 @@ export const getCompanyOHLCNepseAlpha = async (req, res) => {
 
   const __dirname = path.resolve();
   const fileName = path.join(__dirname, `./public/stock/${requestedSymbol}/${requestedSymbol}_${timeFrame}.json`);
+  const lastUpdatedFileName = path.join(__dirname, `./public/stock/${requestedSymbol}/${requestedSymbol}_${timeFrame}_lastupdated.json`);
   const currentEpochTime = Math.floor(Date.now() / 1000);
 
   try {
-    if (!await fetchFromCache('isMarketOpen')) {
-      const fileData = await fs.promises.readFile(fileName, 'utf8').catch(err => null);
-      if (fileData) {
-        const epochTime = new Date(new Date().getTime() + (5 * 60 * 60 * 1000) + (45 * 60 * 1000)).toISOString().split('T')[0];
-        const jsonData = JSON.parse(fileData);
-        const lastEpochTime = jsonData.t[jsonData.t.length - 1];
-        const lastDateString = new Date(lastEpochTime * 1000).toISOString().slice(0, 10);
-        if (epochTime === lastDateString) {
-          assetLogger.info(`${requestedSymbol} ${timeFrame} data found in cache, returning cached data`);
-          return res.status(200).json(JSON.parse(fileData));
-        }
+    const fileData = await fs.promises.readFile(fileName, 'utf8').catch(err => null);
+    const lastUpdatedTime = await fs.promises.readFile(lastUpdatedFileName, 'utf8').catch(err => null);
+    const lastIndexUpdatedEpochTime = await fetchFromCache('intradayGraph');
+
+    if (fileData && lastUpdatedTime && lastIndexUpdatedEpochTime) {
+      const lastepochFromFile = JSON.parse(lastUpdatedTime).lastUpdated;
+      const lastTimeEpochFromIndex = Math.max(...lastIndexUpdatedEpochTime.map(item => item.timeepoch));
+
+      //check time difference between two times
+      const timeDifference = lastTimeEpochFromIndex - lastepochFromFile;
+      console.log(`Time difference for ${requestedSymbol}_${timeFrame} is ${timeDifference}`);
+      if (timeDifference < 50) {
+        assetLogger.info(`${requestedSymbol} ${timeFrame} data found in cache, returning cached data`);
+        return res.status(200).json(JSON.parse(fileData));
       }
       assetLogger.info(`${requestedSymbol} ${timeFrame} data not found in cache, returning live data`);
     }
@@ -798,6 +801,10 @@ export const getCompanyOHLCNepseAlpha = async (req, res) => {
 
     await fs.promises.mkdir(path.dirname(fileName), { recursive: true });
     await fs.promises.writeFile(fileName, JSON.stringify(response));
+    //saving last updated time in json too
+    await fs.promises.mkdir(path.dirname(lastUpdatedFileName), { recursive: true });
+    await fs.promises.writeFile(lastUpdatedFileName, JSON.stringify({ lastUpdated: Math.floor(Date.now() / 1000) }));
+
     return res.status(200).json(response);
   } catch (error) {
     assetLogger.error(`Error fetching data: ${error.message}`);
@@ -979,38 +986,39 @@ export const WorldMarketData = async (req, res) => {
   }
 };
 
-export const nepseSummary = async (req, res) => {
-  apiLogger.info("Nepse Summary Requested");
-  try {
-    const refreshParam = req.query.refresh || "";
-    if (refreshParam.toLowerCase() === "refresh") {
-      apiLogger.info("Refreshing nepse summary");
-      await deleteFromCache("Nepsesummary");
-    }
+//merged to index data
+// export const nepseSummary = async (req, res) => {
+//   apiLogger.info("Nepse Summary Requested");
+//   try {
+//     const refreshParam = req.query.refresh || "";
+//     if (refreshParam.toLowerCase() === "refresh") {
+//       apiLogger.info("Refreshing nepse summary");
+//       await deleteFromCache("Nepsesummary");
+//     }
 
-    const nepseSummary = await fetchSummary();
-    if (!nepseSummary) {
-      return respondWithError(
-        res,
-        "INTERNAL_SERVER_ERROR",
-        "Failed to fetch nepse summary."
-      );
-    }
-    return respondWithData(
-      res,
-      "SUCCESS",
-      "Data refreshed Successfully",
-      nepseSummary
-    );
-  } catch (error) {
-    apiLogger.error(`Error fetching nepse summary: ${error.message}`);
-    return respondWithError(
-      res,
-      "INTERNAL_SERVER_ERROR",
-      "Internal Server Error"
-    );
-  }
-};
+//     const nepseSummary = await fetchSummary();
+//     if (!nepseSummary) {
+//       return respondWithError(
+//         res,
+//         "INTERNAL_SERVER_ERROR",
+//         "Failed to fetch nepse summary."
+//       );
+//     }
+//     return respondWithData(
+//       res,
+//       "SUCCESS",
+//       "Data refreshed Successfully",
+//       nepseSummary
+//     );
+//   } catch (error) {
+//     apiLogger.error(`Error fetching nepse summary: ${error.message}`);
+//     return respondWithError(
+//       res,
+//       "INTERNAL_SERVER_ERROR",
+//       "Internal Server Error"
+//     );
+//   }
+// };
 
 export const nepseDailyGraphData = async (req, res) => {
   nepseLogger.info("Nepse daily graph data requested");
@@ -1309,7 +1317,6 @@ export default {
   refreshMetalsData,
   fetchAndMergeDailyNepsePrice,
   nepseDailyGraphData,
-  nepseSummary,
   refreshWorldMarketData,
   refreshCommodityData,
   CombinedIndexData,
