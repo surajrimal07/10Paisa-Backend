@@ -8,7 +8,7 @@ export function responseTimeMiddleware(req, res, next) {
     const responseTime = Date.now() - start;
 
     const logData = {
-      user: req.session.userId || 'anonymous',
+     // user: req.session.userId || 'anonymous',
       method: req.method,
       url: req.originalUrl,
       statusCode: res.statusCode,
