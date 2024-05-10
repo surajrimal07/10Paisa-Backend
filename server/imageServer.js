@@ -65,6 +65,8 @@ async function extractFeaturedImage(url, publisher) {
       featuredImageUrl = await extractNepalPress($);
     } else if (publisher == newsSources[25].source) { //Gorkha Patra
       featuredImageUrl = await extraceGorkhaPatra($);
+    } else if (publisher == newsSources[26].source) { //Aanapurna Post
+      featuredImageUrl = await extraceGorkhaPatra($); //metapropery og image
     }
 
     if (featuredImageUrl && featuredImageUrl.length > 0) {

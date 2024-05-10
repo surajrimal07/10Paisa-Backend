@@ -25,6 +25,7 @@ const newsSources = [
   { url: "https://www.nepalipatra.com/feed", source: "Nepali Patra" }, //23 //meta property og image okkk
   { url: "https://www.meroauto.com/feed/", source: "Mero Auto" }, //24 //meta property og image okk
   { url: "https://gorkhapatraonline.com/rss", source: "Gorkha Patra" }, //25
+  { url: "https://annapurnapost.com/rss/", source: "Aanapurna Post" }, //26
 
 ];
 

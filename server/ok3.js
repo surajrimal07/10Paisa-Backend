@@ -144,7 +144,35 @@ async function scarpeGorkhaPatra() {
     }
 }
 
-console.log(await scarpeGorkhaPatra());
+async function scrapeEkantipur() {
+    const url = 'https://ekantipur.com/news';
+    const response = await axios.get(url);
+    const $ = cheerio.load(response.data);
+    const newsList = [];
+
+    $('article.normal').each((index, element) => {
+        const title = $(element).find('h2 a').text().trim();
+        const publishDate = $('#hdnRequestDate').attr('value').trim();
+        const description = $(element).find('p').text().trim();
+        const newsLink = `https://ekantipur.com${$(element).find('h2 a').attr('href').trim()}`;
+        const imageSrc = $(element).find('img').attr('data-src');
+        const imageLink = imageSrc ? decodeURIComponent(imageSrc.split('src=')[1]).replace(/&w=301&h=0$/, '') : '';
+
+        const newsItem = {
+            title,
+            publishDate,
+            description,
+            newsLink,
+            imageLink
+        };
+
+        newsList.push(newsItem);
+    });
+
+    return newsList;
+}
+
+console.log(await scrapeEkantipur());
 
 // scarpeMeroLagani().then(data => {
 //     console.log(data);
