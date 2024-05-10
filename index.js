@@ -3,13 +3,13 @@ import bodyParser from "body-parser";
 import { v2 as cloudinary } from "cloudinary";
 import multipart from "connect-multiparty";
 import cors from "cors";
-//import dotenv from "dotenv";
 import 'dotenv/config';
 import express from "express";
 import httpsOptions from "./certificate/httpOptions.js";
 
 //
 import session from 'express-session';
+import helmet from 'helmet';
 import https from "https";
 import { clean } from "perfect-express-sanitizer";
 import { v4 as uuidv4 } from 'uuid';
@@ -18,17 +18,32 @@ import { v4 as uuidv4 } from 'uuid';
 import initializeRefreshMechanism, { ActiveServer } from "./controllers/refreshController.js";
 import { Database } from "./database/db.js";
 import { responseTimeMiddleware } from "./middleware/apiResponseTime.js";
+import { sessionMiddleware } from './middleware/session.js';
 import userRouter from "./routes/appRoutes.js";
-import { startNewsServer } from "./server/newsserver.js";
+import { initiateNewsFetch } from "./server/newsserver.js";
 import { redisclient } from "./server/redisServer.js";
 import { startWebSocketServer } from "./server/websocket.js";
 import { mainLogger } from './utils/logger/logger.js';
 import dynamicRoutes from "./utils/routesforIndex.js";
-import { sessionMiddleware } from './middleware/session.js';
 
 
 //Express Middlewares
 const app = express();
+app.use(helmet());
+
+app.use(
+  helmet.contentSecurityPolicy({
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'"],
+      scriptSrcAttr: ["'unsafe-inline'"]
+    },
+  })
+);
+
+
 const port = process.env.PORT || 4000;
 const isDevelopment = process.env.NODE_ENV == "development";
 
@@ -49,85 +64,6 @@ app.use(
     noSqlLevel: 5,
   })
 );
-
-// Use connect-multiparty middleware to parse multipart/form-data bodies
-app.use(multipart());
-
-//database
-Database();
-
-// var allowedDomains = ['https:localhost:3000', 'https://tenpaisa.tech'];
-
-// app.use(cors({
-//   origin: function (origin, callback) {
-//     console.log('Origin: ', origin);
-//     if (!origin) return callback(null, true);
-//     if (allowedDomains.indexOf(origin) === -1) {
-//       var msg = `This site ${origin} does not have an access. Only specific domains are allowed to access it.`;
-//       return callback(new Error(msg), false);
-//     }
-//     return callback(null, true);
-//   },
-//   credentials: true,
-//   flightContinue: true
-// }));
-
-// const allowedOrigins = process.env.ALLOWED_ORIGINS || ''
-// const allowedOriginsArray = allowedOrigins.split(",").map(item => item.trim());
-// console.log('Allowed Origins: ', allowedOriginsArray);
-
-// const allowedOrigins = process.env.ALLOWED_ORIGINS.split(',').map(origin => origin);
-
-// const cors = cors({
-//   origin: (origin, callback) => {
-//     allowedOrigins.includes(origin) ? callback(null, true) : callback(new Error('Not allowed by CORS'))
-//   },
-//   allowedHeaders: [
-//     'access-control-allow-origin',
-//     'authorization',
-//     'Pragma',
-//     'contact',
-//   ],
-//   exposeHeaders: []
-// })
-// const whitelist =
-//   [https://localhost:3000,
-//   https://tenpaisa.tech]
-// var whitelist = ['https:localhost:3000', 'https://tenpaisa.tech']
-// var corsOptions = {
-//   preflightContinue: true,
-//   credentials: true,
-//   origin: function (origin, callback) {
-//     console.log('Origin: ', origin);
-//     if (whitelist.indexOf(origin) !== -1 || !origin) {
-//       callback(null, true)
-//     } else {
-//       console.log('Origin: ', origin);
-//       callback(new Error('Not allowed by CORS'))
-//     }
-//   }
-// }
-
-// app.use(cors(corsOptions));
-// const corsOptions = {
-//   credentials: true,
-//   flightContinue: true,
-//   origin: ["https://localhost:3000", "https://tenpaisa.tech"],
-
-// };
-// app.use(cors(corsOptions));
-// app.use(function(req, res, next) {
-//   var allowedOrigins = ['http://127.0.0.1:8020', 'http://localhost:8020', 'http://127.0.0.1:9000', 'http://localhost:9000'];
-//   var origin = req.headers.origin;
-//   if(allowedOrigins.indexOf(origin) > -1){
-//        res.setHeader('Access-Control-Allow-Origin', origin);
-//   }
-//   //res.header('Access-Control-Allow-Origin', 'http://127.0.0.1:8020');
-//   res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
-//   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-//   res.header('Access-Control-Allow-Credentials', true);
-//   return next();
-// });
 
 const corsOptions = {
   flightContinue: true,
@@ -158,6 +94,13 @@ app.use(session({
 
 app.use(responseTimeMiddleware);
 app.use(sessionMiddleware);
+
+// Use connect-multiparty middleware to parse multipart/form-data bodies
+app.use(multipart());
+
+//database
+Database();
+
 
 //cloudnary config
 cloudinary.config({
@@ -204,7 +147,7 @@ if (useRedis == "true") {
 ActiveServer();
 initializeRefreshMechanism();
 startWebSocketServer();
-startNewsServer(app);
+initiateNewsFetch();
 
 
 //routes

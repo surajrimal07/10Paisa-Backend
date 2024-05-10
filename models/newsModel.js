@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 import mongoose from 'mongoose';
-import mongooseSequence from 'mongoose-sequence';
 import mongoosePaginate from 'mongoose-paginate-v2';
+import mongooseSequence from 'mongoose-sequence';
 
 const AutoIncrement = mongooseSequence(mongoose);
 
@@ -31,7 +31,7 @@ const newsSchema = new mongoose.Schema({
 newsSchema.plugin(AutoIncrement, { id: 'news_id', inc_field: 'id' });
 newsSchema.plugin(mongoosePaginate);
 
-newsSchema.index({ unique_key: 1 }, { unique: true });
+newsSchema.index({ unique_key: 1 });
 
 newsSchema.pre('save', function (next) {
   const hash = crypto.createHash('sha256');
