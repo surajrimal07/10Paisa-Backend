@@ -1,10 +1,11 @@
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 import newsSources from '../middleware/newsUrl.js';
-import { headers } from '../utils/headers.js';
+import { createheaders } from '../utils/headers.js';
 import { newsLogger } from '../utils/logger/logger.js';
 
 async function extractFeaturedImage(url, publisher) {
+  const headers = createheaders(url);
   try {
     const response = await axios.get(url, { headers });
     const html = response.data;
@@ -66,6 +67,12 @@ async function extractFeaturedImage(url, publisher) {
     } else if (publisher == newsSources[25].source) { //Gorkha Patra
       featuredImageUrl = await extraceGorkhaPatra($);
     } else if (publisher == newsSources[26].source) { //Aanapurna Post
+      featuredImageUrl = await extraceGorkhaPatra($); //metapropery og image
+    } else if (publisher == newsSources[30].source) { //Sourya Online.
+      featuredImageUrl = await extraceGorkhaPatra($); //metapropery og image
+    } else if (publisher == newsSources[31].source) { //Ujyaalo Online
+      featuredImageUrl = await extractUjayaloOnline($);
+    } else if (publisher == newsSources[32].source) { //Rising Nepal Daily
       featuredImageUrl = await extraceGorkhaPatra($); //metapropery og image
     }
 
@@ -146,6 +153,11 @@ async function extractFeaturedImage(url, publisher) {
 //     return null;
 //   }
 // }
+
+async function extractUjayaloOnline($) {
+  const imageUrl = $('figure img').attr('src');
+  return imageUrl;
+};
 
 async function arthapathex($) {
   const featuredImageElement = $('img[class="attachment-full size-full wp-post-image"]');

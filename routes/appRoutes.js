@@ -7,7 +7,6 @@ import { addStockToPortfolio, createPortfolio, deletePortfolio, getAllPortfolios
 import { createUser, deleteAccount, forgetPass, googleSignIn, loginUser, makeadmin, updateUser, updateUserData, updateUserProfilePicture, verifyData, verifyEmail, verifyName, verifyPassword, verifyPhoneNumber, verifyUser } from '../controllers/userController.js';
 import { addStockToWatchlist, createWatchlist, deleteWatchlist, getWatchlistsByUserEmail, removeStockFromWatchlist, renameWatchlist } from '../controllers/watchlistController.js';
 import { authGuard, authGuardAdmin } from '../middleware/authGuard.js';
-import { getNews } from '../server/newsserver.js';
 
 const router = Router();
 
@@ -65,7 +64,6 @@ router.get('/topturnover', allowOnly(['GET']), TopTurnoverData);
 router.get('/topvolume', allowOnly(['GET']), TopVolumeData);
 router.get('/toptrans', allowOnly(['GET']), TopTransData);
 router.get('/dashboard', allowOnly(['GET']), DashBoardData);
-router.get('/news', allowOnly(['GET']), getNews);
 //router.get('/nepsesummary', allowOnly(['GET']), nepseSummary); //merged to index data
 
 //index data
@@ -77,8 +75,6 @@ router.get('/fetchcompanygraphintraday', allowOnly(['GET']), fetchIntradayCompan
 //company ko historical or intraday ohlc data from nepsealpha or systemxlite //used for python chart
 router.get('/getcompanyohlc', allowOnly(['GET']), getCompanyOHLCNepseAlpha);
 router.get('/availablenepsecompanies', allowOnly(['GET']), AvailableNepseSymbols);
-
-
 
 //admin routes
 router.get('/allusers', allowOnly(['GET']), getAllUsers);

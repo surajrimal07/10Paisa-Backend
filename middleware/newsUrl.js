@@ -26,9 +26,23 @@ const newsSources = [
   { url: "https://www.meroauto.com/feed/", source: "Mero Auto" }, //24 //meta property og image okk
   { url: "https://gorkhapatraonline.com/rss", source: "Gorkha Patra" }, //25
   { url: "https://annapurnapost.com/rss/", source: "Aanapurna Post" }, //26
-
+  { url: "https://thehimalayantimes.com/rssFeed/11", source: "Himalayan Times" }, //27
+  { url: "https://nepalnews.com/feed", source: "Nepal News" }, //28
+  { url: "https://newsofnepal.com/feed/", source: "News Of Nepal" }, //29
+  { url: "https://www.souryaonline.com/feed", source: "Sourya Online" }, //30
+  { url: "https://ujyaaloonline.com/rss/", source: "Ujyaalo Online" }, //31
+  { url: "https://risingnepaldaily.com/rss", source: "Rising Nepal Daily" }, //32
 ];
 
 export default newsSources;
 
 //  { url: "https://nagariknews.nagariknetwork.com/feed", source: "OS Nepal" }, //8
+
+//new sources //will add later
+//https://www.news24nepal.com/feed //desc and image missing
+//https://baahrakhari.com/feed
+//https://thahakhabar.com/rss/
+//https://nepalkhabar.com/feed/ //only image missing
+//https://nepalsamaya.com/feed //no desc and image
+//https://www.gadgetbytenepal.com/feed/
+//https://www.techpana.com/feed

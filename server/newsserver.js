@@ -4,7 +4,7 @@ import crypto from 'crypto';
 import xml2js from 'xml2js';
 import newsSources from '../middleware/newsUrl.js';
 import newsModel from '../models/newsModel.js';
-import { headers } from '../utils/headers.js';
+import { createheaders } from '../utils/headers.js';
 import { newsLogger } from '../utils/logger/logger.js';
 import extractFeaturedImage from './imageServer.js';
 import { notifyClients } from './websocket.js';
@@ -128,7 +128,29 @@ export const getNews = async (req, res) => {
   try {
     const page = parseInt(req.query._page) || 1;
     const limit = parseInt(req.query.limit) || 100;
-    const source = req.query.source || 'all';
+    const source = req.query.source;
+    const keyword = req.query.keyword;
+
+    let query = {};
+
+    if (source && keyword) {
+      query = {
+        source: source,
+        $or: [
+          { title: { $regex: keyword, $options: 'i' } },
+          { description: { $regex: keyword, $options: 'i' } },
+        ]
+      };
+    } else if (source) {
+      query = { source: source };
+    } else if (keyword) {
+      query = {
+        $or: [
+          { title: { $regex: keyword, $options: 'i' } },
+          { description: { $regex: keyword, $options: 'i' } },
+        ]
+      };
+    }
 
     const options = {
       page: page,
@@ -136,7 +158,12 @@ export const getNews = async (req, res) => {
       sort: { _id: -1 }
     };
 
-    const result = await newsModel.paginate({}, options);
+    const result = await newsModel.paginate(query, options);
+
+    if (result.docs.length === 0) {
+      return res.status(404).json({ message: 'No news found with selected keyword and source.' });
+    }
+
     res.json(result.docs);
   } catch (error) {
     res.status(500).json({ error: 'Internal Server Error' });
@@ -185,12 +212,14 @@ async function scrapeEkantipur() {
 
 
 const cleanDescription = (desc) => {
+  if (!desc) return '';
+
   return desc
     .replace(/<[^>]+>/g, '')
-    .replace(/\n\s+/g, '')
-    .replace(/&#8220/g, '')
-    .replace(/\[&#8230;\]/g, '')
-    .replace(/_{76}\s*&#8220;/g, '')
+    .replace(/\s+/g, ' ')
+    .replace(/&[^\s]*;/g, '')
+    .replace(/&#8220;/g, '')
+    .replace(/&#8230;/g, '')
     .replace(/&nbsp;/g, '')
     .replace(/&#8216;/g, '')
     .replace(/&#8217;/g, '')
@@ -201,11 +230,13 @@ const cleanDescription = (desc) => {
 
 async function startFetchingRSS(url, source) {
   const fallbackDate = new Date('2023-01-01T00:00:00.000Z');
+  const headers = createheaders(url);
 
   try {
     const response = await axios.get(url, { headers });
     if (response.status === 200 && response.data) {
       const result = await new xml2js.Parser().parseStringPromise(response.data);
+
       if (
         result.rss &&
         result.rss.channel &&
@@ -213,26 +244,55 @@ async function startFetchingRSS(url, source) {
         result.rss.channel[0].item
       ) {
         for (const item_elem of result.rss.channel[0].item) {
-          const title = item_elem.title && item_elem.title[0];
+          const title = cleanDescription(item_elem.title && item_elem.title[0]);
 
           const link = item_elem.link && item_elem.link[0].trim();
-          const description =
-            item_elem.description && item_elem.description[0];
+
           const pubDateN = item_elem.pubDate && new Date(item_elem.pubDate[0]);
+
           const pubDate = pubDateN || fallbackDate;
-          const cleanedDescription = cleanDescription(description);
+
+          let img_url = '';
+          let description = '';
+
           const unique_key = generateUniqueKey(title, pubDate);
 
           if (await isDuplicateArticle(unique_key)) {
             continue;
           }
 
-          const img_url = await extractFeaturedImage(link, source);
+          if (source === 'Nepal News') {
+            const contentEncoded = item_elem['content:encoded'] && item_elem['content:encoded'][0];
+            description = cleanDescription(contentEncoded);
+
+            const regex = /<img[^>]+src="([^">]+)/g;
+            const match = regex.exec(contentEncoded);
+            if (match && match[1]) {
+              img_url = match[1];
+            }
+          } else if (source === 'News Of Nepal') {
+            description = cleanDescription(item_elem.description && item_elem.description[0]);
+
+            const imageUrlRegex = /<img[^>]*src="([^"]*)"[^>]*>/;
+            const contentEncoded = item_elem['content:encoded'] && item_elem['content:encoded'][0];
+            const imageUrlMatch = contentEncoded.match(imageUrlRegex);
+            img_url = imageUrlMatch ? imageUrlMatch[1] : '';
+
+            // } else if (source === 'Himalayan Times') {
+            //   img_url = xmlDoc.getElementsByTagName('media:content')[0];
+          } else {
+            img_url = item_elem['media:content'] && item_elem['media:content'][0] && item_elem['media:content'][0].$ && item_elem['media:content'][0].$.url && item_elem['media:content'][0].$.url.trim();
+            description = cleanDescription(item_elem.description && item_elem.description[0]);
+          }
+
+          if (!img_url) {
+            img_url = await extractFeaturedImage(link, source);
+          };
 
           const new_item_data = {
             title,
             link,
-            description: cleanedDescription,
+            description,
             img_url,
             pubDate,
             source,
@@ -248,6 +308,9 @@ async function startFetchingRSS(url, source) {
       newsLogger.error(`fetching news from url failed: ${response.status} ${url}`);
     }
   } catch (error) {
+    if (error.response && error.response.status === 403) {
+      newsLogger.error(`Error fetching news on : ${source} : Sarping is blocked by the server`);
+    }
     newsLogger.error(`Error fetching news data: ${url} : ${error}`);
   }
 }
@@ -256,6 +319,7 @@ export async function initiateNewsFetch() {
   newsLogger.info('Initiating news fetch');
 
   const fetchAndDelay = async ({ url, source }) => {
+    newsLogger.info(`Fetching news from ${source}`);
     await startFetchingRSS(url, source);
     await new Promise((resolve) => setTimeout(resolve, 2 * 1000));
   };

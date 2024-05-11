@@ -20,7 +20,7 @@ import { Database } from "./database/db.js";
 import { responseTimeMiddleware } from "./middleware/apiResponseTime.js";
 import { sessionMiddleware } from './middleware/session.js';
 import userRouter from "./routes/appRoutes.js";
-import { initiateNewsFetch } from "./server/newsserver.js";
+import { getNews, initiateNewsFetch } from "./server/newsserver.js";
 import { redisclient } from "./server/redisServer.js";
 import { startWebSocketServer } from "./server/websocket.js";
 import { mainLogger } from './utils/logger/logger.js';
@@ -153,6 +153,7 @@ initiateNewsFetch();
 //routes
 app.use("/api", userRouter);
 app.get("/", dynamicRoutes);
+app.get("/news", getNews);
 
 //exports
 export default app;
