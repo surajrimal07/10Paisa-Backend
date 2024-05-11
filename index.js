@@ -8,11 +8,13 @@ import express from "express";
 import httpsOptions from "./certificate/httpOptions.js";
 
 //
+import compression from "compression";
 import session from 'express-session';
 import helmet from 'helmet';
 import https from "https";
 import { clean } from "perfect-express-sanitizer";
 import { v4 as uuidv4 } from 'uuid';
+
 
 //file imports
 import initializeRefreshMechanism, { ActiveServer } from "./controllers/refreshController.js";
@@ -95,6 +97,12 @@ app.use(session({
 app.use(responseTimeMiddleware);
 app.use(sessionMiddleware);
 
+// Use compression middleware to compress responses
+app.use(compression({
+  level: 7,
+  threshold: 0,
+}));
+
 // Use connect-multiparty middleware to parse multipart/form-data bodies
 app.use(multipart());
 
@@ -149,13 +157,12 @@ initializeRefreshMechanism();
 startWebSocketServer();
 initiateNewsFetch();
 
-
 //routes
 app.use("/api", userRouter);
 app.get("/", dynamicRoutes);
 app.get("/news", getNews);
 app.get("/ping", (req, res) => {
-  res.status(200).send("Server is up and running!");
+  res.sendStatus(200);
 });
 
 //exports

@@ -526,11 +526,9 @@ export async function getIndexIntraday(refresh) {
     }
 
     const nepseIndex = nepseIndexData["NEPSE Index"];
-    console.log(`Generated time is ${nepseIndex.generatedTime}`);
     const nepseSummaryArray = Object.values(nepseSummaryData);
 
     const nepseIndexDataObj = {
-      time: nepseIndex.generatedTime,
       open: open[0].index,
       high: nepseIndex.high,
       low: nepseIndex.low,

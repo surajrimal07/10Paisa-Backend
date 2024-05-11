@@ -1,24 +1,14 @@
 import { Router } from 'express';
-import { deleteUserByEmail, editUserByEmail, getAllPortfolios, getAllUsers } from '../controllers/adminController.js';
 import { AllIndicesData, AssetMergedData, AssetMergedDataBySector, AvailableNepseSymbols, CombinedIndexData, CommodityData, DashBoardData, IndexData, SingeAssetMergedData, TopGainersData, TopHeavyStocks, TopLoosersData, TopTransData, TopTurnoverData, TopVolumeData, WorldMarketData, fetchAndMergeDailyNepsePrice, fetchIntradayCompanyGraph, fetchMetalPrices, getCompanyOHLCNepseAlpha, nepseDailyGraphData, refreshCommodityData, refreshMetalsData, refreshWorldMarketData } from '../controllers/assetControllers.js';
 import { NrbBankingDataAll, combinedNrbData, nrbForexData, refreshNRBData } from '../controllers/extraDataControllers.js';
 import { sendOTP, verifyOTP } from '../controllers/otpControllers.js';
 import { addStockToPortfolio, createPortfolio, deletePortfolio, getAllPortfoliosForUser, removeStockFromPortfolio, renamePortfolio } from '../controllers/portfolioControllers.js';
-import { createUser, deleteAccount, forgetPass, googleSignIn, loginUser, makeadmin, updateUser, updateUserData, updateUserProfilePicture, verifyData, verifyEmail, verifyName, verifyPassword, verifyPhoneNumber, verifyUser } from '../controllers/userController.js';
+import { createUser, deleteAccount, forgetPass, googleSignIn, loginUser, updateUser, updateUserData, updateUserProfilePicture, verifyData, verifyEmail, verifyName, verifyPassword, verifyPhoneNumber, verifyUser } from '../controllers/userController.js';
 import { addStockToWatchlist, createWatchlist, deleteWatchlist, getWatchlistsByUserEmail, removeStockFromWatchlist, renameWatchlist } from '../controllers/watchlistController.js';
-import { authGuard, authGuardAdmin } from '../middleware/authGuard.js';
+import { allowOnly } from '../middleware/methodAllowed.js';
+import authrouter from './adminRoutes.js';
 
 const router = Router();
-
-// Middleware to block requests with disallowed methods //not working
-const allowOnly = (allowedMethods) => {
-    return (req, res, next) => {
-        if (!allowedMethods.includes(req.method)) {
-            return res.status(405).json({ error: 'Method Not Allowed', message: `${req.method} method is not allowed on this route` });
-        }
-        next();
-    };
-};
 
 //user routes
 //security verification on fly
@@ -76,13 +66,6 @@ router.get('/fetchcompanygraphintraday', allowOnly(['GET']), fetchIntradayCompan
 router.get('/getcompanyohlc', allowOnly(['GET']), getCompanyOHLCNepseAlpha);
 router.get('/availablenepsecompanies', allowOnly(['GET']), AvailableNepseSymbols);
 
-//admin routes
-router.get('/allusers', allowOnly(['GET']), getAllUsers);
-router.delete('/deleteUser', allowOnly(['DELETE']), authGuardAdmin, deleteUserByEmail);
-router.put('/edituser', allowOnly(['PUT']), authGuardAdmin, editUserByEmail);
-router.get('/allportfolios', allowOnly(['GET']), getAllPortfolios);
-router.post('/makeadmin', allowOnly(['POST']), authGuard, makeadmin);
-
 //watchlist routes
 router.post('/createwatchlist', allowOnly(['POST']), createWatchlist);
 router.post('/getwatchlist', allowOnly(['POST']), getWatchlistsByUserEmail);
@@ -111,6 +94,9 @@ router.get('/refreshcommodity', allowOnly(['GET']), refreshCommodityData);
 router.get('/refreshnrbdata', allowOnly(['GET']), refreshNRBData);
 router.get('/adddailyOHLC', allowOnly(['GET']), fetchAndMergeDailyNepsePrice);
 //router.get('/fetchindexdatafromnepsealpha', allowOnly(['GET']), FetchSingleDatafromAPINepseAlpha);
+
+//admin router
+router.use('/admin', authrouter); //https://localhost:4000/api/admin/allportfolios
 
 router.get('/active-users', (req, res) => {
     const activeUsersCount = Object.keys(req.session.activeUsers).length;

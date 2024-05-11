@@ -227,7 +227,7 @@ const cleanDescription = (desc) => {
     .trim();
 };
 
-
+//clickmandu desc broken
 async function startFetchingRSS(url, source) {
   const fallbackDate = new Date('2023-01-01T00:00:00.000Z');
   const headers = createheaders(url);
