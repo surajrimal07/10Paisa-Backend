@@ -1,6 +1,6 @@
 import storage from 'node-persist';
 import { createCache } from 'simple-in-memory-cache';
-import { fetchFromRedis, saveToRedis } from '../server/redisServer.js';
+import { deleteFromRedis, fetchFromRedis, saveToRedis } from '../server/redisServer.js';
 import { mainLogger } from '../utils/logger/logger.js';
 
 const { set, get } = createCache({ defaultSecondsUntilExpiration: Infinity });

@@ -109,7 +109,6 @@ app.use(multipart());
 //database
 Database();
 
-
 //cloudnary config
 cloudinary.config({
   cloud_name: process.env.CLOUD_NAME,

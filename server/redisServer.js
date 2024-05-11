@@ -1,15 +1,16 @@
 import { createClient } from 'redis';
+import { mainLogger } from '../utils/logger/logger.js';
 
 export const redisclient = createClient({
-    password: 'vqmUzFHiWIneSNBcx8c8sC4O0fUhyu4z',
+    password: process.env.REDIS_PASSWORD,
     socket: {
-        host: 'redis-16798.c264.ap-south-1-1.ec2.redns.redis-cloud.com',
-        port: 16798
+        host: process.env.REDIS_HOST,
+        port: process.env.REDIS_PORT
     },
-    connectTimeout: 10000,
+    connectTimeout: process.env.REDIS_TIMEOUT,
 
     retry_strategy: (options) => {
-        console.log('Redis Reconnect Attempt:', options.attempt);
+        mainLogger.info(`Redis Reconnect Attempt: ${options.attempt}`);
         if (options.attempt <= 5) {
             return Math.min(options.attempt * 100, 3000);
         }
@@ -25,12 +26,12 @@ export async function fetchFromRedis(key) {
     try {
         const data = await redisclient.get(key);
         if (!data) {
-            console.warn('No data found for key:', key);
+            mainLogger.warn(`No data found for key: ${key}`);
             return null;
         }
         return JSON.parse(data);
     } catch (err) {
-        console.error('Error fetching data from Redis:', err);
+        mainLogger.error(`Error fetching data from Redis: ${err}`);
         throw err;
     }
 }
@@ -39,7 +40,7 @@ export async function deleteFromRedis(key) {
     try {
         await redisclient.del(key);
     } catch (err) {
-        console.error('Error deleting data from Redis:', err);
+        mainLogger.error(`Error deleting data from Redis: ${err}`);
         throw err;
     }
 }
