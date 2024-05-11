@@ -319,7 +319,6 @@ export async function initiateNewsFetch() {
   newsLogger.info('Initiating news fetch');
 
   const fetchAndDelay = async ({ url, source }) => {
-    newsLogger.info(`Fetching news from ${source}`);
     await startFetchingRSS(url, source);
     await new Promise((resolve) => setTimeout(resolve, 2 * 1000));
   };
