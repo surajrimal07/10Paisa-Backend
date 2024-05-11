@@ -16,12 +16,6 @@ function generateDynamicRoutes(routes) {
   return dynamicRoutes;
 }
 
-function getActiveUsers(req) {
-  const activeUsersCount = Object.keys(req.session.activeUsers).length;
-  return activeUsersCount;
-}
-
-// Middleware to inject dynamic routes into HTML
 async function dynamicRoutes(req, res, next) {
   try {
     const __dirname = path.resolve();

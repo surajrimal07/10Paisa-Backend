@@ -154,6 +154,9 @@ initiateNewsFetch();
 app.use("/api", userRouter);
 app.get("/", dynamicRoutes);
 app.get("/news", getNews);
+app.get("/ping", (req, res) => {
+  res.status(200).send("Server is up and running!");
+});
 
 //exports
 export default app;
