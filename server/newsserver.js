@@ -278,8 +278,9 @@ async function startFetchingRSS(url, source) {
             const imageUrlMatch = contentEncoded.match(imageUrlRegex);
             img_url = imageUrlMatch ? imageUrlMatch[1] : '';
 
-            // } else if (source === 'Himalayan Times') {
-            //   img_url = xmlDoc.getElementsByTagName('media:content')[0];
+          } else if (source === 'Himalayan Times') {
+            //            img_url = item_elem.getElementsByTagName('media:content')[0];
+            img_url = item_elem['media:thumbnail'][0].$.url;
           } else {
             img_url = item_elem['media:content'] && item_elem['media:content'][0] && item_elem['media:content'][0].$ && item_elem['media:content'][0].$.url && item_elem['media:content'][0].$.url.trim();
             description = cleanDescription(item_elem.description && item_elem.description[0]);

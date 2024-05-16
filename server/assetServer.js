@@ -529,6 +529,7 @@ export async function getIndexIntraday(refresh) {
     const nepseSummaryArray = Object.values(nepseSummaryData);
 
     const nepseIndexDataObj = {
+      time: nepseIndex.generatedTime,
       open: open[0].index,
       high: nepseIndex.high,
       low: nepseIndex.low,
@@ -592,6 +593,7 @@ export async function intradayIndexGraph(refresh) {
 
     return processedData;
   } catch (error) {
+    console.log(error);
     assetLogger.error(`Error at intradayIndexGraph : ${error.message}`);
     return null;
   }
@@ -720,6 +722,95 @@ export async function fetchAvailableNepseSymbol(filterdeben = true, refresh) {
   }
 }
 
+//this is to check for empty data that systemxlite.com returns when symbol name is incorrect.
+export function isValidData(data) {
+  if (!data || typeof data !== 'object' ||
+    !data.s || !Array.isArray(data.t) || !Array.isArray(data.c) ||
+    !Array.isArray(data.o) || !Array.isArray(data.h) ||
+    !Array.isArray(data.l) || !Array.isArray(data.v)) {
+    return false;
+  }
+
+  return data.s !== 'no_data' && data.t.length > 0 &&
+    data.c.length > 0 && data.o.length > 0 &&
+    data.h.length > 0 && data.l.length > 0 && data.v.length > 0;
+}
+
+export function filterDuplicatesfromSystemX(existingData, newData) {
+  const existingSet = new Set(existingData.t);
+  const filteredResponse = {
+    t: [],
+    c: [],
+    o: [],
+    h: [],
+    l: [],
+    v: []
+  };
+
+  newData.t.forEach((timestamp, index) => {
+    if (!existingSet.has(timestamp)) {
+      filteredResponse.t.push(timestamp);
+      filteredResponse.c.push(newData.c[index]);
+      filteredResponse.o.push(newData.o[index]);
+      filteredResponse.h.push(newData.h[index]);
+      filteredResponse.l.push(newData.l[index]);
+      filteredResponse.v.push(newData.v[index]);
+    }
+  });
+
+  return filteredResponse;
+}
+
+//fetch dynamic ohlc data from systemx or nepsealpha
+export const fetchFunctionforNepseAlphaORSystemxlite = async (symbolIndex, timeFrame, fromEpochTime, currentEpochTime, force_key) => {
+  let response = await fetch(`https://backendtradingview.systemxlite.com/tv/tv/history?symbol=${symbolIndex}&resolution=${timeFrame}&from=${fromEpochTime}&to=${currentEpochTime}&countback=88`, {
+    "headers": {
+      "accept": "*/*",
+      "accept-language": "en-US,en;q=0.9,ne;q=0.8",
+      "if-none-match": "W/\"107d7-CkFswx0Zr81sX6ZUbikPAlgnJBA\"",
+      "sec-ch-ua": "\"Chromium\";v=\"124\", \"Microsoft Edge\";v=\"124\", \"Not-A.Brand\";v=\"99\"",
+      "sec-ch-ua-mobile": "?0",
+      "sec-ch-ua-platform": "\"Windows\"",
+      "sec-fetch-dest": "empty",
+      "sec-fetch-mode": "cors",
+      "sec-fetch-site": "same-site",
+      "sec-gpc": "1",
+      "Referer": "https://tradingview.systemxlite.com/",
+      "Referrer-Policy": "strict-origin-when-cross-origin"
+    },
+    "method": "GET"
+  }).then((response) => response.json());
+
+  if (!response || !isValidData(response)) {
+    assetLogger.error('Fetching data from systemxlite.com failed. Trying nepsealpha.com');
+    response = await fetch(
+      `https://www.nepsealpha.com/trading/1/history?${force_key}=rrfdwdwdsdfdg&symbol=${requestedSymbol}&from=${fromEpochTime}&to=${currentEpochTime}&resolution=${timeFrame}&pass=ok&fs=${force_key}&shouldCache=1`,
+      {
+        headers: {
+          accept: "application/json, text/plain, */*",
+          "sec-ch-ua":
+            '"Chromium";v="124", "Microsoft Edge";v="124", "Not-A.Brand";v="99"',
+          "sec-ch-ua-arch": '"x86"',
+          "sec-ch-ua-bitness": '"64"',
+          "sec-ch-ua-full-version": '"124.0.2478.67"',
+          "sec-ch-ua-full-version-list":
+            '"Chromium";v="124.0.6367.91", "Microsoft Edge";v="124.0.2478.67", "Not-A.Brand";v="99.0.0.0"',
+          "sec-ch-ua-mobile": "?0",
+          "sec-ch-ua-model": '""',
+          "sec-ch-ua-platform": '"Windows"',
+          "sec-ch-ua-platform-version": '"15.0.0"',
+          "x-requested-with": "XMLHttpRequest",
+          Referer: "https://www.nepsealpha.com/trading/chart?symbol=NEPSE",
+          "Referrer-Policy": "strict-origin-when-cross-origin",
+        },
+        "method": "GET",
+      }
+    );
+  }
+
+  return response;
+};
+
 export default {
   fetchCompanyIntradayGraph,
   intradayIndexGraph,
@@ -728,10 +819,13 @@ export default {
   FetchSingularDataOfAsset,
   GetDebentures,
   FetchOldData,
+  filterDuplicatesfromSystemX,
   topgainersShare,
   topLosersShare,
   topTradedShares,
   topTurnoversShare,
   topTransactions,
-  fetchAvailableNepseSymbol
+  fetchAvailableNepseSymbol,
+  fetchFunctionforNepseAlphaORSystemxlite,
+  isValidData
 };

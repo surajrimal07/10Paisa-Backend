@@ -1,4 +1,3 @@
-import parallel from 'async/parallel.js';
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 import crypto from 'crypto';

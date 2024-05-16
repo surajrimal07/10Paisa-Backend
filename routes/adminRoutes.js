@@ -8,11 +8,11 @@ import { allowOnly } from '../middleware/methodAllowed.js';
 const authrouter = Router();
 
 //admin routes
-authrouter.get('/allusers', allowOnly(['GET']), authGuard, getAllUsers);
+authrouter.get('/allusers', allowOnly(['GET']), authGuardAdmin, getAllUsers);
 authrouter.delete('/deleteUser', allowOnly(['DELETE']), authGuardAdmin, deleteUserByEmail);
 authrouter.put('/edituser', allowOnly(['PUT']), authGuardAdmin, editUserByEmail);
-authrouter.get('/allportfolios', allowOnly(['GET']), authGuard, getAllPortfolios);
-authrouter.post('/makeadmin', allowOnly(['POST']), authGuard, makeadmin);
+authrouter.get('/allportfolios', allowOnly(['GET']), authGuardAdmin, getAllPortfolios);
+authrouter.post('/makeadmin', allowOnly(['POST']), authGuardAdmin, makeadmin);
 
 
 export default authrouter;

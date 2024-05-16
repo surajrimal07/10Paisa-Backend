@@ -15,7 +15,6 @@ import https from "https";
 import { clean } from "perfect-express-sanitizer";
 import { v4 as uuidv4 } from 'uuid';
 
-
 //file imports
 import initializeRefreshMechanism, { ActiveServer } from "./controllers/refreshController.js";
 import { Database } from "./database/db.js";
@@ -52,9 +51,7 @@ const isDevelopment = process.env.NODE_ENV == "development";
 // Use express.json() middleware to parse JSON bodies
 app.use(express.json());
 
-// Use body-parser middleware to parse url-encoded bodies
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use(bodyParser.json());
 
 // Use perfect-express-sanitizer middleware to sanitize user input
 app.use(
@@ -75,7 +72,6 @@ const corsOptions = {
   allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization']
 };
 app.use(cors(corsOptions));
-// \app.use(cors({ origin: '*', flightContinue: true }));
 
 //session middleware
 app.use(session({
@@ -99,7 +95,7 @@ app.use(sessionMiddleware);
 
 // Use compression middleware to compress responses
 app.use(compression({
-  level: 7,
+  level: 8,
   threshold: 0,
 }));
 

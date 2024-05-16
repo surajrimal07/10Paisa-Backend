@@ -41,7 +41,7 @@ export const validateEmail = (email) => {
     if (/\s/.test(password)) {
         return "Password should not contain spaces";
     }
-    return true; // Password meets all criteria
+    return true;
 }
 
 //security measures 2 -- check if password contains name or email

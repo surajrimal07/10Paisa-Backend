@@ -4,14 +4,17 @@ import { OAuth2Client } from 'google-auth-library';
 import jwt from 'jsonwebtoken';
 import storage from 'node-persist';
 import { forgetPassword } from '../controllers/otpControllers.js';
+import { encryptJWT } from '../middleware/authGuard.js';
 import Portfolio from '../models/portfolioModel.js';
 import User from '../models/userModel.js';
 import { notifySelectedClients } from '../server/websocket.js';
 import { LDAcheck, NameorEmailinPassword, validateEmail, validateName, validatePassword, validatePhoneNumber } from '../utils/dataValidation_utils.js';
 import globalVariables from '../utils/globalVariables.js';
-import { respondWithData, respondWithError, respondWithSuccess } from '../utils/response_utils.js';
 import { userLogger } from '../utils/logger/userlogger.js';
+import { respondWithData, respondWithError, respondWithSuccess } from '../utils/response_utils.js';
+import { saveToCache } from './savefetchCache.js';
 
+//
 
 function setUserDetails({ name, phone, email }) {
   console.log("Setting user global details");
@@ -105,21 +108,14 @@ export const verifyPhoneNumber = async (req, res) => {
   return respondWithSuccess(res, 'SUCCESS', "Phone number is valid");
 };
 
-
-
 //create user
 export const createUser = async (req, res) => {
   const name = req.body.name;
-  const email = req.body.email;
+  const email = req.body.email.toLowerCase();
   const password = req.body.password;
   const phone = req.body.phone;
-  const style = req.body.style !== undefined ? req.body.style : undefined;
-  const isAdmin = req.body.isAdmin ?? false;
-  const premium = req.body.premium ?? false;
-  const userAmount = req.body.amount !== undefined ? req.body.amount : undefined;
 
-  console.log("Create user command passed");
-  console.log(req.body);
+  userLogger.info(`Create user command passed`);
 
   if (!name || !email || !password || !phone) {
     return respondWithError(res, 'BAD_REQUEST', "Empty data passed. Please provide all required fields.");
@@ -135,17 +131,15 @@ export const createUser = async (req, res) => {
     return respondWithError(res, 'BAD_REQUEST', "Password is too common.");
   }
 
-  let dpImage;
-
-  if (req.files && req.files.length > 0) {
-    dpImage = req.files[0];
-  }
-
   try {
     setUserDetails({ name, phone, email });
     const hashedPassword = await bcrypt.hash(password, 10);
     const token = jwt.sign({ email: email, isAdmin: false }, process.env.JWT_SECRET, { expiresIn: '7d' });
-    await storage.setItem(email + '_token', token);
+    const encryped_token = encryptJWT(token);
+
+    console.log("Token: ", encryped_token)
+
+    await saveToCache(email + '_token', encryped_token);
 
     const samplePortfolio = await Portfolio.create({
       id: 1,
@@ -155,27 +149,21 @@ export const createUser = async (req, res) => {
     });
 
     const newUser = new User({
-      token,
       name,
-      email: email.toLowerCase(),
+      email,
       password: hashedPassword,
       phone,
-      style,
-      isAdmin,
-      premium,
-      dpImage: dpImage ? dpImage.path : undefined,
-      userAmount: userAmount !== undefined ? userAmount : undefined,
-      portfolio: [samplePortfolio._id],
-
+      portfolio: [samplePortfolio._id]
     });
     try {
+      console.log(newUser)
       const savedUser = await newUser.save();
       const populatedPortfolio = await Portfolio.findById(samplePortfolio._id);
       const formattedPortfolio = formatPortfolioData(populatedPortfolio)
 
       const userData = {
         _id: savedUser._id,
-        token: savedUser.token,
+        token: encryped_token,
         name: savedUser.name,
         email: savedUser.email,
         pass: savedUser.password,
@@ -187,10 +175,10 @@ export const createUser = async (req, res) => {
         portfolio: [formattedPortfolio],
         wallets: savedUser.wallets
       };
-      console.log("Signup Was Success");
+      userLogger.info(`User created successfully`);
       return respondWithData(res, 'CREATED', "User created successfully", userData);
     } catch (err) {
-      console.log("Signup failed");
+      userLogger.error(`Error creating user: ${err.toString()}`);
       return respondWithError(res, 'INTERNAL_SERVER_ERROR', err.toString());
     }
   } catch (err) {
@@ -222,10 +210,17 @@ const formatSinglePortfolio = (portfolio) => {
     percentage: portfolio.percentage,
   };
 };
+
 //
 export const loginUser = async (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
+
+  if (!email || !password) {
+    userLogger.info("Invalid email or password.");
+    return respondWithError(res, 'BAD_REQUEST', "Invalid email or password.");
+  };
+
   try {
     const user = await User.findOne({ email: email.toLowerCase() }).populate('portfolio');
 
@@ -234,16 +229,16 @@ export const loginUser = async (req, res) => {
       return respondWithError(res, 'UNAUTHORIZED', "Invalid email or password.");
     } else {
       const isExpired = user.isPasswordExpired() ?? notifyClients({ type: 'notification', title: 'Password Expired', description: "Your password is expired, please change soon", image: user.dpImage, url: "https://10paisa.com" });
-      // if (isExpired) {
-      //   notifyClients({ type: 'notification', title: 'Password Expired', description: "Your password is expired, please change soon", image: user.dpImage, url: "https://10paisa.com" });
-      // }
-
+      if (isExpired) {
+        notifyClients({ type: 'notification', title: 'Password Expired', description: "Your password is expired, please change soon", image: user.dpImage, url: "https://10paisa.com" });
+      }
       const token = jwt.sign({ email: email, isAdmin: user.isAdmin }, process.env.JWT_SECRET, { expiresIn: '7d' });
-      await storage.setItem(email + '_token', token);
+      const encryped_token = encryptJWT(token);
+      await storage.setItem(email + '_token', encryped_token);
 
       let userData = {
         _id: user._id,
-        token: token,
+        token: encryped_token,
         name: user.name,
         email: user.email,
         pass: user.password,
@@ -408,7 +403,8 @@ export const updateUser = async (req, res) => {
 
     if (cachedtkn == null) {
       token = jwt.sign({ email: user.email, isAdmin: user.isAdmin }, process.env.JWT_SECRET, { expiresIn: '7d' });
-      await storage.setItem(email + '_token', token);
+      const encryped_token = encryptJWT(token);
+      await saveToCache(email + '_token', encryped_token);
     } else {
       token = cachedtkn;
     }
@@ -439,189 +435,6 @@ export const updateUser = async (req, res) => {
   }
 };
 
-
-// //works //for individual updates //
-// export const updateUser = async (req, res) => {
-//   const token = req.body.token;
-//   const email = req.body.email;
-//   const newPassword  = req.body.password;
-//   const phone = req.body.phone;
-//   const invStyle = req.body.style;
-//   const fieldToUpdate = req.body.field;
-//   const valueToUpdate = req.body.value;
-//   const userAmount = req.body.useramount;
-
-//   const User_token_key = email + '_token';
-
-
-//   if (!email ) {
-//     return respondWithError(res, 'BAD_REQUEST', "User email is missing");
-//   }
-//   if (!fieldToUpdate) {
-//     return respondWithError(res, 'BAD_REQUEST', "Field to update missing");
-//   }
-
-//   try {
-//     const user = await User.findOne({ email })
-
-//     if (!user) {
-//       console.log("User not found");
-//       return respondWithError(res, 'NOT_FOUND', "User not found");
-//     }
-//     const populatedPortfolio = await Portfolio.find({ userEmail: email });
-
-//     const formattedPortfolio = formatPortfolioData(populatedPortfolio);
-
-//     if (fieldToUpdate === 'name') {
-//       console.log("Username updated, new "+fieldToUpdate+ " is "+valueToUpdate)
-//       user.name = valueToUpdate;
-//     }
-
-//     if (fieldToUpdate == 'useramount') {
-//     console.log("User updated, new "+fieldToUpdate+ " is "+valueToUpdate)
-//     user.userAmount = valueToUpdate;
-//     }
-
-//     if (fieldToUpdate === 'password') {
-//       const newPassword = await bcrypt.hash(valueToUpdate, 10);
-//       console.log("User password updated, new "+fieldToUpdate+ " is "+valueToUpdate)
-//       user.password = newPassword;
-//     }
-
-//     if (fieldToUpdate === 'email') {
-//       try {
-//         const existingUser = await User.findOne({ email: valueToUpdate.toLowerCase() });
-
-//         console.log(existingUser);
-
-//         if (!existingUser) {
-//           console.log("User email updated, new " + fieldToUpdate + " is " + valueToUpdate);
-
-//           user.email = valueToUpdate;
-
-//           const savedUser = await user.save();
-
-//           const cachedtkn = await storage.getItem(User_token_key);
-//           let userData = {
-//             _id: savedUser._id,
-//             name: savedUser.name,
-//             email: savedUser.email,
-//             pass: savedUser.password,
-//             phone: savedUser.phone,
-//             token: cachedtkn,
-//             premium: savedUser.premium,
-//             profilePicture: savedUser.profilePicture,
-//             style: savedUser.style,
-//             defaultport: savedUser.defaultport,
-//             isAdmin: savedUser.isAdmin,
-//             dpImage: savedUser.dpImage,
-//             userAmount: savedUser.userAmount,
-//             portfolio: formattedPortfolio,
-//             wallets: savedUser.wallets
-//           };
-
-//           return respondWithData(res, 'SUCCESS', "Email updated successfully", userData);
-//         } else {
-//           return respondWithError(res, 'BAD_REQUEST', "Email already exists");
-//         }
-//       } catch (error) {
-//         console.error("Error updating user email:", error);
-//         return respondWithError(res, 'INTERNAL_SERVER_ERROR', "Error updating email");
-//       }
-//     }
-
-//     if (fieldToUpdate === 'phone') {
-//       try {
-//         const existingUser = await User.findOne({ phone: valueToUpdate });
-//         if (!existingUser) {
-//           console.log("User phone updated, new " + fieldToUpdate + " is " + valueToUpdate);
-
-//           user.phone = valueToUpdate;
-
-//           await user.save();
-
-//           const cachedtkn = await storage.getItem(User_token_key);
-//           let userData = {
-//             _id: user._id,
-//             name: user.name,
-//             email: user.email,
-//             pass: user.password,
-//             phone: user.phone,
-//             token: cachedtkn,
-//             premium: user.premium,
-//             profilePicture: user.profilePicture,
-//             style: user.style,
-//             defaultport: user.defaultport,
-//             isAdmin: user.isAdmin,
-//             dpImage: user.dpImage,
-//             userAmount: user.userAmount,
-//             portfolio: formattedPortfolio,
-//             wallets: user.wallets
-//           };
-
-//           return respondWithData(res, 'SUCCESS', "Phone updated successfully", userData);
-//         } else {
-//           console.log("Phone already exists");
-//           return respondWithError(res, 'BAD_REQUEST', "Phone already exists");
-//         }
-//       } catch (error) {
-//         console.error("Error updating user Phone:", error);
-//         return respondWithError(res, 'INTERNAL_SERVER_ERROR', "Error updating phone");
-//       }
-//     }
-
-//     else if (fieldToUpdate === 'style') {
-//       user.style = valueToUpdate;
-//       console.log("User Style updated, new "+fieldToUpdate+ " is " +valueToUpdate)
-//     }
-
-//     //
-//     else if (fieldToUpdate === 'premium') {
-//       user.premium = valueToUpdate;
-//       console.log("User Premium updated, new "+fieldToUpdate+ " is " +valueToUpdate)
-//     }
-
-//     else if (fieldToUpdate === 'wallets') {
-
-//      user.wallets = valueToUpdate;
-//       console.log("User Wallets updated, new "+fieldToUpdate+ " is " +valueToUpdate)
-//     }
-
-//     try {
-//       await user.save();
-//       const cachedtkn = await storage.getItem(User_token_key);
-//       let userData = {
-//         _id: user._id,
-//         name: user.name,
-//         email: user.email,
-//         pass: user.password,
-//         phone: user.phone,
-//         token: cachedtkn,
-//         profilePicture: user.profilePicture,
-//         style: user.style,
-//         premium: user.premium,
-//         defaultport: user.defaultport,
-//         isAdmin: user.isAdmin,
-//         dpImage: user.dpImage,
-//         userAmount: user.userAmount,
-//         portfolio: formattedPortfolio,
-//         wallets: user.wallets
-//       };
-
-//       console.log('User ' + fieldToUpdate + ' updated successfully');
-//       return respondWithData(res, 'SUCCESS',  fieldToUpdate + " updated successfully", userData);
-//     } catch (error) {
-//       console.error('User ' + fieldToUpdate + ' update failed: ' + error);
-//       return respondWithError(res, 'INTERNAL_SERVER_ERROR', "Error updating user " + fieldToUpdate);
-//     }
-//   } catch (error) {
-//     console.error('Error updating user data:', error);
-//     return respondWithError(res, 'INTERNAL_SERVER_ERROR', "Error updating user data");
-//   }
-// };
-
-//
-
 export const verifyUser = async (req, res) => {
 
   console.log("User verification requested")
@@ -641,8 +454,8 @@ export const verifyUser = async (req, res) => {
 
       if (!cachedtkn) {
         const token = jwt.sign({ email: email, isAdmin: user.isAdmin }, process.env.JWT_SECRET, { expiresIn: '7d' });
-        await storage.setItem(User_token_key, token);
-        user_token = token;
+        await saveToCache(email + '_token', encryped_token);
+        user_token = encryptJWT(token);
       } else {
         user_token = cachedtkn;
       }
@@ -671,25 +484,6 @@ export const verifyUser = async (req, res) => {
   }
 };
 
-// export const fetchToken = async (req, res) => {
-//   const email = req.body.email;
-
-//   try {
-//     const user = await User.findOne({ email });
-
-//     if (!user) {
-//       console.log("401 Invalid email");
-//       return respondWithError(res, 'UNAUTHORIZED', "Invalid email");
-//     } else {
-//       return respondWithData(res, 'SUCCESS', "Token fetched successfully", user.token);
-
-//     }
-//   } catch (error){
-//     console.log(error.toString());
-//     return respondWithError(res, 'INTERNAL_SERVER_ERROR', error.toString());
-//   }
-// };
-
 export const deleteAccount = async (req, res) => {
 
   const email = req.body.email;
@@ -717,56 +511,8 @@ export const deleteAccount = async (req, res) => {
   }
 };
 
-// //works
-// export const defaultportfolio = async (req, res) => {
-//   console.log("Change default portfolio requested")
-//   const email = req.body.email;
-//   const portfolioId = req.body.id;
 
-//   try {
-//     const user = await User.findOne({ email });
-
-//     if (!user) {
-//       return respondWithError(res, 'NOT_FOUND', "User not found");
-//     }
-//     if (user.defaultport === portfolioId) {
-//       console.log('Portfolio is already set as default');
-//       return respondWithError(res, 'BAD_REQUEST', "Portfolio is already set as default");
-//     }
-
-//     user.defaultport = portfolioId;
-//     await user.save();
-
-//     console.log("200 Portfolio ID updated");
-//     return respondWithSuccess(res, 'SUCCESS', "Portfolio ID updated");
-
-//   } catch (error) {
-//     console.error(error);
-
-//     return respondWithError(res, 'INTERNAL_SERVER_ERROR', error.toString());
-//   }
-// };
-
-
-// export const removedefaultportfolio = async (req, res) => {
-//   const token = req.body.token;
-
-//   try {
-//     const user = await User.findOne({ token });
-
-//     if (!user) {
-//       return respondWithError(res, 'NOT_FOUND', "User not found");
-//     }
-
-//     user.defaultport = 1;
-
-//   } catch (error) {
-//     console.error(error);
-//     return respondWithError(res, 'INTERNAL_SERVER_ERROR', error.toString());
-//   }
-
-// };
-
+//move this to admin route
 export const makeadmin = async (req, res) => {
   const token = req.body.token;
 
@@ -813,7 +559,8 @@ export const googleSignIn = async (req, res) => {
       return respondWithError(res, 'UNAUTHORIZED', "No Account found with this email");
     }
     const token = jwt.sign({ email, isAdmin: user.isAdmin }, process.env.JWT_SECRET, { expiresIn: '7d' });
-    await storage.setItem('user_token', token);
+    const encryped_token = encryptJWT(token);
+    await saveToCache(email + '_token', encryped_token);
 
     let userData = {
       _id: user._id,
@@ -838,7 +585,6 @@ export const googleSignIn = async (req, res) => {
     console.error(error.toString());
     return respondWithError(res, 'INTERNAL_SERVER_ERROR', error.toString());
   }
-
 };
 
 //extracting all user data //one to upload user one to upload picture
@@ -914,11 +660,16 @@ export const updateUserProfilePicture = async (req, res) => {
     return respondWithError(res, 'BAD_REQUEST', "Old email missing");
   }
 
+  const allowedExtensions = ['.jpg', '.jpeg', '.png'];
+  const fileExtension = dpImage.name.substring(dpImage.name.lastIndexOf('.')).toLowerCase();
+  if (!allowedExtensions.includes(fileExtension)) {
+    return respondWithError(res, 'BAD_REQUEST', "Only JPG and PNG files are allowed");
+  }
+
   try {
     const user = await User.findOne({ email: oldEmail }).populate('portfolio');
 
     if (!user) {
-      console.log("User not found");
       return respondWithError(res, 'NOT_FOUND', "User not found");
     }
 
@@ -933,7 +684,6 @@ export const updateUserProfilePicture = async (req, res) => {
             overwrite: true,
           },
         );
-        console.log("User DP updated, new dp is " + uploadedImage.secure_url);
         user.dpImage = uploadedImage.secure_url;
       } catch (e) {
         console.log(e);
@@ -943,14 +693,14 @@ export const updateUserProfilePicture = async (req, res) => {
     try {
 
       await user.save();
-
-      let token = '';
+      let encryped_token = '';
       const cachedtkn = await storage.getItem(oldEmail + '_token');
       if (cachedtkn == null) {
         const token = jwt.sign({ email: user.email, isAdmin: user.isAdmin }, process.env.JWT_SECRET, { expiresIn: '7d' });
-        await storage.setItem(oldEmail + '_token', token);
+        const encryped_token = encryptJWT(token);
+        await saveToCache(oldEmail + '_token', encryped_token);
       } else {
-        token = cachedtkn;
+        encryped_token = cachedtkn;
       }
 
       let userData = {
@@ -959,7 +709,7 @@ export const updateUserProfilePicture = async (req, res) => {
         email: user.email,
         pass: user.password,
         phone: user.phone,
-        token: token,
+        token: encryped_token,
         profilePicture: user.profilePicture,
         style: user.style,
         premium: user.premium,
@@ -969,7 +719,6 @@ export const updateUserProfilePicture = async (req, res) => {
         userAmount: user.userAmount,
         portfolio: user.portfolio
       };
-      console.log('User profile picture updated successfully');
       return respondWithData(res, 'SUCCESS', "User profile picture updated successfully", userData);
     } catch (error) {
       console.error('User profile picture update failed: ' + error);

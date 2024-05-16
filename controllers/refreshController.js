@@ -14,7 +14,7 @@ import {
 } from "../server/assetServer.js";
 import { notifyClients } from "../server/websocket.js";
 import { nepseLogger } from '../utils/logger/logger.js';
-import { fetchFromCache, saveToCache } from "./savefetchCache.js";
+import { saveToCache } from "./savefetchCache.js";
 
 //initilizing storage here to prevent code racing
 const defaultDirectory = '/tmp/.node-persist';
@@ -24,10 +24,6 @@ await storage.init({
   forgiveParseErrors: true,
   writeQueue: true,
 });
-
-const refreshInterval = (await fetchFromCache("isMarketOpen"))
-  ? 60 * 1000 // 30s if market is open
-  : 30 * 60 * 1000; // 30 mins because no point in refreshing data when market is closed
 
 
 const NEPSE_API_URL1 = process.env.NEPSE_API_URL;
@@ -154,7 +150,7 @@ export default async function initializeRefreshMechanism() {
       if (isNepseOpenNow) {
         await wipeCachesAndRefreshData(); // Refresh data if Nepse is currently open
       }
-    }, refreshInterval);
+    }, 60 * 1000);
   } catch (error) {
     nepseLogger.error(`Error initializing Nepse refresh mechanism ${error.message}`);
   }

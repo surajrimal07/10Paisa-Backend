@@ -37,7 +37,6 @@ export const fetchFromCache = async (cacheKey) => {
 };
 
 export const saveToCache = async (cacheKey, data) => {
-  //mainLogger.info(`saving cache of key ${cacheKey}`)
   try {
     if (inMemory === 'true') {
       set(cacheKey, data);
