@@ -1,18 +1,16 @@
 
 import { Router } from 'express';
-import { deleteUserByEmail, editUserByEmail, getAllPortfolios, getAllUsers } from '../controllers/adminController.js';
-import { makeadmin } from '../controllers/userController.js';
-import { authGuard, authGuardAdmin } from '../middleware/authGuard.js';
-import { allowOnly } from '../middleware/methodAllowed.js';
+import { deleteUserByEmail, editUserByEmail, getAllPortfolios, getAllUsers, makeadmin } from '../controllers/adminController.js';
+import { authGuardAdmin } from '../middleware/authGuard.js';
 
-const authrouter = Router();
+const adminrouter = Router();
 
 //admin routes
-authrouter.get('/allusers', allowOnly(['GET']), authGuardAdmin, getAllUsers);
-authrouter.delete('/deleteUser', allowOnly(['DELETE']), authGuardAdmin, deleteUserByEmail);
-authrouter.put('/edituser', allowOnly(['PUT']), authGuardAdmin, editUserByEmail);
-authrouter.get('/allportfolios', allowOnly(['GET']), authGuardAdmin, getAllPortfolios);
-authrouter.post('/makeadmin', allowOnly(['POST']), authGuardAdmin, makeadmin);
+adminrouter.get('/allusers', authGuardAdmin, getAllUsers);
+adminrouter.delete('/deleteUser', authGuardAdmin, deleteUserByEmail);
+adminrouter.put('/edituser', authGuardAdmin, editUserByEmail);
+adminrouter.get('/allportfolios', authGuardAdmin, getAllPortfolios);
+adminrouter.post('/makeadmin', authGuardAdmin, makeadmin);
 
 
-export default authrouter;
+export default adminrouter;

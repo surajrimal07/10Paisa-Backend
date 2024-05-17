@@ -1,46 +1,13 @@
 import { Router } from 'express';
 import { AllIndicesData, AssetMergedData, AssetMergedDataBySector, AvailableNepseSymbols, CombinedIndexData, CommodityData, DashBoardData, IndexData, SingeAssetMergedData, TopGainersData, TopHeavyStocks, TopLoosersData, TopTransData, TopTurnoverData, TopVolumeData, WorldMarketData, fetchAndMergeDailyNepsePrice, fetchIntradayCompanyGraph, fetchMetalPrices, getCompanyOHLCNepseAlpha, nepseDailyGraphData, refreshCommodityData, refreshMetalsData, refreshWorldMarketData } from '../controllers/assetControllers.js';
 import { NrbBankingDataAll, combinedNrbData, nrbForexData, refreshNRBData } from '../controllers/extraDataControllers.js';
-import { sendOTP, verifyOTP } from '../controllers/otpControllers.js';
-import { addStockToPortfolio, createPortfolio, deletePortfolio, getAllPortfoliosForUser, removeStockFromPortfolio, renamePortfolio } from '../controllers/portfolioControllers.js';
-import { createUser, deleteAccount, forgetPass, googleSignIn, loginUser, updateUser, updateUserData, updateUserProfilePicture, verifyData, verifyEmail, verifyName, verifyPassword, verifyPhoneNumber, verifyUser } from '../controllers/userController.js';
-import { addStockToWatchlist, createWatchlist, deleteWatchlist, getWatchlistsByUserEmail, removeStockFromWatchlist, renameWatchlist } from '../controllers/watchlistController.js';
 import { allowOnly } from '../middleware/methodAllowed.js';
-import authrouter from './adminRoutes.js';
+import adminrouter from './adminRoutes.js';
+import userrouter from './userRoutes.js';
 
 const router = Router();
 
-//user routes
-//security verification on fly
-router.post('/verifyname', allowOnly(['POST']), verifyName);
-router.post('/verifyemail', allowOnly(['POST']), verifyEmail);
-router.post('/verifypassword', allowOnly(['POST']), verifyPassword);
-router.post('/verifyphone', allowOnly(['POST']), verifyPhoneNumber);
-
-//general routes
-router.post('/create', allowOnly(['POST']), createUser);
-router.post('/login', allowOnly(['POST']), loginUser);
-router.post('/googlelogin', allowOnly(['POST']), googleSignIn);
-router.post('/otp-login', allowOnly(['POST']), sendOTP);
-router.post('/otp-verify', allowOnly(['POST']), verifyOTP);
-router.post('/forget', allowOnly(['POST']), forgetPass);
-router.post('/updateuser', allowOnly(['POST']), updateUser);
-router.post('/updatealluserdata', allowOnly(['POST']), updateUserData);
-router.post('/updateprofilepic', allowOnly(['POST']), updateUserProfilePicture);
-
-router.post('/verify', allowOnly(['POST']), verifyUser);
-router.post('/delete-acc', allowOnly(['POST']), deleteAccount);
-router.post('/pre-verify', allowOnly(['POST']), verifyData);
-
-//portfolio
-router.post('/newport', allowOnly(['POST']), createPortfolio);
-router.post('/addstock', allowOnly(['POST']), addStockToPortfolio);
-router.delete('/delport', allowOnly(['DELETE']), deletePortfolio);
-router.post('/renameportfolio', allowOnly(['POST']), renamePortfolio);
-router.post('/getallportforuser', allowOnly(['POST']), getAllPortfoliosForUser);
-router.post('/remstock', allowOnly(['POST']), removeStockFromPortfolio);
-
-//
+//asset data
 router.get('/commodity', allowOnly(['GET']), CommodityData);
 router.get('/metal', allowOnly(['GET']), fetchMetalPrices);
 router.get('/sharesansardata', allowOnly(['GET']), AssetMergedData);
@@ -54,7 +21,6 @@ router.get('/topturnover', allowOnly(['GET']), TopTurnoverData);
 router.get('/topvolume', allowOnly(['GET']), TopVolumeData);
 router.get('/toptrans', allowOnly(['GET']), TopTransData);
 router.get('/dashboard', allowOnly(['GET']), DashBoardData);
-//router.get('/nepsesummary', allowOnly(['GET']), nepseSummary); //merged to index data
 
 //index data
 router.get('/index', allowOnly(['GET']), IndexData);
@@ -66,16 +32,8 @@ router.get('/fetchcompanygraphintraday', allowOnly(['GET']), fetchIntradayCompan
 router.get('/getcompanyohlc', allowOnly(['GET']), getCompanyOHLCNepseAlpha);
 router.get('/availablenepsecompanies', allowOnly(['GET']), AvailableNepseSymbols);
 
-//watchlist routes
-router.post('/createwatchlist', allowOnly(['POST']), createWatchlist);
-router.post('/getwatchlist', allowOnly(['POST']), getWatchlistsByUserEmail);
-router.post('/renamewatchlist', allowOnly(['POST']), renameWatchlist);
-router.post('/deletewatchlist', allowOnly(['POST']), deleteWatchlist);
-router.post('/addstocktowatchlist', allowOnly(['POST']), addStockToWatchlist);
-router.post('/remstockfromwatchlist', allowOnly(['POST']), removeStockFromWatchlist);
 
 //nrb datas
-//router.get('/nrbbankdata', NrbBankingData);
 router.get('/nrbbankingdataAll', allowOnly(['GET']), NrbBankingDataAll);
 router.get('/nrbforexdata', allowOnly(['GET']), nrbForexData);
 router.get('/combinednrbdata', allowOnly(['GET']), combinedNrbData);
@@ -96,7 +54,10 @@ router.get('/adddailyOHLC', allowOnly(['GET']), fetchAndMergeDailyNepsePrice);
 //router.get('/fetchindexdatafromnepsealpha', allowOnly(['GET']), FetchSingleDatafromAPINepseAlpha);
 
 //admin router
-router.use('/admin', authrouter); //https://localhost:4000/api/admin/allportfolios
+router.use('/admin', adminrouter); //https://localhost:4000/api/admin/allportfolios
+
+//user router
+router.use('/user', userrouter); //https://localhost:4000/api/user/login
 
 router.get('/active-users', (req, res) => {
     const activeUsersCount = Object.keys(req.session.activeUsers).length;

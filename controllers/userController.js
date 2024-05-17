@@ -1,18 +1,19 @@
 import bcrypt from 'bcrypt';
 import { v2 as cloudinary } from 'cloudinary';
-import { OAuth2Client } from 'google-auth-library';
 import jwt from 'jsonwebtoken';
 import storage from 'node-persist';
 import { forgetPassword } from '../controllers/otpControllers.js';
 import { encryptJWT } from '../middleware/authGuard.js';
 import Portfolio from '../models/portfolioModel.js';
 import User from '../models/userModel.js';
+import Watchlist from '../models/watchlistModel.js';
 import { notifySelectedClients } from '../server/websocket.js';
 import { LDAcheck, NameorEmailinPassword, validateEmail, validateName, validatePassword, validatePhoneNumber } from '../utils/dataValidation_utils.js';
 import globalVariables from '../utils/globalVariables.js';
 import { userLogger } from '../utils/logger/userlogger.js';
 import { respondWithData, respondWithError, respondWithSuccess } from '../utils/response_utils.js';
 import { saveToCache } from './savefetchCache.js';
+import { formatUserData, updateUserField } from './userHelper.js';
 
 //
 
@@ -110,105 +111,69 @@ export const verifyPhoneNumber = async (req, res) => {
 
 //create user
 export const createUser = async (req, res) => {
-  const name = req.body.name;
-  const email = req.body.email.toLowerCase();
-  const password = req.body.password;
-  const phone = req.body.phone;
+  const { name, password, phone, email } = req.body;
 
   userLogger.info(`Create user command passed`);
+
+  const existingUser = await User.findOne({ email: email.toLowerCase() });
+  const existingPhone = await User.findOne({ phone });
 
   if (!name || !email || !password || !phone) {
     return respondWithError(res, 'BAD_REQUEST', "Empty data passed. Please provide all required fields.");
   } else if (!validatePhoneNumber(phone)) {
     return respondWithError(res, 'BAD_REQUEST', "Invalid phone number. Please provide a 10-digit number.");
-  } else if (!validateEmail(email)) {
+  } else if (existingPhone) {
+    return respondWithError(res, 'BAD_REQUEST', "Phone number already exists.");
+  }
+  else if (!validateEmail(email)) {
     return respondWithError(res, 'BAD_REQUEST', "Invalid email format. Please provide a valid email address.");
-  } else if (!validatePassword(password)) {
+  } else if (existingUser) {
+    return respondWithError(res, 'BAD_REQUEST', "Email already exists.");
+  }
+  else if (!validatePassword(password)) {
     return respondWithError(res, 'BAD_REQUEST', "Password should be at least 6 characters long.");
   } else if (!validateName(name)) {
     return respondWithError(res, 'BAD_REQUEST', "Name should be fname and lname format.");
-  } else if (!LDAcheck(password)) {
+  } else if (!NameorEmailinPassword(name, email, password)) {
+    return respondWithError(res, 'BAD_REQUEST', "Password contains name or email.");
+  }
+  else if (!LDAcheck(password)) {
     return respondWithError(res, 'BAD_REQUEST', "Password is too common.");
   }
 
+  const emailLowercase = email.toLowerCase();
+
   try {
-    setUserDetails({ name, phone, email });
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const token = jwt.sign({ email: email, isAdmin: false }, process.env.JWT_SECRET, { expiresIn: '7d' });
-    const encryped_token = encryptJWT(token);
-
-    console.log("Token: ", encryped_token)
-
-    await saveToCache(email + '_token', encryped_token);
-
+    setUserDetails({ name, phone, emailLowercase });
     const samplePortfolio = await Portfolio.create({
       id: 1,
-      userEmail: email,
+      userEmail: emailLowercase,
       name: "Sample Portfolio",
       stocks: [{ symbol: "CBBL", quantity: 10, wacc: 750 }],
     });
 
-    const newUser = new User({
+    await User.create({
       name,
-      email,
-      password: hashedPassword,
+      email: emailLowercase,
+      password: password,
       phone,
       portfolio: [samplePortfolio._id]
     });
-    try {
-      console.log(newUser)
-      const savedUser = await newUser.save();
-      const populatedPortfolio = await Portfolio.findById(samplePortfolio._id);
-      const formattedPortfolio = formatPortfolioData(populatedPortfolio)
 
-      const userData = {
-        _id: savedUser._id,
-        token: encryped_token,
-        name: savedUser.name,
-        email: savedUser.email,
-        pass: savedUser.password,
-        phone: savedUser.phone,
-        style: savedUser.style,
-        isAdmin: savedUser.isAdmin,
-        dpImage: savedUser.dpImage,
-        userAmount: savedUser.userAmount,
-        portfolio: [formattedPortfolio],
-        wallets: savedUser.wallets
-      };
-      userLogger.info(`User created successfully`);
-      return respondWithData(res, 'CREATED', "User created successfully", userData);
-    } catch (err) {
-      userLogger.error(`Error creating user: ${err.toString()}`);
-      return respondWithError(res, 'INTERNAL_SERVER_ERROR', err.toString());
-    }
+    let userData = await User.findOne({ email: emailLowercase }).populate('portfolio');
+
+    userData = await formatUserData(userData);
+
+    const token = jwt.sign({ email: emailLowercase }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRY_TIME });
+
+    userData.token = encryptJWT(token);
+
+    userLogger.info(`User created successfully`);
+    return respondWithData(res, 'CREATED', "User created successfully", userData);
   } catch (err) {
-    console.error(err);
+    userLogger.error(`Error creating user: ${err.toString()}`);
     return respondWithError(res, 'INTERNAL_SERVER_ERROR', err.toString());
   }
-};
-
-const formatPortfolioData = (portfolio) => {
-  if (Array.isArray(portfolio)) {
-    return portfolio.map((singlePortfolio) => formatSinglePortfolio(singlePortfolio));
-  } else {
-    return formatSinglePortfolio(portfolio);
-  }
-};
-
-const formatSinglePortfolio = (portfolio) => {
-  return {
-    _id: portfolio._id,
-    id: portfolio.id,
-    name: portfolio.name,
-    userEmail: portfolio.userEmail,
-    stocks: portfolio.stocks,
-    totalunits: portfolio.totalunits,
-    gainLossRecords: portfolio.gainLossRecords,
-    portfoliocost: portfolio.portfoliocost,
-    portfoliovalue: portfolio.portfoliovalue,
-    recommendation: portfolio.recommendation,
-    percentage: portfolio.percentage,
-  };
 };
 
 //
@@ -228,31 +193,17 @@ export const loginUser = async (req, res) => {
       userLogger.info("Invalid email or password.");
       return respondWithError(res, 'UNAUTHORIZED', "Invalid email or password.");
     } else {
-      const isExpired = user.isPasswordExpired() ?? notifyClients({ type: 'notification', title: 'Password Expired', description: "Your password is expired, please change soon", image: user.dpImage, url: "https://10paisa.com" });
+      const isExpired = user.isPasswordExpired();
       if (isExpired) {
         notifyClients({ type: 'notification', title: 'Password Expired', description: "Your password is expired, please change soon", image: user.dpImage, url: "https://10paisa.com" });
       }
-      const token = jwt.sign({ email: email, isAdmin: user.isAdmin }, process.env.JWT_SECRET, { expiresIn: '7d' });
-      const encryped_token = encryptJWT(token);
-      await storage.setItem(email + '_token', encryped_token);
 
-      let userData = {
-        _id: user._id,
-        token: encryped_token,
-        name: user.name,
-        email: user.email,
-        pass: user.password,
-        phone: user.phone,
-        premium: user.premium,
-        style: user.style,
-        isAdmin: user.isAdmin,
-        dpImage: user.dpImage,
-        userAmount: user.userAmount,
-        defaultport: user.defaultport,
-        portfolio: user.portfolio,
-        wallets: user.wallets,
-        LastPasswordChangeDate: user.LastPasswordChangeDate
-      };
+      let userData = await formatUserData(user);
+
+      const token = jwt.sign({ email: email }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRY_TIME });
+
+      userData.token = encryptJWT(token);
+
       notifySelectedClients(user.email, { type: 'notification', title: 'Login', description: "User " + user.name + " logged in", image: user.dpImage, url: "https://10paisa.com" });
       return respondWithData(res, 'SUCCESS', "Login successful", userData);
     }
@@ -279,6 +230,8 @@ export const forgetPass = async (req, res) => {
 };
 
 
+//i believe this was created to be used in mobile app
+//but we now created a on fly check so this is not necessary
 export const verifyData = async (req, res) => {
   const fieldToUpdate = req.body.field;
   const valueToCheck = req.body.value;
@@ -319,114 +272,36 @@ export const verifyData = async (req, res) => {
   }
 };
 
-const User_token_key = 'user_token';
-
+//function to update single user data based on what user wants to update
+//this is useful in mobile app where we will not update whole form again but only the field user wants to update
 export const updateUser = async (req, res) => {
-  const { email, password, phone, style, field: fieldToUpdate, value: valueToUpdate, useramount: userAmount } = req.body;
-  let token = '';
 
-  if (!email) {
-    return respondWithError(res, 'BAD_REQUEST', "User email is missing");
-  }
+  const { email, fieldToUpdate, valueToUpdate } = req.body;
 
-  if (!fieldToUpdate) {
-    return respondWithError(res, 'BAD_REQUEST', "Field to update missing");
-  }
+  if (!email || !fieldToUpdate || !valueToUpdate) {
+    return respondWithError(res, 'BAD_REQUEST', "Email, field or value is missing");
+  };
 
   try {
-    let user = await User.findOne({ email });
-
+    let user = await User.findOne({ email: email.toLowerCase() }).populate('portfolio');
     if (!user) {
       console.log("User not found");
       return respondWithError(res, 'NOT_FOUND', "User not found");
     }
 
-    const populatedPortfolio = await Portfolio.find({ userEmail: email });
-    const formattedPortfolio = formatPortfolioData(populatedPortfolio);
-
-    switch (fieldToUpdate) {
-      case 'name':
-        console.log("Username updated, new " + fieldToUpdate + " is " + valueToUpdate)
-        user.name = valueToUpdate;
-        break;
-      case 'useramount':
-        console.log("User updated, new " + fieldToUpdate + " is " + valueToUpdate)
-        user.userAmount = valueToUpdate;
-        break;
-      case 'password':
-        const newPasswordHash = await bcrypt.hash(valueToUpdate, 10);
-        console.log("User password updated, new " + fieldToUpdate + " is " + valueToUpdate)
-        user.password = newPasswordHash;
-        break;
-      case 'email':
-        try {
-          const existingUser = await User.findOne({ email: valueToUpdate.toLowerCase() });
-          if (!existingUser) {
-            console.log("User email updated, new " + fieldToUpdate + " is " + valueToUpdate);
-            user.email = valueToUpdate;
-          } else {
-            return respondWithError(res, 'BAD_REQUEST', "Email already exists");
-          }
-        } catch (error) {
-          console.error("Error updating user email:", error);
-          return respondWithError(res, 'INTERNAL_SERVER_ERROR', "Error updating email");
-        }
-        break;
-      case 'phone':
-        try {
-          const existingUser = await User.findOne({ phone: valueToUpdate });
-          if (!existingUser) {
-            console.log("User phone updated, new " + fieldToUpdate + " is " + valueToUpdate);
-            user.phone = valueToUpdate;
-          } else {
-            console.log("Phone already exists");
-            return respondWithError(res, 'BAD_REQUEST', "Phone already exists");
-          }
-        } catch (error) {
-          console.error("Error updating user Phone:", error);
-          return respondWithError(res, 'INTERNAL_SERVER_ERROR', "Error updating phone");
-        }
-        break;
-      case 'style':
-      case 'premium':
-      case 'wallets':
-        user[fieldToUpdate] = valueToUpdate;
-        console.log("User " + fieldToUpdate + " updated, new value is " + valueToUpdate);
-        break;
-      default:
-        return respondWithError(res, 'BAD_REQUEST', "Invalid field to update");
+    const result = await updateUserField(user, fieldToUpdate, valueToUpdate, email);
+    if (result.error) {
+      return respondWithError(res, 'BAD_REQUEST', result.error);
     }
-
     await user.save();
 
-    const cachedtkn = await storage.getItem(email + '_token');
+    let userData = await formatUserData(user);
 
-    if (cachedtkn == null) {
-      token = jwt.sign({ email: user.email, isAdmin: user.isAdmin }, process.env.JWT_SECRET, { expiresIn: '7d' });
-      const encryped_token = encryptJWT(token);
-      await saveToCache(email + '_token', encryped_token);
-    } else {
-      token = cachedtkn;
+    if (fieldToUpdate === 'email' || fieldToUpdate === 'password') {
+      const token = jwt.sign({ email: email }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRY_TIME });
+      userData.token = encryptJWT(token);
     }
-    const userData = {
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-      pass: user.password,
-      phone: user.phone,
-      token: token,
-      profilePicture: user.profilePicture,
-      style: user.style,
-      premium: user.premium,
-      defaultport: user.defaultport,
-      isAdmin: user.isAdmin,
-      dpImage: user.dpImage,
-      userAmount: user.userAmount,
-      portfolio: formattedPortfolio,
-      wallets: user.wallets
-    };
 
-    console.log('User ' + fieldToUpdate + ' updated successfully');
     return respondWithData(res, 'SUCCESS', fieldToUpdate + " updated successfully", userData);
 
   } catch (error) {
@@ -435,6 +310,7 @@ export const updateUser = async (req, res) => {
   }
 };
 
+//not sure why this is here
 export const verifyUser = async (req, res) => {
 
   console.log("User verification requested")
@@ -485,24 +361,20 @@ export const verifyUser = async (req, res) => {
 };
 
 export const deleteAccount = async (req, res) => {
+  const { email, password } = req.body;
 
-  const email = req.body.email;
-  const passwords = req.body.password;
   try {
     const user = await User.findOne({ email: email });
 
-    if (!user) {
-      return respondWithError(res, 'NOT_FOUND', "User not found");
+    if (!user || !(await bcrypt.compare(password, user.password))) {
+      return respondWithError(res, 'NOT_FOUND', "User not found or invalid password");
     }
 
-    const isPasswordValid = await bcrypt.compare(passwords, user.password);
-
-    if (!isPasswordValid) {
-      return respondWithError(res, 'UNAUTHORIZED', "Invalid password");
-    }
-
-    await Portfolio.deleteMany({ userEmail: email });
-    await User.deleteOne({ email: email });
+    await Promise.all([
+      Portfolio.deleteMany({ userEmail: email }), ////many or findOneAndDelete
+      Watchlist.deleteMany({ userEmail: email }),
+      User.deleteOne({ email: email })
+    ]);
 
     return respondWithSuccess(res, 'SUCCESS', "User deleted successfully");
 
@@ -511,93 +383,9 @@ export const deleteAccount = async (req, res) => {
   }
 };
 
-
-//move this to admin route
-export const makeadmin = async (req, res) => {
-  const token = req.body.token;
-
-  try {
-    const user = await User.findOne({ token });
-
-    if (!user) {
-      return respondWithError(res, 'NOT_FOUND', "User not found");
-    }
-
-    if (user.isAdmin !== undefined) {
-      user.isAdmin = true;
-    } else {
-      user.isAdmin = true;
-    }
-
-    user.isAdmin = true;
-    await user.save();
-
-    console.log("Made user admin");
-    return respondWithSuccess(res, 'SUCCESS', "Made user Admin");
-
-  } catch (error) {
-    console.error(error);
-    return respondWithError(res, 'INTERNAL_SERVER_ERROR', error.toString());
-  }
-};
-
-//google signin
-export const googleSignIn = async (req, res) => {
-  const { googleToken } = req.body;
-
-  try {
-    const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
-    const ticket = await client.verifyIdToken({
-      idToken: googleToken,
-      audience: process.env.GOOGLE_CLIENT_ID,
-    });
-
-    const { email } = ticket.getPayload();
-    let user = await User.findOne({ email });
-
-    if (!user) {
-      return respondWithError(res, 'UNAUTHORIZED', "No Account found with this email");
-    }
-    const token = jwt.sign({ email, isAdmin: user.isAdmin }, process.env.JWT_SECRET, { expiresIn: '7d' });
-    const encryped_token = encryptJWT(token);
-    await saveToCache(email + '_token', encryped_token);
-
-    let userData = {
-      _id: user._id,
-      token: token,
-      name: user.name,
-      email: user.email,
-      pass: user.password,
-      phone: user.phone,
-      style: user.style,
-      isAdmin: user.isAdmin,
-      dpImage: user.dpImage,
-      premium: user.premium,
-      userAmount: user.userAmount,
-      defaultport: user.defaultport,
-      portfolio: user.portfolio,
-      wallets: user.wallets
-
-    };
-
-    return respondWithData(res, 'SUCCESS', 'Google Sign-In successful', userData);
-  } catch (error) {
-    console.error(error.toString());
-    return respondWithError(res, 'INTERNAL_SERVER_ERROR', error.toString());
-  }
-};
-
-//extracting all user data //one to upload user one to upload picture
+//update all at once
 export const updateUserData = async (req, res) => {
-  const oldEmail = req.body.oldEmail;
-  const newEmail = req.body.newEmail;
-  const newPassword = req.body.password;
-  const phone = req.body.phone;
-  const invStyle = req.body.style;
-  const userName = req.body.name;
-  const userAmount = req.body.useramount;
-  const isAdmin = req.body.isAdmin;
-  const premium = req.body.premium;
+  const { oldEmail, newEmail, password, phone, style, name, userAmount, premium } = req.body;
 
   if (!oldEmail) {
     return respondWithError(res, 'BAD_REQUEST', "Old email missing");
@@ -605,44 +393,28 @@ export const updateUserData = async (req, res) => {
 
   try {
     const user = await User.findOne({ email: oldEmail }).populate('portfolio');
-
     if (!user) {
       console.log("User not found");
       return respondWithError(res, 'NOT_FOUND', "User not found");
     }
 
-    if (newPassword) {
-      const hashedPassword = await bcrypt.hash(newPassword, 10);
-      user.password = hashedPassword;
-    }
-
-    user.email = newEmail || user.email;
-    user.name = userName || user.name;
-    user.phone = phone || user.phone;
-    user.style = invStyle || user.style;
-    user.userAmount = userAmount || user.userAmount;
-    user.premium = premium || user.premium;
-
-    if (newEmail && newEmail !== oldEmail) {
-      const existingUser = await User.findOne({ email: newEmail });
-      if (existingUser && !existingUser._id.equals(user._id)) {
-        console.log("Email already exists");
-        return respondWithError(res, 'BAD_REQUEST', "Email already exists");
+    const fieldsToUpdate = { email: newEmail, name, phone, style, userAmount, premium, password };
+    for (const [field, value] of Object.entries(fieldsToUpdate)) {
+      if (value !== undefined && value !== user[field]) {
+        const result = await updateUserField(user, field, value, oldEmail);
+        if (result.error) {
+          return respondWithError(res, 'BAD_REQUEST', result.error);
+        }
       }
     }
 
-    if (isAdmin) {
-      user.isAdmin = isAdmin;
-    }
-    if (phone) {
-      const existingUser = await User.findOne({ phone: phone });
-      if (existingUser && !existingUser._id.equals(user._id)) {
-        console.log("Phone already exists");
-        return respondWithError(res, 'BAD_REQUEST', "Phone already exists");
-      }
-    }
     await user.save();
-    console.log('User data updated successfully');
+    const userData = formatUserData(user);
+
+    if (fieldsToUpdate.email || fieldsToUpdate.password) {
+      const token = jwt.sign({ email: user.email }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRY_TIME });
+      userData.token = encryptJWT(token);
+    }
     return respondWithData(res, 'SUCCESS', "User data updated successfully", user);
 
   } catch (error) {
@@ -668,7 +440,6 @@ export const updateUserProfilePicture = async (req, res) => {
 
   try {
     const user = await User.findOne({ email: oldEmail }).populate('portfolio');
-
     if (!user) {
       return respondWithError(res, 'NOT_FOUND', "User not found");
     }
@@ -690,40 +461,11 @@ export const updateUserProfilePicture = async (req, res) => {
         return respondWithError(res, 'INTERNAL_SERVER_ERROR', "Error uploading image");
       }
     }
-    try {
 
-      await user.save();
-      let encryped_token = '';
-      const cachedtkn = await storage.getItem(oldEmail + '_token');
-      if (cachedtkn == null) {
-        const token = jwt.sign({ email: user.email, isAdmin: user.isAdmin }, process.env.JWT_SECRET, { expiresIn: '7d' });
-        const encryped_token = encryptJWT(token);
-        await saveToCache(oldEmail + '_token', encryped_token);
-      } else {
-        encryped_token = cachedtkn;
-      }
+    await user.save();
+    const userData = await formatUserData(user);
+    return respondWithData(res, 'SUCCESS', "User profile picture updated successfully", userData);
 
-      let userData = {
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        pass: user.password,
-        phone: user.phone,
-        token: encryped_token,
-        profilePicture: user.profilePicture,
-        style: user.style,
-        premium: user.premium,
-        defaultport: user.defaultport,
-        isAdmin: user.isAdmin,
-        dpImage: user.dpImage,
-        userAmount: user.userAmount,
-        portfolio: user.portfolio
-      };
-      return respondWithData(res, 'SUCCESS', "User profile picture updated successfully", userData);
-    } catch (error) {
-      console.error('User profile picture update failed: ' + error);
-      return respondWithError(res, 'INTERNAL_SERVER_ERROR', "Error updating profile picture");
-    }
   } catch (error) {
     console.error('Error updating user profile picture:', error);
     return respondWithError(res, 'INTERNAL_SERVER_ERROR', "Error updating profile picture");

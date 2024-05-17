@@ -58,7 +58,7 @@ const newSchema = new Schema({
   },
   LastPasswordChangeDate: {
     type: Date,
-    default: Date.now,
+    default: new Date(Math.floor(Date.now() / 1000) * 1000),
     required: true
   },
   previousPasswords: {
@@ -79,6 +79,28 @@ newSchema.methods.isPasswordExpired = function () {
 newSchema.methods.comparePassword = async function (candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
+
+
+
+newSchema.pre('save', async function (next) {
+  if (!this.isModified('password')) {
+    return next();
+  }
+
+  const newPasswordHash = await bcrypt.hash(this.password, 10);
+
+  if (!this.previousPasswords) {
+    this.previousPasswords = [];
+  }
+
+  this.previousPasswords.push(newPasswordHash);
+
+  this.password = newPasswordHash;
+
+  this.LastPasswordChangeDate = new Date(Math.floor(Date.now() / 1000) * 1000);
+  next();
+});
+
 
 const User = mongoose.model('User', newSchema);
 

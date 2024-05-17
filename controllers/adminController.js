@@ -9,7 +9,6 @@ export const getAllUsers = async (req, res) => {
         if (!users || users.length === 0) {
             console.log("No users found");
             return respondWithError(res, 'NOT_FOUND', 'No users found');
-
         }
 
         return respondWithData(res, 'SUCCESS', 'Users fetched successfully', users);
@@ -20,20 +19,30 @@ export const getAllUsers = async (req, res) => {
 
 export const deleteUserByEmail = async (req, res) => {
     const { email } = req.body;
-    console.log("Delete User by email requested for email: " + email );
+    console.log("Delete User by email requested for email: " + email);
 
     try {
-
-        await Portfolio.deleteMany({ userEmail: email });
-
-        const deletedUser = await User.findOneAndDelete({ email });
+        const deletedUser = await User.findOne({ email });
 
         if (!deletedUser) {
             console.log("User not found");
             return respondWithError(res, 'NOT_FOUND', 'User not found');
         }
 
-          console.log("User deleted successfully"   );
+        await Promise.all([
+            Portfolio.deleteMany({ userEmail: email }), //many or findOneAndDelete
+            Watchlist.deleteMany({ userEmail: email }),
+            User.deleteOne({ email: email })
+        ]);
+
+        //const deletedUser = await User.findOneAndDelete({ email });
+
+        // if (!deletedUser) {
+        //     console.log("User not found");
+        //     return respondWithError(res, 'NOT_FOUND', 'User not found');
+        // }
+
+        console.log("User deleted successfully");
         return respondWithData(res, 'SUCCESS', 'User deleted successfully', deletedUser);
     } catch (error) {
         return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'An error occurred while deleting the user');
@@ -69,6 +78,29 @@ export const editUserByEmail = async (req, res) => {
         return respondWithData(res, 'SUCCESS', 'User updated successfully', updatedUser);
     } catch (error) {
         return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'An error occurred while updating the user');
+    }
+};
+
+
+export const makeadmin = async (req, res) => {
+    const email = req.body.email;
+
+    try {
+        const user = await User.findOne({ email: email });
+
+        if (!user) {
+            return respondWithError(res, 'NOT_FOUND', "User not found");
+        }
+
+        user.isAdmin = true;
+        await user.save();
+
+        console.log("Made user admin");
+        return respondWithSuccess(res, 'SUCCESS', "Made user Admin");
+
+    } catch (error) {
+        console.error(error);
+        return respondWithError(res, 'INTERNAL_SERVER_ERROR', error.toString());
     }
 };
 

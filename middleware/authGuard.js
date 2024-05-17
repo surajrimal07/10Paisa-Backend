@@ -27,45 +27,39 @@ export function decryptJWT(encryptedText) {
 }
 
 export const authGuard = async (req, res, next) => {
-    //    console.log(req.headers.authorization)
     const authHeader = req.headers.authorization;
 
     const token = authHeader.split(' ')[1];
     if (!authHeader || !token) {
         userLogger.error("Invalid Token Provided");
-        // console.log("Invalid Admin Token Provided")
         return respondWithError(res, 'BAD_REQUEST', "No token provided");
     }
-    // if (!token) {
-    //     userLogger.error("Invalid Token Provided");
-    //     return respondWithError(res, 'BAD_REQUEST', "No token provided");
-    // }
     try {
-        //console.log(`token is ${token}`);
-        // let decryptedToken;
-        // try {
-        //     decryptedToken = decryptJWT(token);
-        // } catch {
-        //     console.log("error in decrypting token");
-        //     return respondWithError(res, 'UNAUTHORIZED', "Invalid token");
-        // }
-
-        //console.log(`decrypted token is ${decryptedToken}`);
         const decoded = jwt.verify(decryptJWT(token), process.env.JWT_SECRET);
 
-        // Check token expiration
         if (decoded.exp && decoded.exp < Date.now() / 1000) {
             userLogger.error("Token has expired");
             return respondWithError(res, 'UNAUTHORIZED', "Token has expired");
         }
-        // console.log(req.user = decoded);
 
         const user = await User.findOne({ email: decoded.email }, { LastPasswordChangeDate: 1 });
+        // console.log(user.LastPasswordChangeDate > decoded.iat, user.LastPasswordChangeDate, decoded.iat);
 
-        if (!user || user.LastPasswordChangeDate > decoded.iat * 1000) {
-            userLogger.error("User Not Found");
+        // if (!user) {
+        //     userLogger.error("User not found");
+        //     return respondWithError(res, 'UNAUTHORIZED', "Token is invalid/expired or user not found");
+        // }
+
+        // const lastPasswordChangeSeconds = Math.floor(user.LastPasswordChangeDate.getTime() / 1000);
+        // const tokenIssuedAtSeconds = decoded.iat;
+
+        // console.log(lastPasswordChangeSeconds > tokenIssuedAtSeconds, lastPasswordChangeSeconds, tokenIssuedAtSeconds);
+
+        if (Math.floor(user.LastPasswordChangeDate.getTime() / 1000) > decoded.iat || !user) {
+            userLogger.error("Token is invalid/expired or user not found");
             return respondWithError(res, 'UNAUTHORIZED', "Token is invalid/expired or user not found");
         }
+
 
         req.user = { email: decoded.email };
 
@@ -81,37 +75,26 @@ export const authGuard = async (req, res, next) => {
 export const authGuardAdmin = async (req, res, next) => {
     const authHeader = req.headers.authorization;
 
-    // if (!authHeader) {
-    //     userLogger.error("No Admin token provided");
-    //     return respondWithError(res, 'BAD_REQUEST', "No token provided");
-
-    // }
     const token = authHeader.split(' ')[1];
     if (!authHeader || !token) {
         userLogger.error("Admin Token Provided");
-        // console.log("Invalid Admin Token Provided")
         return respondWithError(res, 'BAD_REQUEST', "No token provided");
     }
     try {
         const decoded = jwt.verify(decryptJWT(token), process.env.JWT_SECRET);
-
-        // console.log(decoded)
 
         if (decoded.exp && decoded.exp < Date.now() / 1000) {
             userLogger.error("Token has expired");
             return respondWithError(res, 'UNAUTHORIZED', "Token has expired");
         }
 
-        //invalid the token if it's created date is less than the last password change date
-        //fetch users isAdmin status and last password change date, find user based on email
-        //        const emailss = 'davidparkedme@gmail.com';
         const user = await User.findOne({ email: decoded.email }, { isAdmin: 1, LastPasswordChangeDate: 1 });
-        //        console.log(user)
 
-        if (!user || user.LastPasswordChangeDate > decoded.iat * 1000 || !user.isAdmin) {
-            userLogger.error("User Not Found");
-            return respondWithError(res, 'UNAUTHORIZED', "Token is expired or or user not found or user is not an admin");
+        if (Math.floor(user.LastPasswordChangeDate.getTime() / 1000) > decoded.iat || !user || !user.isAdmin) {
+            userLogger.error("Token is invalid/expired or user not found");
+            return respondWithError(res, 'UNAUTHORIZED', "Token is invalid/expired or user not found");
         }
+
 
         req.user = { email: decoded.email, isAdmin: user.isAdmin };
 

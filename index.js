@@ -61,6 +61,7 @@ app.use(
     sql: true,
     sqlLevel: 5,
     noSqlLevel: 5,
+    allowedKeys: ["user"], //fixing user being removed from req.body
   })
 );
 
@@ -156,9 +157,15 @@ initiateNewsFetch();
 app.use("/api", userRouter);
 app.get("/", dynamicRoutes);
 app.get("/news", getNews);
-app.get("/ping", (req, res) => {
+app.get("/ping", (res) => {
   res.sendStatus(200);
 });
+
+//error handling
+app.use((req, res, next) => {
+  res.status(404).json({ error: 'Not Found', message: 'The requested resource was not found on this server.' });
+});
+
 
 //exports
 export default app;
