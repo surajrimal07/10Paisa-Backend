@@ -1,5 +1,8 @@
+import { Mongoose } from 'mongoose';
+import { clientOptions } from '../database/db.js';
 import Portfolio from '../models/portfolioModel.js';
 import User from '../models/userModel.js';
+import { adminLogger } from '../utils/logger/adminlogger.js';
 import { respondWithData, respondWithError } from '../utils/response_utils.js';
 
 export const getAllUsers = async (req, res) => {
@@ -7,7 +10,7 @@ export const getAllUsers = async (req, res) => {
         const users = await User.find();
 
         if (!users || users.length === 0) {
-            console.log("No users found");
+            adminLogger.error("No users found");
             return respondWithError(res, 'NOT_FOUND', 'No users found');
         }
 
@@ -19,13 +22,13 @@ export const getAllUsers = async (req, res) => {
 
 export const deleteUserByEmail = async (req, res) => {
     const { email } = req.body;
-    console.log("Delete User by email requested for email: " + email);
+    adminLogger.info(`Delete User by email requested for email:${email}`);
 
     try {
         const deletedUser = await User.findOne({ email });
 
         if (!deletedUser) {
-            console.log("User not found");
+            adminLogger.error(`User not found for email:${email}`);
             return respondWithError(res, 'NOT_FOUND', 'User not found');
         }
 
@@ -35,14 +38,7 @@ export const deleteUserByEmail = async (req, res) => {
             User.deleteOne({ email: email })
         ]);
 
-        //const deletedUser = await User.findOneAndDelete({ email });
-
-        // if (!deletedUser) {
-        //     console.log("User not found");
-        //     return respondWithError(res, 'NOT_FOUND', 'User not found');
-        // }
-
-        console.log("User deleted successfully");
+        adminLogger.info(`User deleted successfully for email:${email}`);
         return respondWithData(res, 'SUCCESS', 'User deleted successfully', deletedUser);
     } catch (error) {
         return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'An error occurred while deleting the user');
@@ -54,7 +50,7 @@ export const getAllPortfolios = async (req, res) => {
         const portfolios = await Portfolio.find();
 
         if (!portfolios || portfolios.length === 0) {
-            console.log("No portfolios found");
+            adminLogger.error("No portfolios found in the database");
             return respondWithError(res, 'NOT_FOUND', 'No portfolios found');
         }
 
@@ -71,7 +67,7 @@ export const editUserByEmail = async (req, res) => {
         const updatedUser = await User.findOneAndUpdate({ email }, newData, { new: true });
 
         if (!updatedUser) {
-            console.log("User not found");
+            adminLogger.error(`User not found for email:${email}`);
             return respondWithError(res, 'NOT_FOUND', 'User not found');
         }
 
@@ -84,6 +80,7 @@ export const editUserByEmail = async (req, res) => {
 
 export const makeadmin = async (req, res) => {
     const email = req.body.email;
+    const makeAdmin = req.body.makeAdmin === 'true' ? true : false;
 
     try {
         const user = await User.findOne({ email: email });
@@ -92,10 +89,10 @@ export const makeadmin = async (req, res) => {
             return respondWithError(res, 'NOT_FOUND', "User not found");
         }
 
-        user.isAdmin = true;
+        user.isAdmin = makeAdmin;
         await user.save();
 
-        console.log("Made user admin");
+        adminLogger.info(`Admin status changed for :${email}`);
         return respondWithSuccess(res, 'SUCCESS', "Made user Admin");
 
     } catch (error) {
@@ -104,3 +101,36 @@ export const makeadmin = async (req, res) => {
     }
 };
 
+export const fetchUserLogs = async (req, res) => {
+    let db = new Mongoose();
+    try {
+        await db.connect(process.env.NEW_DB_URL, clientOptions);
+        const collection = db.connection.collection('sessionlogs');
+        const logsCursor = collection.find({});
+        const logs = await logsCursor.toArray();
+
+        const formattedLogs = logs.map(log => {
+            const message = JSON.parse(log.message);
+            return {
+                user: message.user,
+                method: message.method,
+                url: message.url,
+                statusCode: message.statusCode,
+                responseTime: message.responseTime,
+                clientIP: message.clientIP,
+                serverHostname: log.hostname,
+                environment: message.environment,
+                timestamp: log.timestamp
+            };
+        });
+
+        await db.disconnect();
+        return respondWithData(res, 'SUCCESS', 'Logs fetched successfully', formattedLogs);
+    }
+    catch (error) {
+        if (db.connection.readyState !== 0) {
+            await db.disconnect();
+        } adminLogger.error(`Error while fetching logs: ${error}`);
+        return respondWithError(res, 'INTERNAL_SERVER_ERROR', error.toString());
+    }
+};

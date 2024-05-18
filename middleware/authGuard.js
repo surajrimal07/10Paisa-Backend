@@ -18,6 +18,7 @@ export const authGuard = async (req, res, next) => {
 
     if (scheme !== 'Bearer' || !token || token === 'undefined' || token === 'null') {
         userLogger.error("Token not provided or improperly formatted");
+        console.log(authHeader);
         return respondWithError(res, 'BAD_REQUEST', "No token provided or improperly formatted");
     }
 

@@ -72,8 +72,8 @@ function createWebSocketServer() {
 
         if (cooldownTimeRemaining > 0) {
           const minutesRemaining = Math.ceil(cooldownTimeRemaining / (60 * 1000));
-          socketLogger.error(`Too many login attempts of ${userEmail}. Please try again in ${minutesRemaining} minutes.`);
-          ws.send(JSON.stringify({ error: `Too many login attempts. Please try again in ${minutesRemaining} minutes.` }));
+          socketLogger.error(`Too many socket login attempts of ${userEmail}. Please try again in ${minutesRemaining} minutes.`);
+          ws.send(JSON.stringify({ error: `Too many socket login attempts. Please try again in ${minutesRemaining} minutes.` }));
           ws.close();
           return;
         } else {

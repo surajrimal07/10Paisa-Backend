@@ -1,35 +1,7 @@
-// import mongoose from 'mongoose';
-// import { mainLogger } from '../utils/logger/logger.js';
-
-// const clientOptions = {
-//   minPoolSize: 10,
-//   maxPoolSize: 100,
-//   serverApi: { version: '1', serverSelectionTimeoutMS: 60000, strict: true, deprecationErrors: true, socketTimeoutMS: 30000, family: 4 },
-// };
-
-// export async function Database() {
-//   try {
-//     mongoose.connection.on('open', () => mainLogger.info(`Connected to the database. ReadyState is: ${mongoose.connection.readyState}`));
-//     mongoose.connection.on('disconnected', () => mainLogger.info('MongoDB is Disconnected'));
-//     mongoose.connection.on('reconnected', () => mainLogger.info('MongoDB is Reconnected'));
-//     mongoose.connection.on('disconnecting', () => mainLogger.info('MongoDB is Disconnecting'));
-//     mongoose.connection.on('close', () => mainLogger.info('MongoDB is Closed'));
-
-//     await mongoose.connect(process.env.DB_URL, clientOptions);
-//     return mongoose.connection;
-//   } catch (error) {
-
-//     mainLogger.error('Error connecting to the database:', error);
-//   }
-// };
-
-// export default { Database };
-
-
 import mongoose from 'mongoose';
 import { mainLogger } from '../utils/logger/logger.js';
 
-const clientOptions = {
+export const clientOptions = {
   minPoolSize: 10,
   maxPoolSize: 100,
   compressors: ["zstd"],
@@ -75,3 +47,11 @@ export async function Database() {
 }
 
 export default { Database };
+
+
+// process.on('SIGINT', () => {
+//   mongoose.connection.close().then(() => {
+//       console.info("Mongoose primary connection disconnected through app termination!");
+//       process.exit(0);
+//   });
+// });

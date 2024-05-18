@@ -464,12 +464,19 @@ export const updateUserData = async (req, res) => {
 
 //image part //upload
 export const updateUserProfilePicture = async (req, res) => {
+  console.log(req.body);
+
   const oldEmail = req.body.oldEmail;
-  const { dpImage } = req.files;
 
   if (!oldEmail) {
     return respondWithError(res, 'BAD_REQUEST', "Old email missing");
   }
+
+  if (!req.files) {
+    return respondWithError(res, 'BAD_REQUEST', "Profile picture missing");
+  }
+
+  const { dpImage } = req.files;
 
   const allowedExtensions = ['.jpg', '.jpeg', '.png'];
   const fileExtension = dpImage.originalFilename.substring(dpImage.originalFilename.lastIndexOf('.')).toLowerCase();

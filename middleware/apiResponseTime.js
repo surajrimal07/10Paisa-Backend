@@ -1,8 +1,7 @@
-import { apiLogger } from "../utils/logger/apilogger.js";
+import { sessionLogger } from "../utils/logger/logger.js";
 
 export function responseTimeMiddleware(req, res, next) {
   const start = Date.now();
-  //console.log(req.session.cookie);
 
   res.once('finish', () => {
     const responseTime = Date.now() - start;
@@ -18,7 +17,7 @@ export function responseTimeMiddleware(req, res, next) {
       environment: process.env.NODE_ENV || 'development',
     };
 
-    apiLogger.info(JSON.stringify(logData));
+    sessionLogger.info(JSON.stringify(logData));
   });
 
   next();
