@@ -6,14 +6,25 @@ import { respondWithError } from '../utils/response_utils.js';
 
 export const authGuard = async (req, res, next) => {
     const authHeader = req.headers.authorization;
-    const token = await decryptData(authHeader.split(' ')[1]);
+    //console.log(authHeader);
 
-    if (!authHeader || !token) {
-        userLogger.error("Invalid Token Provided");
+
+    if (!authHeader) {
+        userLogger.error("Token not provided");
         return respondWithError(res, 'BAD_REQUEST', "No token provided");
     }
+
+    const [scheme, token] = authHeader.split(' ');
+
+    if (scheme !== 'Bearer' || !token || token === 'undefined' || token === 'null') {
+        userLogger.error("Token not provided or improperly formatted");
+        return respondWithError(res, 'BAD_REQUEST', "No token provided or improperly formatted");
+    }
+
+    const decryptedToken = await decryptData(token);
+
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const decoded = jwt.verify(decryptedToken, process.env.JWT_SECRET);
 
         if (decoded.exp && decoded.exp < Date.now() / 1000) {
             userLogger.error("Token has expired");
@@ -39,14 +50,24 @@ export const authGuard = async (req, res, next) => {
 //for admins
 export const authGuardAdmin = async (req, res, next) => {
     const authHeader = req.headers.authorization;
+    //console.log(authHeader);
 
-    const token = await decryptData(authHeader.split(' ')[1]);
-    if (!authHeader || !token) {
-        userLogger.error("Admin Token Provided");
+    if (!authHeader) {
+        userLogger.error("Admin Token not provided");
         return respondWithError(res, 'BAD_REQUEST', "No token provided");
     }
+
+    const [scheme, token] = authHeader.split(' ');
+
+    if (scheme !== 'Bearer' || !token || token === 'undefined' || token === 'null') {
+        userLogger.error("Admin Token not provided or improperly formatted");
+        return respondWithError(res, 'BAD_REQUEST', "No token provided or improperly formatted");
+    }
+
+    const decryptedToken = await decryptData(token);
+
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const decoded = jwt.verify(decryptedToken, process.env.JWT_SECRET);
 
         if (decoded.exp && decoded.exp < Date.now() / 1000) {
             userLogger.error("Token has expired");

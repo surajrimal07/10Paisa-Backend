@@ -9,17 +9,19 @@ import httpsOptions from "./certificate/httpOptions.js";
 
 //
 import compression from "compression";
+import RedisStore from "connect-redis";
 import session from 'express-session';
 import helmet from 'helmet';
 import https from "https";
 import { clean } from "perfect-express-sanitizer";
 import { v4 as uuidv4 } from 'uuid';
 
+
 //file imports
 import initializeRefreshMechanism, { ActiveServer } from "./controllers/refreshController.js";
 import { Database } from "./database/db.js";
 import { responseTimeMiddleware } from "./middleware/apiResponseTime.js";
-import { sessionMiddleware } from './middleware/session.js';
+//import { sessionMiddleware } from './middleware/session.js';
 import userRouter from "./routes/appRoutes.js";
 import { getNews, initiateNewsFetch } from "./server/newsserver.js";
 import { redisclient } from "./server/redisServer.js";
@@ -27,10 +29,47 @@ import { startWebSocketServer } from "./server/websocket.js";
 import { mainLogger } from './utils/logger/logger.js';
 import dynamicRoutes from "./utils/routesforIndex.js";
 
-
 //Express Middlewares
 const app = express();
 app.use(helmet());
+//app.use(cookieParser())
+
+//conect to redis earliy
+const useRedis = process.env.USEREDIS;
+if (useRedis == "true") {
+  await redisclient.connect();
+  mainLogger.info(
+    redisclient.isOpen
+      ? "Connected to Redis Server"
+      : "Not connected to Redis Server"
+  );
+
+  redisclient.on("error", (error) => {
+    mainLogger.error("Redis client error:", error);
+  });
+
+  app.on("close", () => {
+    redisclient.disconnect();
+  });
+}
+
+//session
+app.use(session({
+  genid: function () {
+    return uuidv4()
+  },
+  secret: process.env.SESSION_SECRET,
+  resave: false,
+  proxy: true,
+  store: new RedisStore({ client: redisclient }),
+  saveUninitialized: true,
+  cookie: {
+    httpsOnly: true,
+    secure: true,
+    sameSite: true,
+    maxAge: 10 * 24 * 60 * 60 * 1000
+  },
+}));
 
 app.use(
   helmet.contentSecurityPolicy({
@@ -53,7 +92,9 @@ app.use(express.json());
 
 app.use(bodyParser.urlencoded({ extended: true }));
 
-// Use perfect-express-sanitizer middleware to sanitize user input
+//Use perfect-express-sanitizer middleware to sanitize user input
+const whiteList = ["/api/user/updateprofilepic"]; //for some reason files are not being uploaded
+
 app.use(
   clean({
     xss: true,
@@ -62,7 +103,9 @@ app.use(
     sqlLevel: 5,
     noSqlLevel: 5,
     allowedKeys: ["user"], //fixing user being removed from req.body
-  })
+  },
+    whiteList
+  )
 );
 
 const corsOptions = {
@@ -75,24 +118,16 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 //session middleware
-app.use(session({
-  genid: function () {
-    return uuidv4()
-  },
-  secret: process.env.SESSION_SECRET,
-  resave: false,
-  proxy: true,
-  saveUninitialized: true,
-  cookie: {
-    httpsOnly: true,
-    secure: true,
-    sameSite: true,
-    maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
-  },
-}));
+//let redisStore = connectRedis(session);
+
+// let redisStore = new RedisStore({
+//   client: redisclient,
+//   prefix: "tenpaisabackend:",
+// })
+
 
 app.use(responseTimeMiddleware);
-app.use(sessionMiddleware);
+//app.use(sessionMiddleware);
 
 // Use compression middleware to compress responses
 app.use(compression({
@@ -128,24 +163,6 @@ if (isDevelopment) {
   });
 }
 
-//connect to redis server //if redis is enabled
-const useRedis = process.env.USEREDIS;
-if (useRedis == "true") {
-  await redisclient.connect();
-  mainLogger.info(
-    redisclient.isOpen
-      ? "Connected to Redis Server"
-      : "Not connected to Redis Server"
-  );
-
-  redisclient.on("error", (error) => {
-    mainLogger.error("Redis client error:", error);
-  });
-
-  app.on("close", () => {
-    redisclient.disconnect();
-  });
-}
 
 //others servers
 ActiveServer();
@@ -162,7 +179,7 @@ app.get("/ping", (res) => {
 });
 
 //error handling
-app.use((req, res, next) => {
+app.use((res) => {
   res.status(404).json({ error: 'Not Found', message: 'The requested resource was not found on this server.' });
 });
 

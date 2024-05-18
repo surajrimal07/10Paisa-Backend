@@ -234,6 +234,8 @@ export const loginUser = async (req, res) => {
 
       userData.token = await encryptData(token);
 
+      req.session.userEmail = email;
+
       notifySelectedClients(user.email, { type: 'notification', title: 'Login', description: "User " + user.name + " logged in", image: user.dpImage, url: "https://10paisa.com" });
       return respondWithData(res, 'SUCCESS', "Login successful", userData);
     }
@@ -330,6 +332,7 @@ export const updateUser = async (req, res) => {
     if (fieldToUpdate === 'email' || fieldToUpdate === 'password') {
       const token = jwt.sign({ email: email }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRY_TIME });
       userData.token = await encryptData(token);
+      req.session.userEmail = email;
     }
 
     return respondWithData(res, 'SUCCESS', fieldToUpdate + " updated successfully", userData);
@@ -405,12 +408,17 @@ export const deleteAccount = async (req, res) => {
       Watchlist.deleteMany({ userEmail: email }),
       User.deleteOne({ email: email })
     ]);
-
+    req.session.userEmail = null;
     return respondWithSuccess(res, 'SUCCESS', "User deleted successfully");
 
   } catch (error) {
     return respondWithError(res, 'INTERNAL_SERVER_ERROR', error.toString());
   }
+};
+
+export const logoutUser = async (req, res) => {
+  req.session.userEmail = null;
+  return respondWithSuccess(res, 'SUCCESS', "User logged out successfully");
 };
 
 //update all at once
@@ -444,6 +452,7 @@ export const updateUserData = async (req, res) => {
     if (fieldsToUpdate.email || fieldsToUpdate.password) {
       const token = jwt.sign({ email: user.email }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRY_TIME });
       userData.token = await encryptData(token);
+      req.session.userEmail = user.email;
     }
     return respondWithData(res, 'SUCCESS', "User data updated successfully", user);
 
@@ -463,7 +472,8 @@ export const updateUserProfilePicture = async (req, res) => {
   }
 
   const allowedExtensions = ['.jpg', '.jpeg', '.png'];
-  const fileExtension = dpImage.name.substring(dpImage.name.lastIndexOf('.')).toLowerCase();
+  const fileExtension = dpImage.originalFilename.substring(dpImage.originalFilename.lastIndexOf('.')).toLowerCase();
+
   if (!allowedExtensions.includes(fileExtension)) {
     return respondWithError(res, 'BAD_REQUEST', "Only JPG and PNG files are allowed");
   }

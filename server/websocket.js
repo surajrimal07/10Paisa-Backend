@@ -6,6 +6,7 @@ import https from 'https';
 import { v4 as uuidv4 } from 'uuid';
 import WebSocket, { WebSocketServer } from 'ws';
 import httpsOptions from '../certificate/httpOptions.js';
+import { deleteFromCache, fetchFromCache, saveToCache } from '../controllers/savefetchCache.js';
 import User from '../models/userModel.js';
 import { getIsMarketOpen, getPreviousIndexData, getTodayAllIndexData } from '../state/StateManager.js';
 import { socketLogger } from '../utils/logger/logger.js';
@@ -50,7 +51,6 @@ function createWebSocketServer() {
       const { searchParams } = new URL(req.url, `${protocol}://${req.headers.host}`);
       const userEmail = searchParams.get('email');
       const password = searchParams.get('password');
-      socketLogger.info("Web socket request received : ", userEmail, password);
 
       //checking if id and pass is empty or not
       if (!userEmail || !password) {
@@ -60,17 +60,44 @@ function createWebSocketServer() {
         return;
       }
 
+      //protecting from brute force attack
+      let failedLoginAttempts = await fetchFromCache(`failedSocketLoginAttempts:${userEmail}`);
+
+      if (!failedLoginAttempts) {
+        failedLoginAttempts = {};
+      }
+
+      if (failedLoginAttempts[userEmail] && failedLoginAttempts[userEmail].attempts >= process.env.MAX_LOGIN_ATTEMPTS) {
+        const cooldownTimeRemaining = failedLoginAttempts[userEmail].cooldownUntil - Date.now();
+
+        if (cooldownTimeRemaining > 0) {
+          const minutesRemaining = Math.ceil(cooldownTimeRemaining / (60 * 1000));
+          socketLogger.error(`Too many login attempts of ${userEmail}. Please try again in ${minutesRemaining} minutes.`);
+          ws.send(JSON.stringify({ error: `Too many login attempts. Please try again in ${minutesRemaining} minutes.` }));
+          ws.close();
+          return;
+        } else {
+          delete failedLoginAttempts[userEmail].attempts;
+        }
+      }
+
       // Verify user credentials
-      const user = await User.findOne({ email: userEmail.toLowerCase() });
-      if (!user) {
-        socketLogger.info(`User not found for email: ${userEmail}`);
-        ws.send(JSON.stringify({ error: 'User not found' }));
-        ws.close();
-      } else if (!(await bcrypt.compare(password, user.password))) {
-        socketLogger.info(`Invalid credentials for user: ${userEmail}`);
-        ws.send(JSON.stringify({ error: 'Invalid credentials' }));
+      const user = await User.findOne({ email: userEmail });
+      if (!user || !(await bcrypt.compare(password, user.password))) {
+
+        if (!failedLoginAttempts[userEmail]) {
+          failedLoginAttempts[userEmail] = { attempts: 1, cooldownUntil: Date.now() + parseInt(process.env.COOLDOWN_TIME, 10) };
+        } else {
+          failedLoginAttempts[userEmail].attempts++;
+        }
+        await saveToCache(`failedSocketLoginAttempts:${userEmail}`, failedLoginAttempts);
+
+        socketLogger.info(`User not found or Invalid credentials: ${userEmail}`);
+        ws.send(JSON.stringify({ error: 'User not found or Invalid credentials' }));
         ws.close();
       } else {
+        await deleteFromCache(`failedSocketLoginAttempts:${userEmail}`);
+
         socketLogger.info(`User verified: ${userEmail}`);
         ws.send(JSON.stringify({ info: 'User verified' }));
       }

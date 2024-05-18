@@ -26,7 +26,6 @@ export const apiLogger = winston.createLogger({
     format: winston.format.combine(
         winston.format.errors({ stack: true }),
         winston.format.json(),
-        winston.format.timestamp(),
         winston.format.printf(({ level, message }) => {
             return JSON.stringify({ level, message, errorType: level === 'error' ? 'error' : level === 'exception' ? 'exception' : 'info' });
         })
