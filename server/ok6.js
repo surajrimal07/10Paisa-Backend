@@ -1,7 +1,4 @@
 
-
-
-
 export const validatePassword = (password) => {
     if (password.length < 8) {
         return "Password should be at least 8 characters long";
@@ -123,3 +120,40 @@ const updateUserField = async (user, fieldToUpdate, valueToUpdate, email) => {
             throw new Error("Invalid field to update");
     }
 };
+
+
+// //cryptoJS is decripted so don't use it for sensitive data
+// const encrypt = (data) => {
+//     const ciphertext = CryptoJS.AES.encrypt(data, 'secret key 123').toString();
+//     return ciphertext;
+// }
+
+// const decrypt = (data) => {
+//     const bytes = CryptoJS.AES.decrypt(data, 'secret key 123');
+//     const originalText = bytes.toString(CryptoJS.enc.Utf8);
+//     return originalText;
+// }
+
+// console.log(encrypt(8899999));
+
+// console.log(decrypt("U2FsdGVkX1+8pna+r3ugcEU1mjDMO/QQ0/sd4DiMVlA="));
+
+import bcrypt from 'bcrypt';
+
+const saltRounds = 10;
+
+export async function encryptData(text) {
+    const salt = await bcrypt.genSalt(saltRounds);
+    const encrypted = await bcrypt.hash(text.toString(), salt);
+    return encrypted;
+}
+
+export async function decryptData(encryptedText) {
+    const decrypted = await bcrypt.compare(encryptedText, encryptedText);
+    return decrypted;
+}
+
+console.log(await encryptData("suraj@123"));
+
+
+console.log(await decryptData("$2b$10$Cy/PIHTNAkIQa0hqx7dR2eDIA9VtjamWVQIJszPqfEf5EhROnLO3K"));

@@ -3,16 +3,16 @@ import { v2 as cloudinary } from 'cloudinary';
 import jwt from 'jsonwebtoken';
 import storage from 'node-persist';
 import { forgetPassword } from '../controllers/otpControllers.js';
-import { encryptJWT } from '../middleware/authGuard.js';
 import Portfolio from '../models/portfolioModel.js';
 import User from '../models/userModel.js';
 import Watchlist from '../models/watchlistModel.js';
 import { notifySelectedClients } from '../server/websocket.js';
 import { LDAcheck, NameorEmailinPassword, validateEmail, validateName, validatePassword, validatePhoneNumber } from '../utils/dataValidation_utils.js';
+import { encryptData } from '../utils/encryption.js';
 import globalVariables from '../utils/globalVariables.js';
 import { userLogger } from '../utils/logger/userlogger.js';
 import { respondWithData, respondWithError, respondWithSuccess } from '../utils/response_utils.js';
-import { saveToCache } from './savefetchCache.js';
+import { deleteFromCache, fetchFromCache, saveToCache } from './savefetchCache.js';
 import { formatUserData, updateUserField } from './userHelper.js';
 
 //
@@ -113,6 +113,8 @@ export const verifyPhoneNumber = async (req, res) => {
 export const createUser = async (req, res) => {
   const { name, password, phone, email } = req.body;
 
+  //encrypting the user details
+
   userLogger.info(`Create user command passed`);
 
   const existingUser = await User.findOne({ email: email.toLowerCase() });
@@ -160,13 +162,11 @@ export const createUser = async (req, res) => {
       portfolio: [samplePortfolio._id]
     });
 
-    let userData = await User.findOne({ email: emailLowercase }).populate('portfolio');
-
-    userData = await formatUserData(userData);
+    let userData = await User.findOne({ email: emailLowercase }).populate('portfolio').then(user => formatUserData(user));
 
     const token = jwt.sign({ email: emailLowercase }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRY_TIME });
 
-    userData.token = encryptJWT(token);
+    userData.token = await encryptData(token);
 
     userLogger.info(`User created successfully`);
     return respondWithData(res, 'CREATED', "User created successfully", userData);
@@ -176,7 +176,7 @@ export const createUser = async (req, res) => {
   }
 };
 
-//
+//login attempts added to cache to prevent brute force attack
 export const loginUser = async (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
@@ -187,12 +187,42 @@ export const loginUser = async (req, res) => {
   };
 
   try {
+    let failedLoginAttempts = await fetchFromCache(`failedLoginAttempts:${email}`);
+
+    if (!failedLoginAttempts) {
+      failedLoginAttempts = {};
+    }
+
+    if (failedLoginAttempts[email] && failedLoginAttempts[email].attempts >= process.env.MAX_LOGIN_ATTEMPTS) {
+      const cooldownTimeRemaining = failedLoginAttempts[email].cooldownUntil - Date.now();
+
+      if (cooldownTimeRemaining > 0) {
+        const minutesRemaining = Math.ceil(cooldownTimeRemaining / (60 * 1000));
+        userLogger.error(`Too many login attempts of ${email}. Please try again in ${minutesRemaining} minutes.`);
+        return respondWithError(res, 'TOO_MANY_REQUESTS', `Too many login attempts. Please try again in ${minutesRemaining} minutes.`);
+      } else {
+        delete failedLoginAttempts[email].attempts;
+      }
+    }
+
     const user = await User.findOne({ email: email.toLowerCase() }).populate('portfolio');
 
     if (!user || !(await bcrypt.compare(password, user.password))) {
+
+      if (!failedLoginAttempts[email]) {
+        failedLoginAttempts[email] = { attempts: 1, cooldownUntil: Date.now() + parseInt(process.env.COOLDOWN_TIME, 10) };
+      } else {
+        failedLoginAttempts[email].attempts++;
+      }
+
+      await saveToCache(`failedLoginAttempts:${email}`, failedLoginAttempts);
+
       userLogger.info("Invalid email or password.");
       return respondWithError(res, 'UNAUTHORIZED', "Invalid email or password.");
+
     } else {
+      await deleteFromCache(`failedLoginAttempts:${email}`);
+
       const isExpired = user.isPasswordExpired();
       if (isExpired) {
         notifyClients({ type: 'notification', title: 'Password Expired', description: "Your password is expired, please change soon", image: user.dpImage, url: "https://10paisa.com" });
@@ -202,7 +232,7 @@ export const loginUser = async (req, res) => {
 
       const token = jwt.sign({ email: email }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRY_TIME });
 
-      userData.token = encryptJWT(token);
+      userData.token = await encryptData(token);
 
       notifySelectedClients(user.email, { type: 'notification', title: 'Login', description: "User " + user.name + " logged in", image: user.dpImage, url: "https://10paisa.com" });
       return respondWithData(res, 'SUCCESS', "Login successful", userData);
@@ -299,7 +329,7 @@ export const updateUser = async (req, res) => {
 
     if (fieldToUpdate === 'email' || fieldToUpdate === 'password') {
       const token = jwt.sign({ email: email }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRY_TIME });
-      userData.token = encryptJWT(token);
+      userData.token = await encryptData(token);
     }
 
     return respondWithData(res, 'SUCCESS', fieldToUpdate + " updated successfully", userData);
@@ -331,7 +361,7 @@ export const verifyUser = async (req, res) => {
       if (!cachedtkn) {
         const token = jwt.sign({ email: email, isAdmin: user.isAdmin }, process.env.JWT_SECRET, { expiresIn: '7d' });
         await saveToCache(email + '_token', encryped_token);
-        user_token = encryptJWT(token);
+        user_token = await encryptData(token);
       } else {
         user_token = cachedtkn;
       }
@@ -413,7 +443,7 @@ export const updateUserData = async (req, res) => {
 
     if (fieldsToUpdate.email || fieldsToUpdate.password) {
       const token = jwt.sign({ email: user.email }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRY_TIME });
-      userData.token = encryptJWT(token);
+      userData.token = await encryptData(token);
     }
     return respondWithData(res, 'SUCCESS', "User data updated successfully", user);
 
@@ -457,7 +487,6 @@ export const updateUserProfilePicture = async (req, res) => {
         );
         user.dpImage = uploadedImage.secure_url;
       } catch (e) {
-        console.log(e);
         return respondWithError(res, 'INTERNAL_SERVER_ERROR', "Error uploading image");
       }
     }
