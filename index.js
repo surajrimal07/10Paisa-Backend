@@ -174,7 +174,7 @@ initiateNewsFetch();
 app.use("/api", userRouter);
 app.get("/", dynamicRoutes);
 app.get("/news", getNews);
-app.get("/ping", (res) => {
+app.use((req, res, next) => {
   res.sendStatus(200);
 });
 
