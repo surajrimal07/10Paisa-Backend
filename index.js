@@ -10,10 +10,12 @@ import httpsOptions from "./certificate/httpOptions.js";
 //
 import compression from "compression";
 import RedisStore from "connect-redis";
+import { rateLimit } from 'express-rate-limit';
 import session from 'express-session';
 import helmet from 'helmet';
 import https from "https";
 import { clean } from "perfect-express-sanitizer";
+import { RedisStore as RateLimitRedisStore } from 'rate-limit-redis';
 import { v4 as uuidv4 } from 'uuid';
 
 
@@ -163,6 +165,20 @@ if (isDevelopment) {
   });
 }
 
+//rate limiting middleware // 100 requests per 15 minutes
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 200,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: 'Too many requests, please try again later.',
+  store: new RateLimitRedisStore({
+    sendCommand: (...args) => redisclient.sendCommand(args),
+  }),
+});
+
+app.set('trust proxy', 1); // trust first proxy for rate limiting
+app.use(limiter);
 
 //others servers
 ActiveServer();
@@ -174,9 +190,10 @@ initiateNewsFetch();
 app.use("/api", userRouter);
 app.get("/", dynamicRoutes);
 app.get("/news", getNews);
-app.use((req, res, next) => {
-  res.sendStatus(200);
-});
+
+// app.use((req, res, next) => {
+//   res.sendStatus(200);
+// });
 
 //error handling
 app.use((req, res, next) => {

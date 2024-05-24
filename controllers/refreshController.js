@@ -91,7 +91,7 @@ async function handleisNepseOpenResponse(response, apiUrl) {
     NEPSE_ACTIVE_API_URL = apiUrl;
     return true;
   } else {
-    nepseLogger.info(`Error fetching Nepse status from ${apiUrl}:`, response.data);
+    nepseLogger.info(`Error fetching Nepse status from ${apiUrl} ${response.data}`);
     return false;
   }
 }

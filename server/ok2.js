@@ -92,4 +92,7 @@ async function FetchSingleDatafromAPI(symbol) {
   }
 }
 
-FetchSingularDataOfAssetFromAPI().then(console.log).catch(console.error);
+//FetchSingularDataOfAssetFromAPI().then(console.log).catch(console.error);
+
+
+FetchSingleDatafromAPI("ADBL").then(console.log).catch(console.error);

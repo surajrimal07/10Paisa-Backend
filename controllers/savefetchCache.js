@@ -3,18 +3,31 @@ import { createCache } from 'simple-in-memory-cache';
 import { deleteFromRedis, fetchFromRedis, saveToRedis } from '../server/redisServer.js';
 import { mainLogger } from '../utils/logger/logger.js';
 
+const isDevelopment = process.env.NODE_ENV == "development";
 const { set, get } = createCache({ defaultSecondsUntilExpiration: Infinity });
 const useRedis = process.env.USEREDIS
 const inMemory = process.env.INMEMORYCACHE
 
 export const fetchFromCache = async (cacheKey) => {
   try {
+
+    if (isDevelopment) {
+      const localData = await storage.getItem(cacheKey);
+      if (localData !== undefined && localData !== null) {
+        return localData;
+      }
+    }
+
     if (inMemory == 'true') {
-      // mainLogger.info(`fetching cache of key ${cacheKey}`)
       const cachedData = get(cacheKey);
       if (cachedData !== undefined && cachedData !== null) {
         return cachedData;
       }
+    }
+
+    const localData = await storage.getItem(cacheKey);
+    if (localData !== undefined && localData !== null) {
+      return localData;
     }
 
     if (useRedis == 'true') {
@@ -24,10 +37,6 @@ export const fetchFromCache = async (cacheKey) => {
       }
     }
 
-    const localData = await storage.getItem(cacheKey);
-    if (localData !== undefined && localData !== null) {
-      return localData;
-    }
     mainLogger.error('Error: Data not found in any cache.');
     return null;
   } catch (error) {

@@ -8,7 +8,7 @@ import { fetchFromCache, saveToCache } from "../controllers/savefetchCache.js";
 
 import { assetLogger } from '../utils/logger/logger.js';
 
-//preparing to switch to sharesansar as data provider
+//preparing to switch to sharesansar as data provider //bad code
 export async function FetchSingularDataOfAsset(refresh) {
   const liveTradingUrl = "https://www.sharesansar.com/live-trading";
 
@@ -70,27 +70,110 @@ export async function FetchSingularDataOfAsset(refresh) {
     return stockDataWithoutName;
   } catch (error) {
     assetLogger.error(`Error at FetchSingularDataOfAsset : ${error.message}`);
-    //throw error;
     return null;
   }
 }
 
-//not used in controller
-export async function FetchSingularDataOfAssetFromAPI(refresh) {
+//not used in controller //new code merges and creates somewhat useful data from nepseapi
+export async function FetchAllCompaniesDataFromAPI(refresh = false) {
   const url = NEPSE_ACTIVE_API_URL + "/CompanyList";
+  const url2 = NEPSE_ACTIVE_API_URL + "/TradeTurnoverTransactionSubindices";
+
+
+  const cachedData = await fetchFromCache("FetchSingularDataOfAssetsFromAPI");
+  if (cachedData !== null && cachedData !== undefined && !refresh) {
+    return cachedData;
+  }
 
   try {
-    const cachedData = await fetchFromCache("FetchSingularDataOfAssetsFromAPI");
-    if (cachedData !== null && cachedData !== undefined && !refresh) {
-      return cachedData;
+    const data = await fetch(url).then((response) => response.json());
+    const data2 = await fetch(url2).then((response) => response.json());
+
+    if (!data || !data2) {
+      return null;
     }
 
-    const data = await fetch(url).then((response) => response.json());
-    await saveToCache("FetchSingularDataOfAssetsFromAPI", data);
+    const filteredData = data
+      .filter((company) => company.status === "A")
+      .map(({ id, sectorName, securityName, ...rest }) => rest);
+
+    const mergedData = filteredData.map((company) => {
+      const symbol = company.symbol;
+      const extraInfo = data2.scripsDetails[symbol];
+      if (extraInfo) {
+        return { ...company, ...extraInfo };
+      } else {
+        return company;
+      }
+    });
+
+    await saveToCache("FetchSingularDataOfAssetsFromAPI", mergedData);
+    return mergedData;
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+//not used in controller //gives very detailed data of a single company from nepseapi
+//not good for high frequency api requests
+export async function FetchSingleCompanyDatafromAPI(symbol) {
+  const url = NEPSE_ACTIVE_API_URL + `/CompanyDetails?symbol=${symbol}`;
+
+  try {
+    const data = await fetch(url).then((data) => data.json());
+
+    if (!data) {
+      return null;
+    }
+
+    data.securityDailyTradeDto.open = data.securityDailyTradeDto.openPrice;
+    delete data.securityDailyTradeDto.openPrice;
+
+    data.securityDailyTradeDto.high = data.securityDailyTradeDto.highPrice;
+    delete data.securityDailyTradeDto.highPrice;
+
+    data.securityDailyTradeDto.low = data.securityDailyTradeDto.lowPrice;
+    delete data.securityDailyTradeDto.lowPrice;
+
+    data.securityDailyTradeDto.close = data.securityDailyTradeDto.closePrice;
+    delete data.securityDailyTradeDto.closePrice;
+
+    delete data.securityDailyTradeDto.securityId;
+    delete data.security.id;
+    delete data.security.isin;
+    delete data.security.creditRating;
+    delete data.security.meInstanceNumber;
+    delete data.security.recordType;
+    delete data.security.shareGroupId;
+    delete data.security.cdsStockRefId;
+    delete data.security.securityTradeCycle;
+    delete data.security.companyId;
+    delete data.security.instrumentType;
+    delete data.security.sectorMaster;
+    delete data.security.highRangeDPR;
+    delete data.security.issuerName;
+    delete data.security.parentId;
+    delete data.security.schemeDescription;
+    delete data.security.schemeName;
+    delete data.security.series;
+    delete data.security.divisor;
+    delete data.security.secured;
+
+    if (data.security.companyId) {
+      delete data.security.companyId.companyShortName;
+      delete data.security.companyId.companyWebsite;
+      delete data.security.companyId.companyRegistrationNumber;
+      delete data.security.companyId.modifiedBy;
+      delete data.security.companyId.modifiedDate;
+    }
+
+    delete data.updatedDate;
+    delete data.securityId;
 
     return data;
   } catch (error) {
-    assetLogger.error(`Error fetching or parsing the data: ${error.message}`);
+    console.error("Fetch error:", error);
+    return null;
   }
 }
 
@@ -191,7 +274,7 @@ export async function FetchOldData(refresh) {
 
   try {
     if (!refresh) {
-      const cachedData = await fetchFromCache("FetchOldDatas");
+      const cachedData = await fetchFromCache("FetchOldData");
       if (cachedData != null) {
         return cachedData;
       }
@@ -238,7 +321,6 @@ export async function FetchOldData(refresh) {
         symbol: columns[1].querySelector("a").textContent.trim(),
         vwap: parseInt(columns[7].textContent.trim()),
         Turnover: parseInt(columns[10].textContent.replace(/,/g, "")), //controvercial
-        //why add yesterday turnover in today data? //find alternative way
         day120: parseInt(columns[17].textContent.replace(/,/g, "")),
         day180: parseInt(columns[18].textContent.replace(/,/g, "")),
         week52high: parseInt(columns[19].textContent.replace(/,/g, "")),
@@ -259,7 +341,7 @@ export async function FetchOldData(refresh) {
     assetLogger.error(`Error at FetchOldData : ${error.message}`);
   }
 }
-//share sansar top gainers
+//nepseapi top gainers
 export const topgainersShare = async (refresh) => {
   const url = NEPSE_ACTIVE_API_URL + "/TopGainers";
 
@@ -293,7 +375,7 @@ export const topgainersShare = async (refresh) => {
   }
 };
 
-//top loosers// sharesansar
+//top loosers
 export const topLosersShare = async (refresh) => {
   const url = NEPSE_ACTIVE_API_URL + "/TopLosers";
   try {
@@ -651,7 +733,7 @@ export async function fetchCompanyDailyOHLC(company) {
   try {
     const data = await fetch(url).then((response) => response.json());
 
-    return modifiedData;
+    return data;
   } catch (error) {
     assetLogger.error(`Error fetching company full details: ${error.message}`);
     return null;
@@ -826,6 +908,7 @@ export default {
   topTurnoversShare,
   topTransactions,
   fetchAvailableNepseSymbol,
+  FetchSingleCompanyDatafromAPI,
   fetchFunctionforNepseAlphaORSystemxlite,
   isValidData
 };

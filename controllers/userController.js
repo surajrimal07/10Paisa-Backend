@@ -232,9 +232,14 @@ export const loginUser = async (req, res) => {
 
       const token = jwt.sign({ email: email }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRY_TIME });
 
-      userData.token = await encryptData(token);
+      const encryptedToken = await encryptData(token);
+
+      userData.token = encryptedToken;
 
       req.session.userEmail = email;
+      //add Bearer to token
+
+      req.session.jwtToken = `Bearer ${encryptedToken}`; //for testing
 
       notifySelectedClients(user.email, { type: 'notification', title: 'Login', description: "User " + user.name + " logged in", image: user.dpImage, url: "https://10paisa.com" });
       return respondWithData(res, 'SUCCESS', "Login successful", userData);
@@ -307,8 +312,9 @@ export const verifyData = async (req, res) => {
 //function to update single user data based on what user wants to update
 //this is useful in mobile app where we will not update whole form again but only the field user wants to update
 export const updateUser = async (req, res) => {
+  const email = req.session.userEmail;
 
-  const { email, fieldToUpdate, valueToUpdate } = req.body;
+  const { fieldToUpdate, valueToUpdate } = req.body;
 
   if (!email || !fieldToUpdate || !valueToUpdate) {
     return respondWithError(res, 'BAD_REQUEST', "Email, field or value is missing");

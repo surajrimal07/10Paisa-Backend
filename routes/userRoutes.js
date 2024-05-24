@@ -37,7 +37,7 @@ router.post('/newport', authGuard, createPortfolio);
 router.post('/addstock', authGuard, addStockToPortfolio);
 router.delete('/delport', authGuard, deletePortfolio);
 router.post('/renameportfolio', authGuard, renamePortfolio);
-router.post('/getallportforuser', authGuard, getAllPortfoliosForUser);
+router.get('/getallportforuser', authGuard, getAllPortfoliosForUser);
 router.post('/remstock', authGuard, removeStockFromPortfolio);
 
 //watchlist routes

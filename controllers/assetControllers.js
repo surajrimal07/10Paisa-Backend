@@ -7,6 +7,7 @@ import {
 } from "../controllers/savefetchCache.js";
 import {
   FetchOldData,
+  FetchSingleCompanyDatafromAPI,
   FetchSingularDataOfAsset,
   fetchAvailableNepseSymbol,
   fetchCompanyIntradayGraph,
@@ -56,6 +57,8 @@ export const AssetMergedData = async (req, res) => {
       ...(liveDataMap.get(item.symbol) || {}),
     }));
 
+    await saveToCache("AssetMergedDataShareSansar", mergedData);
+
     return respondWithData(
       res,
       "SUCCESS",
@@ -75,9 +78,9 @@ export const AssetMergedData = async (req, res) => {
 //single asset from sharesanasar like upcl
 export const SingeAssetMergedData = async (req, res) => {
   apiLogger.info("Sharesansar Single Asset Data Requested");
-  const symbol = req.body.symbol;
 
-  if (!symbol) {
+
+  if (!req.body.symbol) {
     apiLogger.error("No symbol provided in the request");
     return respondWithError(
       res,
@@ -85,27 +88,41 @@ export const SingeAssetMergedData = async (req, res) => {
       "No symbol provided in the request"
     );
   }
+  const symbol = (req.body.symbol).toUpperCase();
 
   try {
-    const [todayData, liveData] = await Promise.all([
-      FetchSingularDataOfAsset(),
-      FetchOldData(),
-    ]);
 
-    const liveDataMap = new Map(liveData.map((item) => [item.symbol, item]));
-    const mergedData = todayData.map((item) => ({
-      ...item,
-      ...(liveDataMap.get(item.symbol) || {}),
-    }));
+    const companyDetails = await FetchSingleCompanyDatafromAPI(symbol);
+    if (!companyDetails) {
+      return respondWithError(
+        res,
+        "INTERNAL_SERVER_ERROR",
+        "Failed to fetch company data."
+      );
+    }
 
-    const filteredMergedData = mergedData.filter(
-      (item) => item.symbol === symbol
+    // const [todayData, liveData] = await Promise.all([
+    //   FetchSingularDataOfAsset(),
+    //   FetchOldData(),
+    // ]);
+
+    // const liveDataMap = new Map(liveData.map((item) => [item.symbol, item]));
+    // const mergedData = todayData.map((item) => ({
+    //   ...item,
+    //   ...(liveDataMap.get(item.symbol) || {}),
+    // }));
+
+    // const filteredMergedData = companyDetails.filter(
+    //   (item) => item.symbol === symbol
+    // );
+
+    return respondWithData(
+      res,
+      "SUCCESS",
+      "Data Fetched Successfully",
+      companyDetails
     );
 
-    return res.status(200).json({
-      data: filteredMergedData,
-      isCached: false,
-    });
   } catch (error) {
     apiLogger.error(`Error fetching single asset data: ${error.message}`);
     return respondWithError(

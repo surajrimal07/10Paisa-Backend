@@ -1,41 +1,43 @@
 import mongoose from 'mongoose';
-import mongooseSequence from 'mongoose-sequence';
-import Asset from '../models/assetModel.js';
 
-
-const AutoIncrement = mongooseSequence(mongoose);
-
-const gainLoss = new mongoose.Schema({
-    date: {
-        type: Date,
-        required: true,
-    },
-    value: {
-        type: Number,
-        required: true,
-    },
-    portgainloss: {
-        type: Number,
-        required: true,
-    },
-});
 
 const StockToPortfolio = new mongoose.Schema({
-    name: String,
+    name: {
+        type: String,
+        default: 'Unknown'
+    },
     ltp: Number,
     symbol: String,
     quantity: Number,
     wacc: Number,
-    costprice: Number,
-    currentprice: Number,
-    netgainloss: Number
+    costprice: {
+        type: Number,
+        default: function () {
+            return (this.quantity * this.wacc).toFixed(2);
+        }
+    },
+    currentprice: {
+        type: Number,
+        default: function () {
+            return (this.quantity * this.ltp).toFixed(2);
+        }
+    },
+    netgainloss: {
+        type: Number,
+        default: function () {
+            return (this.currentprice - this.costprice).toFixed(2);
+        }
+    },
+    time : {
+        type: Number,
+        default: function () {
+            return Math.floor(Date.now() / 1000);
+        }
+    }
+
 });
 
 const portfolioSchema = new mongoose.Schema({
-    id: {
-        type: Number,
-        required: true,
-    },
     userEmail: {
         type: String,
         required: true,
@@ -55,86 +57,185 @@ const portfolioSchema = new mongoose.Schema({
     },
 
     portfolioGoal: {
-        type : String
+        type: String,
+        default: 'Not set'
+
+    },
+    recommendation: {
+        type: String,
+        default: 'No recommendation'
+    },
+    portfolioPercentage: {
+        type: Number,
+        default: 0
+    },
+    totalStocks: {
+        type: Number,
+        default: 0
     },
 
     totalunits: {
         type: Number,
-        default: function () {
-            return this.stocks.reduce((total, stock) => total + stock.quantity, 0);
-        },
-    },
-
-    gainLossRecords: [gainLoss],
+        default: 0
+    }
 });
 
-portfolioSchema.plugin(AutoIncrement, { id: 'portfolio_id', inc_field: 'id' });
+
+// portfolioSchema.pre('save', async function (next) {
+//     console.log(`we are inside pre save hook`);
+//     try {
+//             const asset = await fetchFromCache('AssetMergedDataShareSansar');
+//             if (!asset) {
+//                 portfolioLogger.error('Asset not found');
+//                 throw new Error('Asset not found');
+//             }
+//             for (const stock of this.stocks) {
+//                 const assetLTP = asset.find(item => item.symbol === stock.symbol);
+//                 if (assetLTP) {
+//                     stock.ltp = assetLTP.ltp;
+//                     stock.costprice = (stock.quantity * stock.wacc).toFixed(2);
+//                     stock.name = assetLTP.name;
+
+//                     stock.currentprice = (assetLTP.ltp * stock.quantity).toFixed(2);
+//                     stock.netgainloss = (stock.currentprice - stock.costprice).toFixed(2);
+//                 }
+//             }
+
+//         next();
+//     } catch (error) {
+//         portfolioLogger.error('Error updating stock data, userAmount, and gainLossRecords:', error.message);
+//         next(error);
+//     }
+// });
 
 
-portfolioSchema.pre('save', async function (next) {
-  try {
-    //   if (!this.id) {
-    //     const maxIdPortfolio = await this.constructor.findOne({}, { id: 1 }).sort({ id: -1 });
-    //     this.id = (maxIdPortfolio ? maxIdPortfolio.id : 0) + 1;
-    // }
-      const updateStockPrices = async () => {
-          for (const stock of this.stocks) {
-              const asset = await Asset.findOne({ symbol: stock.symbol });
+// portfolioSchema.post('find', async function (docs, next) {
+//     try {
+//         if (!Array.isArray(docs) || docs.length === 0) {
+//             portfolioLogger.error('No portfolios found to process');
+//             return;
+//         }
 
-              if (asset) {
-                  stock.currentprice = asset.ltp * stock.quantity; // Update current price based on the total units
-                  stock.name = asset.name;
-                  stock.ltp = asset.ltp;
-              } else {
-                  console.error(`Asset not found for symbol ${stock.symbol}`);
-              }
-          }
-      };
+//         const asset = await fetchFromCache('AssetMergedDataShareSansar');
+//         if (!asset) {
+//             portfolioLogger.error('Asset not found');
+//             throw new Error('Asset not found');
+//         }
 
-      await updateStockPrices();
+//         await Promise.all(docs.map(async (doc) => {
+//             if (!doc.stocks || !Array.isArray(doc.stocks) || doc.stocks.length === 0) {
+//                 return;
+//             }
 
-      // Calculate dynamically updated values for costprice and netgainloss
-      this.stocks.forEach(stock => {
-          stock.costprice = stock.quantity * stock.wacc; // Assuming wacc as the purchase price
-          stock.netgainloss = stock.currentprice - stock.costprice; // Corrected netgainloss calculation
-      });
+//             await Promise.all(doc.stocks.map(async (stock) => {
+//                 const assetLTP = asset.find(item => item.symbol === stock.symbol);
+//                 if (assetLTP) {
+//                     stock.ltp = assetLTP.ltp;
+//                     stock.costprice = (stock.quantity * stock.wacc).toFixed(2);
+//                     stock.name = assetLTP.name;
+//                     stock.currentprice = (assetLTP.ltp * stock.quantity).toFixed(2);
+//                     stock.netgainloss = (stock.currentprice - stock.costprice).toFixed(2);
+//                 }
+//             }));
 
-      // Calculate portfoliocost and portfoliovalue
-      this.portfoliocost = this.stocks.reduce((total, stock) => total + stock.costprice, 0);
-      this.portfoliovalue = this.stocks.reduce((total, stock) => total + stock.currentprice, 0);
+//             doc.portfoliocost = (doc.stocks.reduce((total, stock) => total + stock.costprice, 0)).toFixed(2);
+//             doc.portfoliovalue = (doc.stocks.reduce((total, stock) => total + stock.currentprice, 0)).toFixed(2);
+//             const returns = (doc.portfoliovalue - doc.portfoliocost) / doc.portfoliocost * 100;
+//             doc.portfolioPercentage = !isNaN(returns) ? parseFloat(returns.toFixed(1)) : 0;
 
-      const newStockValue = this.stocks.reduce((total, stock) => total + stock.currentprice, 0);
-      const deltaStockValue = newStockValue - (this.portfoliovalue || 0);
+//             doc.totalStocks = doc.stocks.length;
+//             doc.totalunits = doc.stocks.reduce((total, stock) => total + stock.quantity, 0);
 
-      // Update userAmount based on the change in stock value
-      if (deltaStockValue > 0) {
-          // Check if the user has sufficient funds
-          if (deltaStockValue <= this.userAmount) {
-              // Deduct the stock value from userAmount
-              this.userAmount -= deltaStockValue;
-          } else {
-              // Throw an error if userAmount is not enough
-              throw new Error('Not Enough Money');
-          }
-      } else if (deltaStockValue < 0) {
-          // Add back the value of stocks removed to userAmount
-          this.userAmount -= deltaStockValue; // Since deltaStockValue is negative
-      }
+//             switch (true) {
+//                 case doc.portfolioPercentage === 0:
+//                     doc.recommendation = "Please add stocks to get a recommendation";
+//                     break;
+//                 case doc.portfolioPercentage > 50:
+//                     doc.recommendation = "You are doing great, look to book your profits";
+//                     break;
+//                 case doc.portfolioPercentage >= 10 && doc.portfolioPercentage <= 50:
+//                     doc.recommendation = "Strong hold and ride the trend";
+//                     break;
+//                 case doc.portfolioPercentage >= -10 && doc.portfolioPercentage < 0:
+//                     doc.recommendation = "Look for a stop-loss";
+//                     break;
+//                 case doc.portfolioPercentage <= -10:
+//                     doc.recommendation = "Hold and average";
+//                     break;
+//                 default:
+//                     doc.recommendation = "Unable to provide a recommendation";
+//             }
 
-      // Update gainLossRecords with the calculated values
-      this.gainLossRecords = [{
-          date: new Date(),
-          value: newStockValue,
-          portgainloss: this.stocks.reduce((total, stock) => total + stock.netgainloss, 0),
-      }];
+//             await doc.save();
+//         }));
 
-      next();
-  } catch (error) {
-      console.error('Error updating stock data, userAmount, and gainLossRecords:', error.message);
-      next(error);
-  }
-});
+//     } catch (error) {
+//         portfolioLogger.error(`Error updating stock data in post-find: ${error.message}`);
+//         throw error;
+//     }
+// });
+
+
+
+// portfolioSchema.post('findOne', async function (doc, next) {
+//     try {
+//         const asset = await fetchFromCache('AssetMergedDataShareSansar');
+//         if (!asset) {
+//             portfolioLogger.error('Asset not found');
+//             throw new Error('Asset not found');
+//         }
+
+//         for (const stock of doc.stocks) {
+//             const assetLTP = asset.find(item => item.symbol === stock.symbol);
+//             if (assetLTP) {
+//                 stock.ltp = assetLTP.ltp;
+//                 stock.costprice = (stock.quantity * stock.wacc).toFixed(2);
+//                 stock.name = assetLTP.name;
+//                 stock.currentprice = (assetLTP.ltp * stock.quantity).toFixed(2);
+//                 stock.netgainloss = (stock.currentprice - stock.costprice).toFixed(2);
+//             }
+//         }
+
+//         // Calculate portfoliocost and portfoliovalue
+//         doc.portfoliocost = (doc.stocks.reduce((total, stock) => total + stock.costprice, 0)).toFixed(2);
+//         doc.portfoliovalue = (doc.stocks.reduce((total, stock) => total + stock.currentprice, 0)).toFixed(2);
+//         const returns = (doc.portfoliovalue - doc.portfoliocost) / doc.portfoliocost * 100;
+//         doc.portfolioPercentage = returns !== null && !isNaN(returns) ? parseFloat(returns.toFixed(1)) : 0;
+//         doc.totalStocks = doc.stocks.length;
+//         doc.totalunits = doc.stocks.reduce((total, stock) => total + stock.quantity, 0);
+
+//         // Update recommendation based on portfolioPercentage
+//         switch (true) {
+//             case doc.portfolioPercentage === 0:
+//                 doc.recommendation = "Please add stocks to get a recommendation";
+//                 break;
+//             case doc.portfolioPercentage > 50:
+//                 doc.recommendation = "You are doing great, look to book your profits";
+//                 break;
+//             case doc.portfolioPercentage >= 10 && doc.portfolioPercentage <= 50:
+//                 doc.recommendation = "Strong hold and ride the trend";
+//                 break;
+//             case doc.portfolioPercentage >= -10 && doc.portfolioPercentage < 0:
+//                 doc.recommendation = "Look for a stop-loss";
+//                 break;
+//             case doc.portfolioPercentage <= -10:
+//                 doc.recommendation = "Hold and average";
+//                 break;
+//             default:
+//                 doc.recommendation = "Unable to provide a recommendation";
+//         }
+
+//         await doc.save();
+//     } catch (error) {
+//         portfolioLogger.error(`Error updating stock data in post-find: ${error.message}`);
+//         throw error;
+//     }
+// });
+
+
 
 const Portfolio = mongoose.model('Portfolio', portfolioSchema);
 
 export default Portfolio;
+
+
