@@ -3,8 +3,31 @@ import { addExtraPortfolioData } from '../models/portfolioExtraCalculations.js';
 import { default as Portfolio } from '../models/portfolioModel.js';
 import User from '../models/userModel.js';
 import { FetchSingularDataOfAsset, fetchAvailableNepseSymbol } from '../server/assetServer.js';
+import { notifyClient } from '../server/websocket.js';
 import { portfolioLogger } from '../utils/logger/portfoliologger.js';
 import { respondWithData, respondWithError, respondWithSuccess } from '../utils/response_utils.js';
+
+
+//how to sync this with refresh controller
+//and also allow many user to connect to this
+export async function sendPeriodicPortfolioData(ws, email) {
+  try {
+    ws.enableLivePortfolio = true;
+    const portfolios = await Portfolio.find({ userEmail: email });
+    if (!Array.isArray(portfolios) || portfolios.portfolios === 0) {
+      notifyClient(ws, 'liveportfolio', []);
+    }
+
+    const data = await addExtraPortfolioData(portfolios);
+    notifyClient(ws, 'liveportfolio', data);
+
+  } catch (error) {
+    portfolioLogger.error(`Error sending periodic portfolio data: ${error.message}`);
+  }
+}
+
+
+
 
 export const createPortfolio = async (req, res) => {
   try {
@@ -18,101 +41,30 @@ export const createPortfolio = async (req, res) => {
 
     portfolioLogger.info(`Create Portfolio Requested by ${userEmail}, for, ${portfolioName}`);
 
-    const userPortfolios = await Portfolio.find({ userEmail: userEmail }).populate('stocks');
+    const userPortfolios = await Portfolio.find({ userEmail: userEmail });
+
     const existingPortfolio = userPortfolios.find(portfolio => portfolio.name === portfolioName);
 
     if (existingPortfolio) {
       return respondWithError(res, 'BAD_REQUEST', 'Duplicate Portfolio');
     }
 
-    await Portfolio.create({ userEmail, name: portfolioName, portfolioGoal });
+    const createdPortfolio = await Portfolio.create({ userEmail, name: portfolioName, portfolioGoal });
+
+    const updateUser = { $push: { portfolio: createdPortfolio._id } };
+
+    await User.findOneAndUpdate({ email: userEmail }, updateUser);
 
     const data = await addExtraPortfolioData(userPortfolios);
 
     return respondWithData(res, 'SUCCESS', 'Portfolio created successfully', data);
 
   } catch (error) {
-    console.error(error);
+    portfolioLogger.error(`Error creating portfolio: ${error.message}`);
     return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'An error occurred while creating portfolio');
   }
 };
 
-//add stock to porfolio, don't ever change this
-// export const addStockToPortfolio = async (req, res) => {
-//   const ObjectId = mongoose.Types.ObjectId;
-
-//   try {
-
-//     if (!req.body.id || !req.body.symboll || !req.body.price || !req.body.quantityy) {
-//       return respondWithError(res, 'BAD_REQUEST', 'Email, id, symbol, price and quantity are required')
-//     };
-
-//     const { id, symboll, quantityy } = req.body;
-//     const email = req.session.userEmail;
-
-//     const symbol = String(symboll).toUpperCase();
-//     const quantity = Number(quantityy);
-//     let wacc = req.body.price;
-
-//     if (!await isStockExists(symbol)) {
-//       return respondWithError(res, 'BAD_REQUEST', `Stock ${symbol} not found`);
-//     }
-
-//     // const existingPortfolio = await Portfolio.findOne({
-//     //   userEmail: email,
-//     //   _id: new ObjectId(id),
-//     // });
-//     const existingPortfolio = await Portfolio.findOne({ userEmail: email, _id: new ObjectId(id) }).populate('stocks');
-
-//     if (!existingPortfolio) {
-//       return respondWithError(res, 'NOT_FOUND', 'Portfolio not found, please create a portfolio first');
-//     }
-
-//     const hasBalance = await hasEnoughBalance(email, quantity, req.body.price, true);
-
-//     if (!hasBalance) {
-//       return respondWithError(res, 'BAD_REQUEST', 'Insufficient balance');
-//     }
-
-//     const existingStockIndex = existingPortfolio.stocks.findIndex(
-//       (stock) => stock.symbol === symbol
-//     );
-
-//     if (existingStockIndex !== -1) {
-//       const existingStock = existingPortfolio.stocks[existingStockIndex];
-//       const totalShares = existingStock.quantity + quantity;
-//       existingStock.ltp = await getLTPForStock(symbol);
-
-//       existingStock.quantity += quantity;
-//       existingStock.wacc = ((existingStock.costprice + (wacc * quantity)) / totalShares).toFixed(2);
-//     } else {
-//       wacc = (req.body.price * quantity) / quantity;
-//       const ltp = await getLTPForStock(symbol);
-
-//       existingPortfolio.stocks.push({
-//         symbol,
-//         quantity,
-//         wacc,
-//         ltp
-//       });
-
-//     }
-//     await Promise.all([
-//       hasEnoughBalance(email, quantity, req.body.price, false), //this decucts the balance from user account
-//       existingPortfolio.save(), //calling save once here
-//     ]);
-
-//     // await hasEnoughBalance(email, quantity, req.body.price, false);
-//     // await existingPortfolio.save();
-//     //const data = await addExtraPortfolioData(email);
-
-//     return res.status(200).json({ success: true, message: 'Stock added to portfolio successfully', existingPortfolio });
-
-//   } catch (error) {
-//     console.error(error);
-//     return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'An error occurred while adding stock to portfolio');
-//   }
-// };
 export const addStockToPortfolio = async (req, res) => {
   try {
     const { id, symboll, price, quantityy } = req.body;
@@ -126,6 +78,10 @@ export const addStockToPortfolio = async (req, res) => {
     const quantity = Number(quantityy);
     const wacc = Number(price);
     const time = req.body.time ? Number(time) : Math.floor(Date.now() / 1000);
+
+    if (wacc <= 0 || quantity == 0) {
+      return respondWithError(res, 'BAD_REQUEST', 'Price or Quantity must be greater than 0');
+    }
 
     const [stockExists, userPortfolios, UserData] = await Promise.all([
       isStockExists(symbol),
@@ -153,18 +109,28 @@ export const addStockToPortfolio = async (req, res) => {
       const totalShares = existingStock.quantity + quantity;
       const ltp = await getLTPForStock(symbol);
 
+      let newCostPrice = existingStock.costprice + (wacc * quantity);
+      existingStock.costprice = newCostPrice.toFixed(2);
+
+      existingStock.currentprice = (ltp * totalShares).toFixed(2);
       existingStock.ltp = ltp;
       existingStock.quantity += quantity;
-      existingStock.wacc = ((existingStock.costprice + (wacc * quantity)) / totalShares).toFixed(2);
+      existingStock.wacc = (newCostPrice / totalShares).toFixed(2);
       existingStock.time = time;
     } else {
       const ltp = await getLTPForStock(symbol);
+      const costprice = quantity * price;
+      const currentPrice = quantity * ltp;
+
       const newStock = {
         symbol,
         quantity,
-        wacc: ((req.body.price * quantity) / quantity).toFixed(2),
+        wacc: (costprice / quantity).toFixed(2),
         ltp: ltp,
-        time: time
+        time: time,
+        costprice: costprice.toFixed(2),
+        currentprice: currentPrice,
+        netgainloss: currentPrice - costprice
       };
       existingPortfolio.stocks.push(newStock);
     }
@@ -176,7 +142,12 @@ export const addStockToPortfolio = async (req, res) => {
       UserData.save()
     ]);
 
-    const data = await addExtraPortfolioData(userPortfolios);
+    //updating in-memory portfolio array too, rather then fetching from db again
+    const updatedPortfolios = userPortfolios.map(portfolio =>
+      portfolio._id.toString() === existingPortfolio._id.toString() ? existingPortfolio : portfolio
+    );
+
+    const data = await addExtraPortfolioData(updatedPortfolios);
     return respondWithData(res, 'SUCCESS', 'Stock added to portfolio successfully', data);
   } catch (error) {
     console.error(error);
@@ -194,93 +165,6 @@ const isStockExists = async (symbol) => {
   }
 };
 
-
-//function to check if user has enougn balance to purchase this asset
-// const hasEnoughBalance = async (email, quantity, price, check = true) => {
-//   const user = await User.findOne({ email: email.toLowerCase() })
-//   const costprice = quantity * price;
-
-//   if (check) {
-//     try {
-//       if (costprice > user.userAmount) {
-//         portfolioLogger.warn(`User dont have enough balance`);
-//         return false;
-//       }
-//       return costprice < user.userAmount;
-//     } catch (error) {
-//       portfolioLogger.error(`Error checking user balance: ${error.message}`);
-//       return false;
-//     }
-//   }
-//   else {
-//     try {
-//       user.userAmount -= costprice;
-//       await user.save();
-//       return true;
-//     }
-//     catch (error) {
-//       portfolioLogger.error(`Error updating user balance: ${error.message}`);
-//       return false;
-//     }
-
-//   }
-// };
-
-// Function to update gainLossRecords
-// const updateGainLossRecords = (portfolio) => {
-//   const currentDate = new Date().toLocaleDateString();
-
-//   if (portfolio.gainLossRecords.length === 0) {
-//     portfolio.gainLossRecords.push(createNewGainLossRecord(portfolio.portfoliovalue, portfolio.portfoliocost));
-//   } else {
-//     const latestRecordDate = portfolio.gainLossRecords[portfolio.gainLossRecords.length - 1].date.toLocaleDateString();
-
-//     if (latestRecordDate !== currentDate) {
-//       portfolio.gainLossRecords.push(createNewGainLossRecord(portfolio.portfoliovalue, portfolio.portfoliocost));
-//     } else {
-//       const latestGainLossRecord = portfolio.gainLossRecords[portfolio.gainLossRecords.length - 1];
-//       latestGainLossRecord.value = portfolio.portfoliovalue.toFixed(2);
-//       latestGainLossRecord.portgainloss = (portfolio.portfoliovalue - portfolio.portfoliocost).toFixed(2);
-//     }
-//   }
-// };
-
-// const createNewGainLossRecord = (portfolioValue, portfolioCost) => {
-//   return {
-//     date: new Date(),
-//     value: portfolioValue.toFixed(2),
-//     portgainloss: (portfolioValue - portfolioCost).toFixed(2),
-//   };
-// };
-//get portfolio value //helper function
-// const calculatePortfolioValue = async (stocks) => {
-//   const ltpValues = await Promise.all(
-//     stocks.map(async (stock) => {
-//       const ltp = await getLTPForStock(stock.symbol);
-//       return ltp * stock.quantity;
-//     })
-//   );
-
-//   const portfoliovalue = ltpValues.reduce((total, value) => total + value, 0).toFixed(2);
-//   return portfoliovalue;
-// }
-
-// Function to get LTP (current market value) for a stock //helper function
-// const getLTPForStock = async (symbol) => {
-//   try {
-//     const assetLTP = await FetchSingularDataOfAsset();
-//     if (assetLTP && Array.isArray(assetLTP)) {
-//       const asset = assetLTP.find(item => item.symbol === symbol);
-//       if (asset) {
-//         return asset.ltp;
-//       }
-//     }
-//     return 0;
-//   } catch (error) {
-//     portfolioLogger.error(`Error fetching LTP: ${error.message}`);
-//     return 0;
-//   }
-// };
 
 const getLTPForStock = async (symbol) => {
   try {
@@ -302,6 +186,7 @@ const getLTPForStock = async (symbol) => {
 export const deletePortfolio = async (req, res) => {
   try {
     const portid = req.body.id;
+    const email = req.session.userEmail;
 
     const ObjectId = mongoose.Types.ObjectId;
 
@@ -314,6 +199,10 @@ export const deletePortfolio = async (req, res) => {
     if (portfolio.userEmail !== req.session.userEmail) {
       return respondWithError(res, 'FORBIDDEN', 'You do not have permission to delete this portfolio');
     }
+
+    const updateUser = { $pull: { portfolio: new ObjectId(portid) } };
+
+    await User.findOneAndUpdate({ email }, updateUser);
 
     const delectedportfolio = await Portfolio.findByIdAndDelete(portid);
 
@@ -381,7 +270,7 @@ export const removeStockFromPortfolio = async (req, res) => {
     const symbolUpper = String(symbol).toUpperCase();
     const time = req.body.time ? Number(time) : Math.floor(Date.now() / 1000);
 
-    const [userPortfolios, UserData,stockExists] = await Promise.all([
+    const [userPortfolios, UserData, stockExists] = await Promise.all([
       Portfolio.find({ userEmail: email }),
       User.findOne({ email: email.toLowerCase() }),
       isStockExists(symbolUpper),
@@ -398,7 +287,7 @@ export const removeStockFromPortfolio = async (req, res) => {
     }
 
     const stockIndex = portfolio.stocks.findIndex((stock) => stock.symbol === symbolUpper);
-
+    //wacc ko lafada //add wacc on sell and recalculate cosst price on sell
 
     if (stockIndex === -1) {
       // If the stock is not found in the portfolio, this means we are short selling
@@ -451,7 +340,11 @@ export const removeStockFromPortfolio = async (req, res) => {
       UserData.save(),
     ]);
 
-    const data = await addExtraPortfolioData(userPortfolios);
+    const updatedPortfolios = userPortfolios.map(portfolio =>
+      portfolio._id.toString() === existingPortfolio._id.toString() ? existingPortfolio : portfolio
+    );
+
+    const data = await addExtraPortfolioData(updatedPortfolios);
     return respondWithData(res, 'SUCCESS', 'Stock removed from portfolio successfully', data);
 
   } catch (error) {
@@ -474,26 +367,3 @@ export const getAllPortfoliosForUser = async (req, res) => {
     return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'An error occurred while fetching portfolios');
   }
 };
-
-
-//very basic and logically flawed recommendation system //just for assingment purpose only
-const generateRecommendation = ({ portfolio }) => {
-
-  const returnPercentage = portfolio.portfoliocost === 0 ? 0 : (portfolio.portfoliovalue - portfolio.portfoliocost) / portfolio.portfoliocost * 100;
-
-  if (returnPercentage == 0) {
-    return "Please add stocks to get recommendation";
-  }
-  if (returnPercentage > 50) {
-    return "Look for booking your profits";
-  } else if (returnPercentage >= 10 && returnPercentage <= 50) {
-    return "Strong hold and ride the trend";
-  } else if (returnPercentage >= -10 && returnPercentage < 0) {
-    return "Look for stoploss";
-  } else if (returnPercentage <= -10) {
-    return "Hold and Average";
-  } else {
-    return "Unable to provide recommendation";
-  }
-};
-

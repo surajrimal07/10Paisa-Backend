@@ -28,7 +28,7 @@ const StockToPortfolio = new mongoose.Schema({
             return (this.currentprice - this.costprice).toFixed(2);
         }
     },
-    time : {
+    time: {
         type: Number,
         default: function () {
             return Math.floor(Date.now() / 1000);
@@ -55,7 +55,10 @@ const portfolioSchema = new mongoose.Schema({
     portfoliovalue: {
         type: Number,
     },
-
+    portgainloss: {
+        type: Number,
+        default: 0
+    },
     portfolioGoal: {
         type: String,
         default: 'Not set'

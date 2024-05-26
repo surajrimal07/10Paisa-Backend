@@ -7,7 +7,7 @@ import newsModel from '../models/newsModel.js';
 import { createheaders } from '../utils/headers.js';
 import { newsLogger } from '../utils/logger/logger.js';
 import extractFeaturedImage from './imageServer.js';
-import { notifyClients } from './websocket.js';
+import { notifyRoomClients } from './websocket.js';
 
 function generateUniqueKey(title, pubDate) {
   const hash = crypto.createHash('sha256');
@@ -24,7 +24,8 @@ async function isDuplicateArticle(uniqueKey) {
 }
 
 function NotifyClients(data) {
-  notifyClients(
+  console.log('Notifying clients news');
+  notifyRoomClients('news',
     {
       type: 'news',
       title: data.title,
@@ -122,53 +123,6 @@ async function scrapeMeroLagani() {
   }
 }
 
-
-export const getNews = async (req, res) => {
-  newsLogger.info('News data requested');
-  try {
-    const page = parseInt(req.query._page) || 1;
-    const limit = parseInt(req.query.limit) || 100;
-    const source = req.query.source;
-    const keyword = req.query.keyword;
-
-    let query = {};
-
-    if (source && keyword) {
-      query = {
-        source: source,
-        $or: [
-          { title: { $regex: keyword, $options: 'i' } },
-          { description: { $regex: keyword, $options: 'i' } },
-        ]
-      };
-    } else if (source) {
-      query = { source: source };
-    } else if (keyword) {
-      query = {
-        $or: [
-          { title: { $regex: keyword, $options: 'i' } },
-          { description: { $regex: keyword, $options: 'i' } },
-        ]
-      };
-    }
-
-    const options = {
-      page: page,
-      limit: limit,
-      sort: { _id: -1 }
-    };
-
-    const result = await newsModel.paginate(query, options);
-
-    if (result.docs.length === 0) {
-      return res.status(404).json({ message: 'No news found with selected keyword and source.' });
-    }
-
-    res.json(result.docs);
-  } catch (error) {
-    res.status(500).json({ error: 'Internal Server Error' });
-  }
-};
 
 async function scrapeEkantipur() {
   const url = 'https://ekantipur.com/news';
@@ -279,8 +233,8 @@ async function startFetchingRSS(url, source) {
             img_url = imageUrlMatch ? imageUrlMatch[1] : '';
 
           } else if (source === 'Himalayan Times') {
-            //            img_url = item_elem.getElementsByTagName('media:content')[0];
             img_url = item_elem['media:thumbnail'][0].$.url;
+            description = cleanDescription(item_elem.description[0]);
           } else {
             img_url = item_elem['media:content'] && item_elem['media:content'][0] && item_elem['media:content'][0].$ && item_elem['media:content'][0].$.url && item_elem['media:content'][0].$.url.trim();
             description = cleanDescription(item_elem.description && item_elem.description[0]);
@@ -303,6 +257,9 @@ async function startFetchingRSS(url, source) {
           await newsModel.create(new_item_data);
           NotifyClients(new_item_data);
         }
+      }
+      else {
+        newsLogger.error(`RSS structure not found in: ${source} ${url}`);
       }
     }
     else {
@@ -347,4 +304,63 @@ export async function initiateNewsFetch() {
   await fetchAndScrape();
 }
 
+//news code
+//fetch news
+export async function fetchNews(page = 1, limit = 100, source = null, keyword = null) {
+  let query = {};
 
+  if (source && keyword) {
+    query = {
+      source: source,
+      $or: [
+        { title: { $regex: keyword, $options: 'i' } },
+        { description: { $regex: keyword, $options: 'i' } },
+      ]
+    };
+  } else if (source) {
+    query = { source: source };
+  } else if (keyword) {
+    query = {
+      $or: [
+        { title: { $regex: keyword, $options: 'i' } },
+        { description: { $regex: keyword, $options: 'i' } },
+      ]
+    };
+  }
+
+  const options = {
+    page: page,
+    limit: limit,
+    sort: { _id: -1 }
+  };
+
+  try {
+    const result = await newsModel.paginate(query, options);
+    return result.docs;
+  } catch (error) {
+    throw new Error('Error fetching news data');
+  }
+}
+
+//api code
+export const getNews = async (req, res) => {
+  newsLogger.info('News data requested');
+
+  try {
+    const page = parseInt(req.query._page) || 1;
+    const limit = parseInt(req.query.limit) || 100;
+    const source = req.query.source;
+    const keyword = req.query.keyword;
+
+    const newsData = await fetchNews(page, limit, source, keyword);
+
+    if (newsData.length === 0) {
+      return res.status(404).json({ message: 'No news found with selected keyword and source.' });
+    }
+
+    res.json(newsData);
+  } catch (error) {
+    newsLogger.error('Error fetching news:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+};

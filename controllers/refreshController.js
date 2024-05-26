@@ -1,5 +1,6 @@
 import axios from "axios";
 import storage from 'node-persist';
+import { sendPeriodicPortfolioData } from '../controllers/portfolioControllers.js';
 import {
   FetchOldData,
   FetchSingularDataOfAsset,
@@ -12,7 +13,7 @@ import {
   topTurnoversShare,
   topgainersShare,
 } from "../server/assetServer.js";
-import { notifyClients } from "../server/websocket.js";
+import { notifyRoomClients, wss } from "../server/websocket.js";
 import { nepseLogger } from '../utils/logger/logger.js';
 import { saveToCache } from "./savefetchCache.js";
 
@@ -91,7 +92,7 @@ async function handleisNepseOpenResponse(response, apiUrl) {
     NEPSE_ACTIVE_API_URL = apiUrl;
     return true;
   } else {
-    nepseLogger.info(`Error fetching Nepse status from ${apiUrl} ${response.data}`);
+    nepseLogger.info(`Error fetching Nepse status from ${apiUrl}`);
     return false;
   }
 }
@@ -117,12 +118,26 @@ async function wipeCachesAndRefreshData() {
 
     let newIndexData = await getIndexIntraday(true);
     if (newIndexData) {
-      notifyClients({ type: "index", data: newIndexData });
+      notifyRoomClients('news', { type: "index", data: newIndexData });
     }
+
+    //send the updated portfolio to those who subscribed to live portfolio using websocket
+    notifyUsersWithUpdatedData();
+
     nepseLogger.info(`Refresh Successful at ${new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })}`);
   } catch (error) {
     nepseLogger.error(`Error refreshing Nepse data: ${error.message}`);
   }
+}
+
+
+//update the portfolios and send data
+async function notifyUsersWithUpdatedData() {
+  wss.clients.forEach(client => {
+    if (client.email && client.enableLivePortfolio) {
+      sendPeriodicPortfolioData(client, client.email);
+    }
+  });
 }
 
 //solved the the refresh and 1 minute gap issue when nepse is closed

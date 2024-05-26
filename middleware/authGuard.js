@@ -15,6 +15,7 @@ export const authGuard = async (req, res, next) => {
 
     //check if jwt token matches the one in session
     if (authHeader !== authHeaderInSession) {
+        console.log(authHeader, authHeaderInSession);
         userLogger.error(`Token mismatch`);
         return res.status(416).json({ error: 'Token mismatch, please login again or pass correct token' });
     }

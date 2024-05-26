@@ -23,6 +23,7 @@ const news = fetch("https://www.sharesansar.com/category/latest", {
 
 import axios from 'axios';
 import cheerio from 'cheerio';
+import xml2js from 'xml2js';
 
 async function scrapeShareSansar() {
     const url = 'https://www.sharesansar.com/category/latest';
@@ -172,7 +173,7 @@ async function scrapeEkantipur() {
     return newsList;
 }
 
-console.log(await scrapeEkantipur());
+//console.log(await scrapeEkantipur());
 
 // scarpeMeroLagani().then(data => {
 //     console.log(data);
@@ -206,3 +207,34 @@ console.log(await scrapeEkantipur());
 //     return null;
 // }
 // console.log(await arthapathex('https://www.arthapath.com/banner-first/2024/05/09/143419/'));
+
+
+
+async function scrapeHimalayan() {
+
+    const url = 'https://www.bizkhabar.com/feed';
+    const response = await axios.get(url);
+    if (response.status == 200) {
+        const result = await new xml2js.Parser().parseStringPromise(response.data);
+
+        if (result.rss.channel[0].item) {
+            const newsList = result.rss.channel[0].item.map((item) => {
+                return {
+                    title: item.title[0],
+                    link: item.link[0],
+                    description: item.description[0],
+                    pubDate: item.pubDate[0],
+                    //img_url: item['media:content'][0].$.url.trim()
+                }
+            });
+            return newsList;
+        }
+
+    }
+
+};
+
+scrapeHimalayan().then(data => {
+    console.log(data);
+})
+

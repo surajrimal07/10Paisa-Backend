@@ -32,6 +32,10 @@ const newsSources = [
   { url: "https://www.souryaonline.com/feed", source: "Sourya Online" }, //30
   { url: "https://ujyaaloonline.com/rss/", source: "Ujyaalo Online" }, //31
   { url: "https://risingnepaldaily.com/rss", source: "Rising Nepal Daily" }, //32
+  { url: "https://arthakendra.com/rss", source: "ArthaKendra Nepali" }, //33 //need to extract image
+  {url : "https://english.arthakendra.com/rss", source: "ArthaKendra English"}, //34 //need to extract image
+  {url : "https://www.bizkhabar.com/feed", source: "BizKhabar"}, //35 //need to extract image
+
 ];
 
 export default newsSources;

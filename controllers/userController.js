@@ -1,7 +1,6 @@
 import bcrypt from 'bcrypt';
 import { v2 as cloudinary } from 'cloudinary';
 import jwt from 'jsonwebtoken';
-import storage from 'node-persist';
 import { forgetPassword } from '../controllers/otpControllers.js';
 import Portfolio from '../models/portfolioModel.js';
 import User from '../models/userModel.js';
@@ -237,9 +236,9 @@ export const loginUser = async (req, res) => {
       userData.token = encryptedToken;
 
       req.session.userEmail = email;
-      //add Bearer to token
 
-      req.session.jwtToken = `Bearer ${encryptedToken}`; //for testing
+      req.session.jwtToken = `Bearer ${encryptedToken}`;
+
 
       notifySelectedClients(user.email, { type: 'notification', title: 'Login', description: "User " + user.name + " logged in", image: user.dpImage, url: "https://10paisa.com" });
       return respondWithData(res, 'SUCCESS', "Login successful", userData);
@@ -352,49 +351,18 @@ export const updateUser = async (req, res) => {
 //not sure why this is here
 export const verifyUser = async (req, res) => {
 
-  console.log("User verification requested")
+  const email = req.session.userEmail;
 
-  const email = req.body.email;
-  let user_token;
-
+  userLogger.info(`User ${email} requested for their data verification.`);
   try {
     const user = await User.findOne({ email: email.toLowerCase() }).populate('portfolio');
     if (!user) {
-      console.log("401 Invalid email.");
       return respondWithError(res, 'UNAUTHORIZED', "Invalid email.");
-    } else {
-
-      console.log("User verification was successful");
-      const cachedtkn = await storage.getItem(User_token_key);
-
-      if (!cachedtkn) {
-        const token = jwt.sign({ email: email, isAdmin: user.isAdmin }, process.env.JWT_SECRET, { expiresIn: '7d' });
-        await saveToCache(email + '_token', encryped_token);
-        user_token = await encryptData(token);
-      } else {
-        user_token = cachedtkn;
-      }
-      let userData = {
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        pass: user.password,
-        phone: user.phone,
-        token: user_token,
-        profilePicture: user.profilePicture,
-        style: user.style,
-        premium: user.premium,
-        defaultport: user.defaultport,
-        isAdmin: user.isAdmin,
-        dpImage: user.dpImage,
-        userAmount: user.userAmount,
-        portfolio: user.portfolio,
-        wallets: user.wallets
-      };
-      return respondWithData(res, 'SUCCESS', "User Verified", userData);
     }
+    return respondWithData(res, 'SUCCESS', "User Verified", user);
+
   } catch (error) {
-    console.log("500 An error occurred during user verification.");
+    userLogger.error(`Error verifying user ${email}: ${error.toString()}`);
     return respondWithError(res, 'INTERNAL_SERVER_ERROR', "An error occurred during user verification.");
   }
 };

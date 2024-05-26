@@ -28,9 +28,9 @@ router.post('/forget', forgetPass);
 router.post('/updateuser', authGuard, updateUser);
 router.post('/updatealluserdata', authGuard, updateUserData);
 router.post('/updateprofilepic', authGuard, updateUserProfilePicture);
-router.post('/verify', authGuard, verifyUser);
+router.get('/verify', authGuard, verifyUser);
 router.post('/delete-acc', authGuard, deleteAccount);
-router.post('/pre-verify', authGuard, verifyData);
+router.post('/pre-verify', authGuard, verifyData);  //obselote
 
 //portfolio
 router.post('/newport', authGuard, createPortfolio);

@@ -13,7 +13,7 @@ if (consoleLogEnabled) {
         winston.format.colorize(),
         winston.format.simple(),
         winston.format.printf(({ level, message }) => {
-          return `${level}: ${message}`;
+          return `${level}: ${message}`;s
         })
       ),
       level: 'info',

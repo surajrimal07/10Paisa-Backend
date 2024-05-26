@@ -74,6 +74,8 @@ async function extractFeaturedImage(url, publisher) {
       featuredImageUrl = await extractUjayaloOnline($);
     } else if (publisher == newsSources[32].source) { //Rising Nepal Daily
       featuredImageUrl = await extraceGorkhaPatra($); //metapropery og image
+    } else if (publisher == newsSources[35].source) { //BizKhabar
+      featuredImageUrl = await extractBizKhabar($); //metapropery og image
     }
 
     if (featuredImageUrl && featuredImageUrl.length > 0) {
@@ -155,9 +157,15 @@ async function extractFeaturedImage(url, publisher) {
 // }
 
 async function extractUjayaloOnline($) {
-  const imageUrl = $('figure img').attr('src');
+  const imageUrl = $('figure.uk-text-center img').attr('src');
   return imageUrl;
 };
+
+async function extractBizKhabar($) {
+  const imageUrl = $('figure img').attr('src');
+  return imageUrl;
+
+}
 
 async function arthapathex($) {
   const featuredImageElement = $('img[class="attachment-full size-full wp-post-image"]');
