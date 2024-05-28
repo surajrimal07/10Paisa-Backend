@@ -13,9 +13,11 @@ import {
   topTurnoversShare,
   topgainersShare,
 } from "../server/assetServer.js";
+import { is_NepseOpen } from '../server/nepse_server/nepseServer.js';
 import { notifyRoomClients, wss } from "../server/websocket.js";
 import { nepseLogger } from '../utils/logger/logger.js';
 import { saveToCache } from "./savefetchCache.js";
+
 
 //initilizing storage here to prevent code racing
 const defaultDirectory = '/tmp/.node-persist';
@@ -27,8 +29,11 @@ await storage.init({
 });
 
 
+// eslint-disable-next-line no-undef
 const NEPSE_API_URL1 = process.env.NEPSE_API_URL;
+// eslint-disable-next-line no-undef
 const NEPSE_API_URL2 = process.env.NEPSE_API_URL_BACKUP;
+// eslint-disable-next-line no-undef
 export let NEPSE_ACTIVE_API_URL = process.env.NEPSE_API_URL1;
 
 export async function ActiveServer() {
@@ -39,6 +44,7 @@ export async function ActiveServer() {
       NEPSE_ACTIVE_API_URL = NEPSE_API_URL1;
       nepseLogger.info(`Nepse API Server 1 is active. ${NEPSE_ACTIVE_API_URL}`);
     }
+    // eslint-disable-next-line no-unused-vars
   } catch (error) {
     try {
       const url2Response = await axios.get(NEPSE_API_URL2);
@@ -47,37 +53,49 @@ export async function ActiveServer() {
         nepseLogger.info(`Nepse API Server 2 is active. ${NEPSE_ACTIVE_API_URL}`);
       }
     } catch (error2) {
-      nepseLogger.error("Warning both servers are down.");
+      nepseLogger.error(`Warning both servers are down. ${error2.message}`);
     }
   }
 }
 
 export async function isNepseOpen() {
-  try {
-    const initialResponse = await axios.get(NEPSE_ACTIVE_API_URL + "/IsNepseOpen");
-    return await handleisNepseOpenResponse(initialResponse, NEPSE_ACTIVE_API_URL);
-  } catch (error) {
-    nepseLogger.error(
-      `Error fetching Nepse status from Active URL: ${error.message}`
-    );
+  const isNepseOpen = await is_NepseOpen();
+  if (isNepseOpen.isOpen === "CLOSE") {
+    nepseLogger.info(`Nepse is closed using Local Node server.`);
+    await saveToCache("isMarketOpen", false);
+  } else if (isNepseOpen.isOpen === "OPEN" || isNepseOpen.isOpen === "Pre Open") {
+    nepseLogger.info(`Nepse is open using Local Node server.`);
+    await saveToCache("isMarketOpen", true);
+
+    //remove below code later
+  } else {
     try {
-      const primaryResponse = await axios.get(NEPSE_API_URL1 + "/IsNepseOpen");
-      return await handleisNepseOpenResponse(primaryResponse, NEPSE_API_URL1);
+      const initialResponse = await axios.get(NEPSE_ACTIVE_API_URL + "/IsNepseOpen");
+      return await handleisNepseOpenResponse(initialResponse, NEPSE_ACTIVE_API_URL);
     } catch (error) {
       nepseLogger.error(
-        `Error fetching Nepse status from primary URL: ${error.message}`
+        `Error fetching Nepse status from Active URL: ${error.message}`
       );
       try {
-        const backupResponse = await axios.get(NEPSE_API_URL2 + "/IsNepseOpen");
-        return await handleisNepseOpenResponse(backupResponse, NEPSE_API_URL2);
-      } catch (errorBackup) {
+        const primaryResponse = await axios.get(NEPSE_API_URL1 + "/IsNepseOpen");
+        return await handleisNepseOpenResponse(primaryResponse, NEPSE_API_URL1);
+      } catch (error) {
         nepseLogger.error(
-          `Error fetching Nepse status from backuo URL: ${errorBackup.message}`
+          `Error fetching Nepse status from primary URL: ${error.message}`
         );
-        return false;
+        try {
+          const backupResponse = await axios.get(NEPSE_API_URL2 + "/IsNepseOpen");
+          return await handleisNepseOpenResponse(backupResponse, NEPSE_API_URL2);
+        } catch (errorBackup) {
+          nepseLogger.error(
+            `Error fetching Nepse status from backuo URL: ${errorBackup.message}`
+          );
+          return false;
+        }
       }
     }
   }
+
 }
 
 async function handleisNepseOpenResponse(response, apiUrl) {
@@ -118,7 +136,7 @@ async function wipeCachesAndRefreshData() {
 
     let newIndexData = await getIndexIntraday(true);
     if (newIndexData) {
-      notifyRoomClients('news', { type: "index", data: newIndexData });
+      notifyRoomClients('asset', { type: "index", data: newIndexData });
     }
 
     //send the updated portfolio to those who subscribed to live portfolio using websocket

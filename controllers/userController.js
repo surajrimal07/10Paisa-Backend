@@ -5,7 +5,7 @@ import { forgetPassword } from '../controllers/otpControllers.js';
 import Portfolio from '../models/portfolioModel.js';
 import User from '../models/userModel.js';
 import Watchlist from '../models/watchlistModel.js';
-import { notifySelectedClients } from '../server/websocket.js';
+import { notifyRoomClients } from '../server/websocket.js';
 import { LDAcheck, NameorEmailinPassword, validateEmail, validateName, validatePassword, validatePhoneNumber } from '../utils/dataValidation_utils.js';
 import { encryptData } from '../utils/encryption.js';
 import globalVariables from '../utils/globalVariables.js';
@@ -163,6 +163,7 @@ export const createUser = async (req, res) => {
 
     let userData = await User.findOne({ email: emailLowercase }).populate('portfolio').then(user => formatUserData(user));
 
+    // eslint-disable-next-line no-undef
     const token = jwt.sign({ email: emailLowercase }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRY_TIME });
 
     userData.token = await encryptData(token);
@@ -192,6 +193,7 @@ export const loginUser = async (req, res) => {
       failedLoginAttempts = {};
     }
 
+    // eslint-disable-next-line no-undef
     if (failedLoginAttempts[email] && failedLoginAttempts[email].attempts >= process.env.MAX_LOGIN_ATTEMPTS) {
       const cooldownTimeRemaining = failedLoginAttempts[email].cooldownUntil - Date.now();
 
@@ -209,6 +211,7 @@ export const loginUser = async (req, res) => {
     if (!user || !(await bcrypt.compare(password, user.password))) {
 
       if (!failedLoginAttempts[email]) {
+        // eslint-disable-next-line no-undef
         failedLoginAttempts[email] = { attempts: 1, cooldownUntil: Date.now() + parseInt(process.env.COOLDOWN_TIME, 10) };
       } else {
         failedLoginAttempts[email].attempts++;
@@ -224,11 +227,12 @@ export const loginUser = async (req, res) => {
 
       const isExpired = user.isPasswordExpired();
       if (isExpired) {
-        notifyClients({ type: 'notification', title: 'Password Expired', description: "Your password is expired, please change soon", image: user.dpImage, url: "https://10paisa.com" });
+        notifyRoomClients('profile', { type: 'notification', title: 'Password Expired', description: "Your password is expired, please change soon", image: user.dpImage, url: "https://10paisa.com" }, email);
       }
 
       let userData = await formatUserData(user);
 
+      // eslint-disable-next-line no-undef
       const token = jwt.sign({ email: email }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRY_TIME });
 
       const encryptedToken = await encryptData(token);
@@ -239,8 +243,8 @@ export const loginUser = async (req, res) => {
 
       req.session.jwtToken = `Bearer ${encryptedToken}`;
 
+      notifyRoomClients('profile', { type: 'notification', title: 'Login', description: "User " + user.name + " logged in", image: user.dpImage, url: "https://10paisa.com" }, email);
 
-      notifySelectedClients(user.email, { type: 'notification', title: 'Login', description: "User " + user.name + " logged in", image: user.dpImage, url: "https://10paisa.com" });
       return respondWithData(res, 'SUCCESS', "Login successful", userData);
     }
   } catch (error) {
@@ -335,6 +339,7 @@ export const updateUser = async (req, res) => {
     let userData = await formatUserData(user);
 
     if (fieldToUpdate === 'email' || fieldToUpdate === 'password') {
+      // eslint-disable-next-line no-undef
       const token = jwt.sign({ email: email }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRY_TIME });
       userData.token = await encryptData(token);
       req.session.userEmail = email;
@@ -391,8 +396,13 @@ export const deleteAccount = async (req, res) => {
 };
 
 export const logoutUser = async (req, res) => {
-  req.session.userEmail = null;
-  return respondWithSuccess(res, 'SUCCESS', "User logged out successfully");
+  req.session.destroy(err => {
+    if (err) {
+      return respondWithError(res, 'ERROR', 'Failed to logout user');
+    }
+    res.clearCookie('tenpaisa.session');
+    return respondWithSuccess(res, 'SUCCESS', 'User logged out successfully');
+  });
 };
 
 //update all at once
@@ -424,6 +434,7 @@ export const updateUserData = async (req, res) => {
     const userData = formatUserData(user);
 
     if (fieldsToUpdate.email || fieldsToUpdate.password) {
+      // eslint-disable-next-line no-undef
       const token = jwt.sign({ email: user.email }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRY_TIME });
       userData.token = await encryptData(token);
       req.session.userEmail = user.email;
@@ -478,6 +489,7 @@ export const updateUserProfilePicture = async (req, res) => {
         );
         user.dpImage = uploadedImage.secure_url;
       } catch (e) {
+        userLogger.error(`Error uploading image: ${e.toString()}`);
         return respondWithError(res, 'INTERNAL_SERVER_ERROR', "Error uploading image");
       }
     }

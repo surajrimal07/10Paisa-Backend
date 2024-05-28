@@ -16,6 +16,7 @@ export async function Database() {
 
   async function attemptConnection() {
     try {
+      // eslint-disable-next-line no-undef
       await mongoose.connect(process.env.DB_URL, clientOptions);
       isConnected = true;
       mainLogger.info(`Connected to the database. ReadyState is: ${mongoose.connection.readyState}`);
@@ -33,6 +34,7 @@ export async function Database() {
       return mongoose.connection;
     } catch (error) {
       reconnect();
+      mainLogger.error(`Error connecting to the database: ${error}`);
     }
   }
 

@@ -14,12 +14,11 @@ export async function sendPeriodicPortfolioData(ws, email) {
   try {
     ws.enableLivePortfolio = true;
     const portfolios = await Portfolio.find({ userEmail: email });
-    if (!Array.isArray(portfolios) || portfolios.portfolios === 0) {
-      notifyClient(ws, 'liveportfolio', []);
-    }
 
-    const data = await addExtraPortfolioData(portfolios);
-    notifyClient(ws, 'liveportfolio', data);
+    if (Array.isArray(portfolios) || portfolios.portfolios !== 0) {
+      const data = await addExtraPortfolioData(portfolios);
+      notifyClient(ws, data);
+    }
 
   } catch (error) {
     portfolioLogger.error(`Error sending periodic portfolio data: ${error.message}`);
@@ -161,6 +160,7 @@ const isStockExists = async (symbol) => {
     const symbols = await fetchAvailableNepseSymbol(true);
     return symbols.some(existingSymbol => existingSymbol === symbol);
   } catch (error) {
+    portfolioLogger.error(`Error checking if stock exists: ${error.message}`);
     return false;
   }
 };
@@ -250,6 +250,7 @@ export const renamePortfolio = async (req, res) => {
     return respondWithSuccess(res, 'SUCCESS', "Portfolio renamed successfully");
 
   } catch (error) {
+    portfolioLogger.error(`Error renaming portfolio: ${error.message}`);
     return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'An error occurred while renaming portfolio');
   }
 };
@@ -340,6 +341,7 @@ export const removeStockFromPortfolio = async (req, res) => {
       UserData.save(),
     ]);
 
+    //fix lint error later
     const updatedPortfolios = userPortfolios.map(portfolio =>
       portfolio._id.toString() === existingPortfolio._id.toString() ? existingPortfolio : portfolio
     );
@@ -364,6 +366,7 @@ export const getAllPortfoliosForUser = async (req, res) => {
     const data = await addExtraPortfolioData(portfolios);
     return respondWithData(res, 'SUCCESS', 'Portfolios fetched successfully', data);
   } catch (error) {
+    portfolioLogger.error(`Error fetching portfolios: ${error.message}`);
     return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'An error occurred while fetching portfolios');
   }
 };

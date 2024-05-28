@@ -261,7 +261,7 @@ export const addExtraPortfolioData = async (portfolios) => {
         // Filter out portfolios without stocks and process only valid portfolios
         const validPortfolios = portfolios.filter(portfolio => {
             if (!Array.isArray(portfolio.stocks) || portfolio.stocks.length === 0) {
-                portfolioLogger.warn(`Skipping portfolio "${portfolio.name}" as it has no stocks.`);
+                //portfolioLogger.warn(`Skipping portfolio "${portfolio.name}" as it has no stocks.`);
                 return false; // Exclude portfolio with no stocks
             }
 
@@ -357,7 +357,7 @@ export const addExtraPortfolioData = async (portfolios) => {
 
         return formPortfolios;
     } catch (error) {
-        console.error
+        portfolioLogger.error(`Error adding extra portfolio data: ${error.message}`);
     }
 };
 

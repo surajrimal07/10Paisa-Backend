@@ -15,7 +15,6 @@ export const authGuard = async (req, res, next) => {
 
     //check if jwt token matches the one in session
     if (authHeader !== authHeaderInSession) {
-        console.log(authHeader, authHeaderInSession);
         userLogger.error(`Token mismatch`);
         return res.status(416).json({ error: 'Token mismatch, please login again or pass correct token' });
     }
@@ -31,6 +30,7 @@ export const authGuard = async (req, res, next) => {
     const decryptedToken = await decryptData(token);
 
     try {
+        // eslint-disable-next-line no-undef
         const decoded = jwt.verify(decryptedToken, process.env.JWT_SECRET);
 
         if (decoded.exp && decoded.exp < Date.now() / 1000) {
@@ -84,6 +84,7 @@ export const authGuardAdmin = async (req, res, next) => {
     const decryptedToken = await decryptData(token);
 
     try {
+        // eslint-disable-next-line no-undef
         const decoded = jwt.verify(decryptedToken, process.env.JWT_SECRET);
 
         if (decoded.exp && decoded.exp < Date.now() / 1000) {

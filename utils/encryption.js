@@ -1,8 +1,13 @@
+import { Buffer } from 'buffer';
 import crypto from 'crypto';
 
+// eslint-disable-next-line no-undef
 const algorithm = process.env.JWT_SECRET_ALGORITHM
+// eslint-disable-next-line no-undef
 const key = crypto.scryptSync(process.env.JWT_SECRET_ENCRYPTION, 'salt', 16);
-const iv = Buffer.alloc(16, 0); //always generate same iv, this is done to
+const iv = Buffer.alloc(16, 0);
+
+//always generate same iv, this is done to
 //make mongodb query possible, as we need to search for the encrypted data
 
 export async function encryptData(data) {

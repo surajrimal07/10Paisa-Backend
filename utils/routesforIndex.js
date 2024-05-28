@@ -16,7 +16,7 @@ function generateDynamicRoutes(routes) {
   return dynamicRoutes;
 }
 
-async function dynamicRoutes(req, res, next) {
+async function dynamicRoutes(req, res) {
   try {
     const __dirname = path.resolve();
     const htmlFilePath = path.join(__dirname, 'utils', 'index.html');

@@ -8,12 +8,13 @@ export function responseTimeMiddleware(req, res, next) {
 
     const logData = {
       user: req.session.userEmail || 'anonymous',
-      //  sessionID: req.cookies['connect.sid'] || 'no session', spams the logs
+      //  sessionID: req.cookies['connect.sid'] || 'no session', spams the logs //tenpaisa.session
       method: req.method,
       url: req.originalUrl,
       statusCode: res.statusCode,
       responseTime: `${responseTime} ms`,
       clientIP: req.ip,
+      // eslint-disable-next-line no-undef
       environment: process.env.NODE_ENV || 'development',
     };
 

@@ -29,6 +29,7 @@
     "express-rate-limit": "^7.2.0",
     "express-session": "^1.18.0",
     "helmet": "^7.1.0",
+    "hpp-prevent": "^2.0.0",
     "jsdom": "^24.1.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.4.0",
@@ -42,11 +43,18 @@
     "rate-limit-redis": "^4.2.0",
     "redis": "^4.6.14",
     "simple-in-memory-cache": "^0.3.1",
-    "supertest": "^7.0.0",
+    "svg-captcha": "^1.4.0",
     "uuid": "^9.0.1",
+    "webassemblyjs": "^1.12.1",
     "winston": "^3.13.0",
     "winston-mongodb": "github:Bharat94389/winston-mongodb#master",
     "ws": "^8.17.0",
     "xml2js": "^0.6.2"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.3.0",
+    "eslint": "^9.3.0",
+    "eslint-config-prettier": "^9.1.0",
+    "globals": "^15.3.0"
   }
 }

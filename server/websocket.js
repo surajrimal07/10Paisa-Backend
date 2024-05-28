@@ -516,50 +516,54 @@
 
 
 
-import bcrypt from 'bcrypt';
-import RedisStore from "connect-redis";
 import express from 'express';
-import session from 'express-session';
 import { createServer } from 'http';
 import https from 'https';
-import { v4 as uuidv4 } from 'uuid';
+import jwt from 'jsonwebtoken';
 import WebSocket, { WebSocketServer } from 'ws';
 import httpsOptions from '../certificate/httpOptions.js';
-import { fetchFromCache, saveToCache } from '../controllers/savefetchCache.js';
+import { sendPeriodicPortfolioData } from '../controllers/portfolioControllers.js';
+import { fetchFromCache } from '../controllers/savefetchCache.js';
 import User from '../models/userModel.js';
+import { decryptData } from '../utils/encryption.js';
 import { socketLogger } from '../utils/logger/logger.js';
 import { fetchNews } from './newsserver.js';
-import { redisclient } from "./redisServer.js";
 
 let wss;
 let server;
 const connectedClients = new Map();
-const rooms = { asset: [], news: [], userdata: [], others: [] };
+const rooms = { asset: [], news: [], portfolio: [], profile: [], others: [] };
+let useremail = null;
 
+//sample url
+//wss://localhost:8081/?room=portfolio&jwt=string:0d4bdd8c8dd5469a1a7eb165637d3cfd9a02f61e67e071e1e4a7172ac412673bbb6c9fe2d2bcea536c186db25b4361f5280718f4c5b11c3ad7d25923eec3222dc549b359f8c2b1c07d37385b2bc98dba1c8a6f4a9bdce09f1847933c9e5c78a455ab023c68e6db650a9f1d560eda503d281a63f28e2700df271ba3553d93438cb277c7d49dc901e06df90de45493abd567e39cd7f60b954bc88c832ba2a71ff10565494de0c37ad983
 
 export function createWebSocketServer() {
   const app = express();
 
-  app.use(session({
-    genid: function () {
-      return uuidv4()
-    },
-    secret: process.env.SESSION_SECRET,
-    resave: false,
-    proxy: true,
-    saveUninitialized: true,
-    store: new RedisStore({ client: redisclient }),
-    cookie: {
-      httpsOnly: true,
-      secure: true,
-      sameSite: true,
-      maxAge: 10 * 24 * 60 * 60 * 1000
-    },
-  }));
+  //switching to jwt instead id and pass
+
+  // app.use(session({
+  //   genid: function () {
+  //     return uuidv4()
+  //   },
+  //   secret: process.env.SESSION_SECRET,
+  //   resave: false,
+  //   proxy: true,
+  //   saveUninitialized: true,
+  //   store: new RedisStore({ client: redisclient }),
+  //   cookie: {
+  //     httpsOnly: true,
+  //     secure: true,
+  //     sameSite: true,
+  //     maxAge: 10 * 24 * 60 * 60 * 1000
+  //   },
+  // }));
 
   if (!wss) {
+    // eslint-disable-next-line no-undef
     const isDevelopment = process.env.NODE_ENV == 'development';
-    let protocol = 'http'; //just in case
+    let protocol = 'http';
 
     if (isDevelopment) {
       server = https.createServer(httpsOptions, app);
@@ -573,91 +577,158 @@ export function createWebSocketServer() {
 
     wss.on('connection', async function connection(ws, req) {
       const { searchParams } = new URL(req.url, `${protocol}://${req.headers.host}`);
-      const useremail = searchParams.get('email');
-      const password = searchParams.get('password');
       const room = searchParams.get('room');
+      const jwtToken = searchParams.get('jwt');
 
       //checking if id and pass is empty or not
-      if (!useremail || !password) {
-        socketLogger.info("Web socket request failed : Email and Password required")
-        ws.send(JSON.stringify({ error: 'Email and Password required' }));
+      // if (!useremail || !password) {
+      //   socketLogger.info("Web socket request failed : Email and Password required")
+      //   ws.send(JSON.stringify({ error: 'Email and Password required' }));
+      //   ws.close();
+      //   return;
+      // }
+
+      //checking if jwt is empty or not
+      if (!jwt) {
+        socketLogger.info("Web socket request failed : JWT required")
+        ws.send(JSON.stringify({ error: 'JWT required' }));
+        ws.close();
+        return;
+      }
+
+      try {
+        const decryptedToken = await decryptData(jwtToken);
+        // eslint-disable-next-line no-undef
+        const decoded = jwt.verify(decryptedToken, process.env.JWT_SECRET);
+
+        if (decoded.exp && decoded.exp < Date.now() / 1000) {
+          socketLogger.error("User Token has expired");
+          ws.send(JSON.stringify({ error: 'Token has expired' }));
+          ws.close();
+        }
+
+        const user = await User.findOne({ email: decoded.email }, { LastPasswordChangeDate: 1 });
+        if (Math.floor(user.LastPasswordChangeDate.getTime() / 1000) > decoded.iat || !user) {
+          socketLogger.error("Token is invalid/expired or user not found");
+          ws.send(JSON.stringify({ error: 'Token is invalid/expired or user not found' }));
+          ws.close();
+        }
+
+        useremail = decoded.email;
+
+      } catch (error) {
+        console.log(error);
+        socketLogger.info("Invalid JWT token");
+        ws.send(JSON.stringify({ error: 'Invalid JWT token' }));
         ws.close();
         return;
       }
 
       // Validate room
-      if (!rooms[room]) {
+      // if (!rooms[room]) {
+      //   socketLogger.info("Invalid room specified");
+      //   ws.send(JSON.stringify({ error: 'Invalid room specified' }));
+      //   ws.close();
+      //   return;
+      // }
+
+      if (!['asset', 'news', 'portfolio', 'profile', 'others'].includes(room)) {
         socketLogger.info("Invalid room specified");
         ws.send(JSON.stringify({ error: 'Invalid room specified' }));
         ws.close();
         return;
       }
 
-      rooms[room].push(ws);
+      // rooms[room].push(ws);
 
       //protecting from brute force attack
-      let failedLoginAttempts = await fetchFromCache(`failedSocketLoginAttempts:${useremail}`);
+      // let failedLoginAttempts = await fetchFromCache(`failedSocketLoginAttempts:${useremail}`);
 
-      if (!failedLoginAttempts) {
-        failedLoginAttempts = {};
-      }
+      // if (!failedLoginAttempts) {
+      //   failedLoginAttempts = {};
+      // }
 
-      if (failedLoginAttempts[useremail] && failedLoginAttempts[useremail].attempts >= process.env.MAX_LOGIN_ATTEMPTS) {
-        const cooldownTimeRemaining = failedLoginAttempts[useremail].cooldownUntil - Date.now();
+      // if (failedLoginAttempts[useremail] && failedLoginAttempts[useremail].attempts >= process.env.MAX_LOGIN_ATTEMPTS) {
+      //   const cooldownTimeRemaining = failedLoginAttempts[useremail].cooldownUntil - Date.now();
 
-        if (cooldownTimeRemaining > 0) {
-          const minutesRemaining = Math.ceil(cooldownTimeRemaining / (60 * 1000));
-          socketLogger.error(`Too many socket login attempts of ${useremail}. Please try again in ${minutesRemaining} minutes.`);
-          ws.send(JSON.stringify({ error: `Too many socket login attempts. Please try again in ${minutesRemaining} minutes.` }));
-          ws.close();
-          return;
-        } else {
-          delete failedLoginAttempts[useremail].attempts;
-        }
-      }
+      //   if (cooldownTimeRemaining > 0) {
+      //     const minutesRemaining = Math.ceil(cooldownTimeRemaining / (60 * 1000));
+      //     socketLogger.error(`Too many socket login attempts of ${useremail}. Please try again in ${minutesRemaining} minutes.`);
+      //     ws.send(JSON.stringify({ error: `Too many socket login attempts. Please try again in ${minutesRemaining} minutes.` }));
+      //     ws.close();
+      //     return;
+      //   } else {
+      //     delete failedLoginAttempts[useremail].attempts;
+      //   }
+      // }
 
-      // Verify user credentials
-      const user = await User.findOne({ email: useremail });
-      if (!user || !(await bcrypt.compare(password, user.password))) {
+      // // Verify user credentials
+      // const user = await User.findOne({ email: useremail });
+      // if (!user || !(await bcrypt.compare(password, user.password))) {
 
-        if (!failedLoginAttempts[useremail]) {
-          failedLoginAttempts[useremail] = { attempts: 1, cooldownUntil: Date.now() + parseInt(process.env.COOLDOWN_TIME, 10) };
-        } else {
-          failedLoginAttempts[useremail].attempts++;
-        }
-        await saveToCache(`failedSocketLoginAttempts:${useremail}`, failedLoginAttempts);
+      //   if (!failedLoginAttempts[useremail]) {
+      //     failedLoginAttempts[useremail] = { attempts: 1, cooldownUntil: Date.now() + parseInt(process.env.COOLDOWN_TIME, 10) };
+      //   } else {
+      //     failedLoginAttempts[useremail].attempts++;
+      //   }
+      //   await saveToCache(`failedSocketLoginAttempts:${useremail}`, failedLoginAttempts);
 
-        socketLogger.info(`User not found or Invalid credentials: ${useremail}`);
-        ws.send(JSON.stringify({ error: 'User not found or Invalid credentials' }));
-        ws.close();
-      }
-      // else {  //spam jasto vayo
-      //   await deleteFromCache(`failedSocketLoginAttempts:${useremail}`);
-      //   ws.send(JSON.stringify({ info: 'Connected successfully' }));
+      //   socketLogger.info(`User not found or Invalid credentials: ${useremail}`);
+      //   ws.send(JSON.stringify({ error: 'User not found or Invalid credentials' }));
+      //   ws.close();
       // }
 
       if (!connectedClients.has(useremail)) {
         connectedClients.set(useremail, []);
       }
 
+      // Add client to the rooms object
+      if (!rooms[room]) {
+        rooms[room] = []; // Initialize the array for the room
+      }
+      rooms[room].push(ws); // Add the WebSocket connection to the room
+
       connectedClients.get(useremail).push(ws);
 
       socketLogger.info(`New Client ${useremail} connected in room ${room}, Total Connected clients: ${connectedClients.size}`);
+
+
+      //by default if a user joins a portfolio room then it will enable live portfolio
+      if (room === 'portfolio') {
+        ws.enableLivePortfolio = true;
+        ws.email = useremail;
+        sendPeriodicPortfolioData(ws, useremail);
+
+        // Clean up when connection is closed
+        ws.on('close', () => {
+          ws.enableLivePortfolio = false;
+          ws.email = '';
+        });
+      }
 
       ws.on('message', function incoming(message) {
         handleMessage(useremail, room, String(message), ws);
       });
 
       ws.on('close', function close() {
-        connectedClients.delete(useremail);
+        const clientConnections = connectedClients.get(useremail);
+        const index = clientConnections.indexOf(ws);
+        if (index > -1) {
+          clientConnections.splice(index, 1);
+        }
+        if (clientConnections.length === 0) {
+          connectedClients.delete(useremail);
+        }
 
         // Remove client from all rooms
-        Object.values(rooms).forEach(roomArray => {
-          const index = roomArray.indexOf(ws);
-          if (index !== -1) {
-            roomArray.splice(index, 1);
+        Object.keys(rooms).forEach(room => {
+          const roomClients = rooms[room];
+          const wsIndex = roomClients.indexOf(ws);
+          if (wsIndex !== -1) {
+            roomClients.splice(wsIndex, 1);
           }
         });
+
         socketLogger.info(`Client ${useremail} disconnected. Total Connected clients: ${connectedClients.size}`);
       });
 
@@ -681,17 +752,17 @@ async function handleMessage(useremail, room, message, ws) {
     case "asset":
       switch (message) {
         case "index":
-          const previousIndexData = await fetchFromCache('previousIndexData');
+          { const previousIndexData = await fetchFromCache('previousIndexData');
           notifyClient(ws, { type: 'index', data: previousIndexData });
-          break;
+          break; }
         case "isMarketOpen":
-          const isMarketOpen = await fetchFromCache('isMarketOpen');
+          { const isMarketOpen = await fetchFromCache('isMarketOpen');
           notifyClient(ws, { type: 'marketOpen', data: isMarketOpen });
-          break;
+          break; }
         case "companylatestdata":
-          const companyLatestData = await fetchFromCache('AssetMergedDataShareSansar');
+          { const companyLatestData = await fetchFromCache('AssetMergedDataShareSansar');
           notifyClient(ws, { type: 'companylatestdata', data: companyLatestData });
-          break;
+          break; }
         default:
           notifyClient(ws, { type: 'asset', data: 'Invalid command passed' });
       }
@@ -700,37 +771,38 @@ async function handleMessage(useremail, room, message, ws) {
     case "news":
       switch (message) {
         case "news":
-          const newsData = await fetchNews(1, 10);
+          { const newsData = await fetchNews(1, 10);
           notifyClient(ws, { type: 'news', data: newsData });
-          break;
+          break; }
         default:
           notifyClient(ws, { type: 'news', data: 'Invalid command passed' });
       }
       break;
-    case "userdata":
+    case "portfolio":
       switch (message) {
-        case "liveportfolio":
-          ws.enableLivePortfolio = true;
-          ws.email = useremail;
-
-          //clean up when connection is closed
-          ws.on('close', () => {
-            ws.enableLivePortfolio = false;
-            ws.email = '';
-          });
-
+        case "portfolio":
+          notifyClients({ type: 'portfolio', data: 'Live portfolio is already enabled' });
           break;
         default:
-          notifyClient(ws, { type: 'userdata', data: 'Invalid command passed' });
+          notifyClient(ws, { type: 'portfolio', data: 'Invalid command passed' });
+      }
+      break;
+    case "profile":
+      switch (message) {
+        case "profile":
+          //nothing to do here, this room is just to notify user about profile changes
+          break;
+        default:
+          notifyClient(ws, { type: 'profile', data: 'Invalid command passed' });
       }
       break;
 
     case "others":
       switch (message) {
         case "others":
-          const otherData = await fetchFromCache('otherData');
+          { const otherData = await fetchFromCache('otherData');
           notifyClient(ws, { type: 'others', data: otherData });
-          break;
+          break; }
       }
       break;
 
@@ -740,22 +812,40 @@ async function handleMessage(useremail, room, message, ws) {
 }
 
 //notify clients in a specific room
-export function notifyRoomClients(room, message) {
+//optional params email
+//send in this room to this email client
+export function notifyRoomClients(room, message, email = null) {
   if (!rooms[room]) {
     socketLogger.info(`Room ${room} does not exist.`);
     return;
   }
 
   const clientsInRoom = rooms[room];
-  console.log(`Clients in room ${room}: ${clientsInRoom.length}`);
-  clientsInRoom.forEach(client => {
-    if (client.readyState === WebSocket.OPEN) {
-      const messageString = JSON.stringify(message);
-      client.send(messageString);
-    }
-  });
-}
 
+  if (email) {
+    const clientConnections = connectedClients.get(email) || [];
+    const clientsInRoomWithEmail = clientConnections.filter(ws => clientsInRoom.includes(ws));
+
+    if (clientsInRoomWithEmail.length > 0) {
+      console.log(`Client with email ${email} found in room ${room}.`);
+      clientsInRoomWithEmail.forEach(ws => {
+        if (ws.readyState === WebSocket.OPEN) {
+          const messageString = JSON.stringify(message);
+          ws.send(messageString);
+        }
+      });
+    } else {
+      socketLogger.info(`Client with email ${email} not found in room ${room}.`);
+    }
+  } else {
+    clientsInRoom.forEach(ws => {
+      if (ws.readyState === WebSocket.OPEN) {
+        const messageString = JSON.stringify(message);
+        ws.send(messageString);
+      }
+    });
+  }
+}
 // notify a specific client based on WebSocket connection (ws)
 export function notifyClient(ws, message) {
   if (ws.readyState === WebSocket.OPEN) {
@@ -765,6 +855,9 @@ export function notifyClient(ws, message) {
     socketLogger.info("Client state is not OPEN.");
   }
 }
+
+//has flaw, a client can be in multiple rooms
+//so notifying clients even in not related room is annoying
 
 //notify selected clients based on email
 export function notifySelectedClients(useremail, message) {

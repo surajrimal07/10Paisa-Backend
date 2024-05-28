@@ -24,7 +24,6 @@ async function isDuplicateArticle(uniqueKey) {
 }
 
 function NotifyClients(data) {
-  console.log('Notifying clients news');
   notifyRoomClients('news',
     {
       type: 'news',
@@ -338,7 +337,7 @@ export async function fetchNews(page = 1, limit = 100, source = null, keyword = 
     const result = await newsModel.paginate(query, options);
     return result.docs;
   } catch (error) {
-    throw new Error('Error fetching news data');
+    newsLogger.error('Error fetching news:', error);
   }
 }
 

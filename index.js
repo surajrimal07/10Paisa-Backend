@@ -1,5 +1,5 @@
 //package imports
-import bodyParser from "body-parser";
+//import bodyParser from "body-parser";
 import { v2 as cloudinary } from "cloudinary";
 import multipart from "connect-multiparty";
 import cors from "cors";
@@ -17,6 +17,7 @@ import https from "https";
 import { clean } from "perfect-express-sanitizer";
 import { RedisStore as RateLimitRedisStore } from 'rate-limit-redis';
 import { v4 as uuidv4 } from 'uuid';
+import hppPrevent from 'hpp-prevent';
 
 
 //file imports
@@ -37,6 +38,7 @@ app.use(helmet());
 //app.use(cookieParser())
 
 //conect to redis earliy
+// eslint-disable-next-line no-undef
 const useRedis = process.env.USEREDIS;
 if (useRedis == "true") {
   await redisclient.connect();
@@ -60,6 +62,8 @@ app.use(session({
   genid: function () {
     return uuidv4()
   },
+  name: "tenpaisa.session",
+  // eslint-disable-next-line no-undef
   secret: process.env.SESSION_SECRET,
   resave: false,
   proxy: true,
@@ -69,7 +73,8 @@ app.use(session({
     httpsOnly: true,
     secure: true,
     sameSite: true,
-    maxAge: 10 * 24 * 60 * 60 * 1000
+    maxAge: 10 * 24 * 60 * 60 * 1000,
+    priority: 'High'
   },
 }));
 
@@ -86,13 +91,21 @@ app.use(
 );
 
 
+// eslint-disable-next-line no-undef
 const port = process.env.PORT || 4000;
+// eslint-disable-next-line no-undef
 const isDevelopment = process.env.NODE_ENV == "development";
 
 // Use express.json() middleware to parse JSON bodies
 app.use(express.json());
 
-app.use(bodyParser.urlencoded({ extended: true }));
+app.use(express.urlencoded({ extended: true, limit: "1kb" })); //limiting the size of the body to 1kb
+//app.use(hppPrevent.hppPrevent); //Use hpp middleware to prevent HTTP Parameter Pollution attacks
+
+app.use(hppPrevent.hppPrevent({
+  takeLastOcurrences: true,
+  deepSearch: true
+}));
 
 //Use perfect-express-sanitizer middleware to sanitize user input
 const whiteList = ["/api/user/updateprofilepic"]; //for some reason files are not being uploaded
@@ -145,8 +158,11 @@ Database();
 
 //cloudnary config
 cloudinary.config({
+  // eslint-disable-next-line no-undef
   cloud_name: process.env.CLOUD_NAME,
+  // eslint-disable-next-line no-undef
   api_key: process.env.API_KEY,
+  // eslint-disable-next-line no-undef
   api_secret: process.env.API_SECRET,
 });
 
@@ -168,7 +184,7 @@ if (isDevelopment) {
 //rate limiting middleware // 100 requests per 15 minutes
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  limit: 200,
+  limit: 100,
   standardHeaders: 'draft-7',
   legacyHeaders: false,
   message: 'Too many requests, please try again later.',
@@ -199,7 +215,7 @@ app.get("/ping", (req, res) => {
 // });
 
 //error handling
-app.use((req, res, next) => {
+app.use((req, res) => {
   res.status(404).json({ error: 'Not Found', message: 'The requested resource was not found on this server.' });
 });
 

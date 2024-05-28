@@ -2,6 +2,7 @@ import User from '../models/userModel.js';
 import * as otpService from '../services/otpServices.js';
 import { respondWithError } from '../utils/response_utils.js';
 
+// eslint-disable-next-line no-unused-vars
 export const sendOTP = async (req, res, next) => {
 
 const email = req.body.email;
@@ -33,6 +34,7 @@ if (!user) {
  }
 }
 
+// eslint-disable-next-line no-unused-vars
 export const verifyOTP = (req, res, next) => {
 
     if (!req.body.email || !req.body.otp || !req.body.hash) {

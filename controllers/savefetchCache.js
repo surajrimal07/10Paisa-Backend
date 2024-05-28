@@ -3,9 +3,12 @@ import { createCache } from 'simple-in-memory-cache';
 import { deleteFromRedis, fetchFromRedis, saveToRedis } from '../server/redisServer.js';
 import { mainLogger } from '../utils/logger/logger.js';
 
+// eslint-disable-next-line no-undef
 const isDevelopment = process.env.NODE_ENV == "development";
 const { set, get } = createCache({ defaultSecondsUntilExpiration: Infinity });
+// eslint-disable-next-line no-undef
 const useRedis = process.env.USEREDIS
+// eslint-disable-next-line no-undef
 const inMemory = process.env.INMEMORYCACHE
 
 export const fetchFromCache = async (cacheKey) => {
