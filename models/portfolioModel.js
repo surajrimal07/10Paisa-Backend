@@ -43,8 +43,13 @@ const StockToPortfolio = new mongoose.Schema({
     default: function () {
         return Math.floor(Date.now() / 1000);
     }
-}
-
+},
+    netgainlossPercent: {
+    type: Number,
+    default: function () {
+        return ((this.currentprice - this.costprice) / this.costprice * 100).toFixed(2);
+    }
+    }
 });
 
 const portfolioSchema = new mongoose.Schema({

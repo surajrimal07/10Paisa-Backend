@@ -273,6 +273,8 @@ export const addExtraPortfolioData = async (portfolios) => {
                     stock.name = assetLTP.name;
                     stock.currentprice = (assetLTP.ltp * stock.quantity).toFixed(2);
                     stock.netgainloss = (stock.currentprice - stock.costprice).toFixed(2);
+                    stock.netgainlossPercent = ((stock.netgainloss / stock.costprice) * 100).toFixed(2);
+
                 } else {
                     const stockIndexData = asset['stockIndexData'];
                     for (const key in stockIndexData) {
@@ -290,6 +292,7 @@ export const addExtraPortfolioData = async (portfolios) => {
                     stock.name = assetLTP.name || 'N/A';
                     stock.currentprice = (assetLTP.index * stock.quantity).toFixed(2);
                     stock.netgainloss = (stock.currentprice - stock.costprice).toFixed(2);
+                    stock.netgainlossPercent = ((stock.netgainloss / stock.costprice) * 100).toFixed(2);
                 }
             });
 

@@ -26,8 +26,6 @@ export async function sendPeriodicPortfolioData(ws, email) {
 }
 
 
-
-
 export const createPortfolio = async (req, res) => {
   try {
     const userEmail = req.session.userEmail;
@@ -115,6 +113,7 @@ export const addStockToPortfolio = async (req, res) => {
       existingStock.ltp = ltp;
       existingStock.quantity += quantity;
       existingStock.wacc = (newCostPrice / totalShares).toFixed(2);
+
       existingStock.time = time;
     } else {
       const ltp = await getLTPForStock(symbol);
@@ -262,14 +261,14 @@ export const removeStockFromPortfolio = async (req, res) => {
   const email = req.session.userEmail;
   const { id, quantity, symbol, price } = req.body;
 
-  if (!id || !quantity || !symbol || !price) {
-    return respondWithError(res, 'BAD_REQUEST', 'Email, id, symbol, price and quantity are required')
+  if (!id || !quantity || !symbol || !price || quantity == 0 || price == 0) {
+    return respondWithError(res, 'BAD_REQUEST', 'please check the input values')
   };
 
   try {
     portfolioLogger.info(`Remove Stock from Portfolio Requested by ${email}`);
     const symbolUpper = String(symbol).toUpperCase();
-    const time = req.body.time ? Number(time) : Math.floor(Date.now() / 1000);
+    const time = req.body.time ? Number(req.body.time) : Math.floor(Date.now() / 1000);
 
     const [userPortfolios, UserData, stockExists] = await Promise.all([
       Portfolio.find({ userEmail: email }),
@@ -301,38 +300,24 @@ export const removeStockFromPortfolio = async (req, res) => {
 
       //if we are short selling then we have add the amount to user account
       UserData.userAmount += (quantity * price);
-
     } else {
       const existingQuantity = portfolio.stocks[stockIndex].quantity;
-      console.log(`Existing Quantity: ${existingQuantity} and Quantity to sell: ${quantity}`);
-
 
       if (quantity > existingQuantity) {
-        // Short sell the extra quantity
-        portfolio.stocks[stockIndex].quantity -= quantity; // This will make the quantity negative indicating a short sell
+        portfolio.stocks[stockIndex].quantity -= quantity;
         if (portfolio.stocks[stockIndex].quantity === 0) {
           portfolio.stocks.splice(stockIndex, 1);
         }
-        //if the sell amount is > then existing amount
-        //then for those remaning quantity we have to add the amount to user account
         UserData.userAmount += ((quantity - existingQuantity) * price);
-
+      } else if (quantity === existingQuantity) {
+        portfolio.stocks.splice(stockIndex, 1);
+        UserData.userAmount += (quantity * price);
       } else {
-        //if sell quantity is same as existing quantity
-        //then we have to add the amount to user account of total sales
-        if (quantity === existingQuantity) {
+        portfolio.stocks[stockIndex].quantity -= quantity;
+        if (portfolio.stocks[stockIndex].quantity === 0) {
           portfolio.stocks.splice(stockIndex, 1);
-          UserData.userAmount += (quantity * price);
-        } else {
-          //if sell quantity is less than existing quantity
-          //then we have to add the amount to user account of total quantity sales
-
-          portfolio.stocks[stockIndex].quantity -= quantity;
-          // if (portfolio.stocks[stockIndex].quantity === 0) {
-          //   portfolio.stocks.splice(stockIndex, 1);
-          // }
-          UserData.userAmount += (quantity * price);
         }
+        UserData.userAmount += (quantity * price);
       }
     }
 
@@ -341,9 +326,9 @@ export const removeStockFromPortfolio = async (req, res) => {
       UserData.save(),
     ]);
 
-    //fix lint error later
-    const updatedPortfolios = userPortfolios.map(portfolio =>
-      portfolio._id.toString() === existingPortfolio._id.toString() ? existingPortfolio : portfolio
+    //fix this code, this below code should update the portfolio array in memory rather than fetching from db again
+    const updatedPortfolios = userPortfolios.map(p =>
+      p._id.toString() === portfolio._id.toString() ? portfolio : p
     );
 
     const data = await addExtraPortfolioData(updatedPortfolios);

@@ -173,7 +173,8 @@ export default async function initializeRefreshMechanism() {
         isNepseOpenPrevious = isNepseOpenNow; // Update previous state
       }
 
-      if (isNepseOpenNow || closeCounter > 0) {
+      if (isNepseOpenNow || closeCounter >= 0) {
+        console.log(`Nepse is open now. Close counter: ${closeCounter}`)
         await wipeCachesAndRefreshData(); // Refresh data if Nepse is currently open
         if (!isNepseOpenNow) {
           closeCounter--; // Decrease the counter if Nepse is closed

@@ -1,6 +1,7 @@
 import bcrypt from 'bcrypt';
 import { v2 as cloudinary } from 'cloudinary';
 import { forgetPassword } from '../controllers/otpControllers.js';
+import { addExtraPortfolioData } from '../models/portfolioExtraCalculations.js';
 import Portfolio from '../models/portfolioModel.js';
 import User from '../models/userModel.js';
 import Watchlist from '../models/watchlistModel.js';
@@ -231,15 +232,6 @@ export const loginUser = async (req, res) => {
       let userData = await formatUserData(user);
 
       await signJWTandEncrypt(userData, email, req, res)
-      // const token = jwt.sign({ email: email }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRY_TIME });
-
-      // const encryptedToken = await encryptData(token);
-
-      // userData.token = encryptedToken;
-
-      // req.session.userEmail = email;
-
-      // req.session.jwtToken = `Bearer ${encryptedToken}`;
 
       notifyRoomClients('profile', { type: 'notification', title: 'Login', description: "User " + user.name + " logged in", image: user.dpImage, url: "https://10paisa.com" }, email);
 
@@ -342,11 +334,6 @@ export const updateUser = async (req, res) => {
 
     if (fieldToUpdate === 'email' || fieldToUpdate === 'password') {
       await signJWTandEncrypt(userData, email, req, res)
-      // const token = await encryptData(jwt.sign({ email: email }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRY_TIME }));
-
-      // userData.token = token;
-      // req.session.userEmail = email;
-      // req.session.jwtToken = `Bearer ${token}`;
     }
 
     return respondWithData(res, 'SUCCESS', fieldToUpdate + " updated successfully", userData);
@@ -368,6 +355,9 @@ export const verifyUser = async (req, res) => {
     if (!user) {
       return respondWithError(res, 'UNAUTHORIZED', "Invalid email.");
     }
+
+    await addExtraPortfolioData(user.portfolio);
+
     return respondWithData(res, 'SUCCESS', "User Verified", user);
 
   } catch (error) {
