@@ -269,7 +269,6 @@ async function startFetchingRSS(url, source) {
     if (error.response && error.response.status === 403) {
       newsLogger.error(`Error fetching news on : ${source} : Sarping is blocked by the server`);
     }
-    console.log(error);
     newsLogger.error(`Error fetching news data: ${url} : ${error}`);
   }
 }
