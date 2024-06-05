@@ -4,6 +4,7 @@
 import https from 'https';
 import allCompanies from "./all_companies.js";
 import TokenManager from "./token_manager.js";
+import { mainLogger } from '../../utils/logger/mainlogger.js';
 
 
 process.emitWarning = (warning) => {
@@ -34,7 +35,6 @@ async function initializeTokenManager() {
     accessToken = tokenManagerInstance.accessToken;
     refreshToken = tokenManagerInstance.refreshToken;
     salts = tokenManagerInstance.salts;
-    console.log("Nepse Token Manager Initialized");
 }
 
 let isTokenManagerInitialized = false;
@@ -54,7 +54,7 @@ async function getHeaders() {
     if (!isTokenManagerInitialized) {
         await initializeTokenManager();
         isTokenManagerInitialized = true;
-        console.log("Token Manager Initialized");
+        mainLogger.info("Nepse Token Manager Initialized");
 
     }
     const headers = {
@@ -79,16 +79,22 @@ async function getHeaders() {
 const fetchHeaders = await getHeaders();
 
 //tested and working
-const singleFetch = async (url, reqType) => {
+export const singleFetch = async (url, reqType) => {
     const baseURL = "https://www.nepalstock.com";
     const originalValue = process.env.NODE_TLS_REJECT_UNAUTHORIZED;
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 
     if (reqType) {
-        const body = reqType === "APOST" ? (await preparePostRequestIndex()).body : await preparePostRequest();
+        let body = {};
 
-        //const normalPostRequest = await preparePostRequest();
-        //const { body } = await preparePostRequestIndex();
+        if (reqType === "APOST") {
+            body = await preparePostRequestIndex().body;
+        } else if (reqType === "NPOST") {
+            body = await preparePostRequest();
+        } else { //floorsheet
+            body = (await preparePostRequestFloorsheet()).body;
+        }
+
         const res = await fetch(baseURL + url, {
             method: "POST",
             headers: fetchHeaders,
@@ -98,9 +104,10 @@ const singleFetch = async (url, reqType) => {
         });
 
         if (!res.ok || res.status !== 200) {
-            console.log("Error in fetching data", res.status, res.statusText, res.url, res.headers.raw());
+            console.log("Error in fetching data", res.status, res.statusText, res.url);
             return {};
         }
+        console.log("response from nepse single fetch is "+res.json()   );
         return res.json();
     }
 
@@ -158,6 +165,22 @@ export async function preparePostRequestIndex() {
     return { body: JSON.stringify({ "id": postPayloadId }) };
 }
 
+export async function preparePostRequestFloorsheet() {
+    const normalPostRequest = await preparePostRequest();
+    const e = JSON.parse(normalPostRequest); //doubtful //if error then check here
+
+    const day = new Date().getDate();
+
+    const postPayloadId = (
+        e.id +
+        tokenManagerInstance.salts[e.id % 10 < 4 ? 1 : 3] * day -
+        tokenManagerInstance.salts[(e.id % 10 < 4 ? 1 : 3) - 1]
+    );
+
+    return { body: JSON.stringify({ "id": postPayloadId }) };
+
+}
+
 //other top level functions
 //functional
 export async function get_NepseSummary() {
@@ -175,7 +198,7 @@ export async function get_NepseIndex() {
 }
 
 //functional
-export async function get_NepseTopGainer(category = "top-gainer") {
+export async function get_NepseTopData(category = "top-gainer") {
 
     let url = "/api/nots/top-ten/";
 
@@ -291,7 +314,7 @@ export async function get_NepseSecurityList() {
     //   activeStatus: 'A'
     // },
 
-    return await singleFetch("/api/nots/security");
+    return await singleFetch("/api/nots/security?nonDelisted=true");
 }
 
 //functional
@@ -312,27 +335,121 @@ export async function get_NepseCompanySupplyDemand(symbol) {
 }
 
 export async function get_NepseCompanyDetails(symbol = 'NABIL') {
-    //const originalValue = process.env.NODE_TLS_REJECT_UNAUTHORIZED;
-
-    //returns company details full just like CompanyDetails of nepseApi from python
-
     const id = allCompanies[symbol];
-    // process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
-
-    // const { body, headers, httpsAgent } = await preparePostRequest();
-
-    // const res1 = await fetch("https://www.nepalstock.com/api/nots/security/" + id, {
-    //   method: "POST",
-    //   headers: headers,
-    //   agent: httpsAgent,
-    //   body: body
-    // });
-    // const response = res1.ok ? await res1.json() : {};
-    // process.env.NODE_TLS_REJECT_UNAUTHORIZED = originalValue;
-
     return await singleFetch("/api/nots/security/" + id, "NPOST");
 }
 
+export async function get_NepseCompanyDailyGraph(symbol = 'NABIL') {
+    const id = allCompanies[symbol];
+    return await singleFetch("/api/nots/market/graphdata/daily/" + id, "NPOST");
+}
+
+//working, if errors then make sure that day nepse opened
+export async function get_NepsePriceVolumeHistory(business_date = null) {
+    const businessDate = new Date().toISOString().split('T')[0];
+    const business_dates = '2024-05-27'; //this day nepse was open
+    const url = `/api/nots/nepse-data/today-price?size=500&businessDate=${businessDate}`
+    return await singleFetch(url, "FPOST");
+}
 
 
-export default { get_NepseCompanyDetails, get_NepseCompanyPriceVolumeHistory, get_NepseSecurityList, get_ItemDailyIndexGraph, get_NepseSummary, get_NepseIndex, get_NepseTopGainer, get_NepsePriceVolume, get_NepseSubIndices, get_NepseCompanyList, is_NepseOpen };
+//working if errors then make sure that day nepse opened
+export async function get_NepseCompanyFloorsheet(symbol = 'NABIL', business_date = null) {
+    const id = allCompanies[symbol];
+    ///api/nots/security/floorsheet/417?&businessDate=2024-05-28&size=500&sort=contractid,desc
+    const business_dates = '2024-05-27'; //this day nepse was open
+    const businessDate = business_date ? new Date(business_date) : new Date().toISOString().split('T')[0];
+    const url = `/api/nots/security/floorsheet/${id}?&businessDate=${businessDate}&size=500&sort=contractid,desc`;
+
+    return await singleFetch(url, "FPOST");
+}
+
+//working
+export async function get_NepseFloorsheet() {
+    return await singleFetch("/api/nots/nepse-data/floorsheet?&sort=contractId,desc", "FPOST");
+}
+
+export async function get_NepseIndexInfo() {
+
+    // {
+    //     id: 66,
+    //     indexCode: 'MUTUALIND',
+    //     indexName: 'Mutual Fund',
+    //     description: 'All Mutual Fund Index',
+    //     sectorMaster: {
+    //       id: 46,
+    //       sectorDescription: 'Mutual Fund',
+    //       activeStatus: 'A',
+    //       regulatoryBody: 'Nepal Rastra Bank'
+    //     },
+    //     activeStatus: 'A',
+    //     keyIndexFlag: 'N',
+    //     baseYearMarketCapitalization: 16273.3561
+    //   },
+
+    return await singleFetch("/api/nots/index");
+}
+
+//working
+export async function get_NepseMarketCapByDate() {
+
+    // {
+    //     businessDate: '2024-05-27',
+    //     marCap: 3350977.7,
+    //     senMarCap: 1158214.91,
+    //     floatMarCap: 1143578,
+    //     senFloatMarCap: 405404.46
+    //   },
+
+    return await singleFetch("/api/nots/nepse-data/marcapbydate/?");
+}
+
+//working
+export async function get_NepseSectorwiseSummary() { //of today
+
+    // {
+    //     businessDate: '2024-05-27',
+    //     sectorName: 'Commercial Banks',
+    //     turnOverValues: 437289779.2,
+    //     turnOverVolume: 1685881,
+    //     totalTransaction: 7394
+    //   },
+    return await singleFetch("/api/nots/sectorwise");
+}
+
+export async function get_NepseNewsAlerts() {
+    const response = await singleFetch("/api/nots/news/media/news-and-alerts");
+
+    // {
+    //     id: 207695,
+    //     messageBody: 'Adjusted price of SHIVM is&nbsp; Rs.517.29 for 14.25% bonus shares on previous closing price of Rs.591',
+    //     messageTitle: 'Price Adjusted - SHIVM',
+    //     encryptedId: null,
+    //     expiryDate: '2024-01-03',
+    //     filePath: null,
+    //     remarks: '',
+    //     addedDate: '2024-01-03T15:47:14.457',
+    //     modifiedDate: '2024-01-03T15:47:14.457',
+    //     approvedDate: '2024-01-03T15:47:39.627'
+    //   },
+    const filteredResponse = response.map(item => {
+        return {
+            ...item,
+            messageBody: item.messageBody.replace(/<\/?[^>]+(>|$)/g, "")
+        };
+    });
+
+
+    return filteredResponse;
+}
+
+export async function get_NepseCorporateDisclosures() {
+    //clean the message body
+    return await singleFetch("/api/nots/news/companies/disclosure");
+};
+
+export async function get_NepseBrokersDetails() {
+    return await singleFetch("/api/nots/member?&size=null");
+}
+
+export default { singleFetch,get_NepseTopData, get_NepseBrokersDetails, get_NepseCorporateDisclosures, get_NepseNewsAlerts, get_NepseSectorwiseSummary, get_NepseMarketCapByDate, get_NepseIndexInfo, get_NepsePriceVolumeHistory, get_NepseCompanyFloorsheet, get_NepseCompanyDailyGraph, get_NepseCompanyDetails, get_NepseCompanyPriceVolumeHistory, get_NepseSecurityList, get_ItemDailyIndexGraph, get_NepseSummary, get_NepseIndex, get_NepsePriceVolume, get_NepseSubIndices, get_NepseCompanyList, is_NepseOpen };

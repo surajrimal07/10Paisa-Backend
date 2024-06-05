@@ -1,6 +1,10 @@
 import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
 import User from '../models/userModel.js';
 import { LDAcheck, NameorEmailinPassword, validateEmail, validateName, validatePassword, validatePhoneNumber } from '../utils/dataValidation_utils.js';
+import { encryptData } from '../utils/encryption.js';
+import { userLogger } from '../utils/logger/userlogger.js';
+import { respondWithError } from '../utils/response_utils.js';
 
 const formatPortfolioData = (portfolio) => {
     if (Array.isArray(portfolio)) {
@@ -10,7 +14,7 @@ const formatPortfolioData = (portfolio) => {
     }
 };
 
-const formatSinglePortfolio = (portfolio) => {
+const formatSinglePortfolio = (portfolio) => { //old code
     return {
         _id: portfolio._id,
         id: portfolio.id,
@@ -39,8 +43,6 @@ export const formatUserData = async (user) => {
         premium: user.premium,
         defaultport: user.defaultport,
         isAdmin: user.isAdmin,
-        dpImage: user.dpImage,
-        defaultport: user.defaultport,
         userAmount: user.userAmount,
         portfolio: formattedPortfolio,
         wallets: user.wallets,
@@ -65,48 +67,54 @@ export const updateUserField = async (user, fieldToUpdate, valueToUpdate, email)
             user.userAmount = valueToUpdate;
             break;
         case 'password':
-            let password = valueToUpdate;
-            if (typeof password !== 'string') {
-                password = valueToUpdate.toString();
+            {
+                let password = valueToUpdate;
+                if (typeof password !== 'string') {
+                    password = valueToUpdate.toString();
+                }
+
+                const passwordValidationResult = validatePassword(password);
+                if (passwordValidationResult !== true) {
+                    return { error: passwordValidationResult };
+                } else if (!LDAcheck(password)) {
+                    return { error: "Password is too common." };
+                } else if (!NameorEmailinPassword(user.name, email, password)) {
+                    return { error: "Password contains name or email." };
+                }
+
+                const passwordMatch = user.previousPasswords.some((hash) => bcrypt.compareSync(password, hash));
+
+                if (passwordMatch) {
+                    return { error: "Password matches with old password, please use new password" };
+                }
+
+                user.password = password;
+                break;
             }
-
-            const passwordValidationResult = validatePassword(password);
-            if (passwordValidationResult !== true) {
-                return { error: passwordValidationResult };
-            } else if (!LDAcheck(password)) {
-                return { error: "Password is too common." };
-            } else if (!NameorEmailinPassword(user.name, email, password)) {
-                return { error: "Password contains name or email." };
-            }
-
-            const passwordMatch = user.previousPasswords.some((hash) => bcrypt.compareSync(password, hash));
-
-            if (passwordMatch) {
-                return { error: "Password matches with old password, please use new password" };
-            }
-
-            user.password = password;
-            break;
         case 'email':
-            if (!validateEmail(valueToUpdate)) {
-                return { error: "Invalid email format. Please provide a valid email address." };
+            {
+                if (!validateEmail(valueToUpdate)) {
+                    return { error: "Invalid email format. Please provide a valid email address." };
+                }
+                const existingUser = await User.findOne({ email: valueToUpdate.toLowerCase() });
+                if (existingUser) {
+                    return { error: "Email already exists" };
+                }
+                user.email = valueToUpdate;
+                break;
             }
-            const existingUser = await User.findOne({ email: valueToUpdate.toLowerCase() });
-            if (existingUser) {
-                return { error: "Email already exists" };
-            }
-            user.email = valueToUpdate;
-            break;
         case 'phone':
-            if (!validatePhoneNumber(valueToUpdate) || isNaN(valueToUpdate)) {
-                return { error: "Invalid phone number. Please provide a 10-digit number." };
+            {
+                if (!validatePhoneNumber(valueToUpdate) || isNaN(valueToUpdate)) {
+                    return { error: "Invalid phone number. Please provide a 10-digit number." };
+                }
+                const existingPhoneUser = await User.findOne({ phone: valueToUpdate });
+                if (existingPhoneUser) { //test this
+                    return { error: "Phone already exists" };
+                }
+                user.phone = valueToUpdate;
+                break;
             }
-            const existingPhoneUser = await User.findOne({ phone: valueToUpdate });
-            if (existingPhoneUser) { //test this
-                return { error: "Phone already exists" };
-            }
-            user.phone = valueToUpdate;
-            break;
         case 'style':
             if (isNaN(valueToUpdate) || valueToUpdate <= 0 || valueToUpdate >= 4) {
                 return { error: "Style should be a valid number" };
@@ -136,3 +144,19 @@ export const updateUserField = async (user, fieldToUpdate, valueToUpdate, email)
     }
     return { user };
 };
+
+export const signJWTandEncrypt = async (user, email, req, res) => {
+    try {
+        // eslint-disable-next-line no-undef
+        const token = jwt.sign({ email: user.email }, process.env.JWT_SECRET, { expiresIn: '1d' });
+        const encryptedToken = await encryptData(token);
+        user.token = encryptedToken;
+        req.session.userEmail = email;
+        req.session.jwtToken = `Bearer ${encryptedToken}`;
+    } catch (error) {
+        userLogger.info(`Error updating user token and session ${error.message}`)
+        return respondWithError(res, 'INTERNAL_SERVER_ERROR', "An error occured updating userdata");
+    }
+};
+
+//clear sessopns

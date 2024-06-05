@@ -1,5 +1,5 @@
 
-import { get_NepseSecurityList } from './nepse_server/singletonNepseServer.js';
+import { get_NepseTopData } from './nepse_server/singletonNepseServer.js';
 
 
 // console.log(await is_NepseOpen());
@@ -18,7 +18,7 @@ import { get_NepseSecurityList } from './nepse_server/singletonNepseServer.js';
 
 //console.log(await get_NepseSecurityList());
 
-console.log(await get_NepseSecurityList("KKHC"));
+console.log(await get_NepseTopData());
 
 // console.log(new Date().toISOString().split('T')[0]);
 

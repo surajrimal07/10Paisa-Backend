@@ -617,8 +617,7 @@ export function createWebSocketServer() {
         useremail = decoded.email;
 
       } catch (error) {
-        console.log(error);
-        socketLogger.info("Invalid JWT token");
+        socketLogger.info(`Invalid JWT token: ${error.message}`);
         ws.send(JSON.stringify({ error: 'Invalid JWT token' }));
         ws.close();
         return;

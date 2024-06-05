@@ -13,12 +13,11 @@ import RedisStore from "connect-redis";
 import { rateLimit } from 'express-rate-limit';
 import session from 'express-session';
 import helmet from 'helmet';
+import hppPrevent from 'hpp-prevent';
 import https from "https";
 import { clean } from "perfect-express-sanitizer";
 import { RedisStore as RateLimitRedisStore } from 'rate-limit-redis';
 import { v4 as uuidv4 } from 'uuid';
-import hppPrevent from 'hpp-prevent';
-
 
 //file imports
 import initializeRefreshMechanism, { ActiveServer } from "./controllers/refreshController.js";
@@ -35,27 +34,14 @@ import dynamicRoutes from "./utils/routesforIndex.js";
 //Express Middlewares
 const app = express();
 app.use(helmet());
-//app.use(cookieParser())
 
 //conect to redis earliy
-// eslint-disable-next-line no-undef
-const useRedis = process.env.USEREDIS;
-if (useRedis == "true") {
-  await redisclient.connect();
-  mainLogger.info(
-    redisclient.isOpen
-      ? "Connected to Redis Server"
-      : "Not connected to Redis Server"
-  );
-
-  redisclient.on("error", (error) => {
-    mainLogger.error("Redis client error:", error);
-  });
-
-  app.on("close", () => {
-    redisclient.disconnect();
-  });
-}
+await redisclient.connect();
+mainLogger.info(
+  redisclient.isOpen
+    ? "Connected to Redis Server"
+    : "Not connected to Redis Server"
+);
 
 //session
 app.use(session({
@@ -70,11 +56,13 @@ app.use(session({
   store: new RedisStore({ client: redisclient }),
   saveUninitialized: true,
   cookie: {
+    //give name to the cookie
     httpsOnly: true,
     secure: true,
     sameSite: true,
     maxAge: 10 * 24 * 60 * 60 * 1000,
-    priority: 'High'
+    priority: 'High',
+    path: '/'
   },
 }));
 
@@ -128,21 +116,12 @@ const corsOptions = {
   origin: isDevelopment ? 'https://localhost:3000' : 'https://tenpaisa.tech',
   methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE'],
   credentials: true,
-  allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization']
+  allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization', 'x-csrf-token']
 };
 app.use(cors(corsOptions));
 
 //session middleware
-//let redisStore = connectRedis(session);
-
-// let redisStore = new RedisStore({
-//   client: redisclient,
-//   prefix: "tenpaisabackend:",
-// })
-
-
 app.use(responseTimeMiddleware);
-//app.use(sessionMiddleware);
 
 // Use compression middleware to compress responses
 app.use(compression({
@@ -166,8 +145,8 @@ cloudinary.config({
   api_secret: process.env.API_SECRET,
 });
 
-//starting server
 
+//server
 if (isDevelopment) {
   const server = https.createServer(httpsOptions, app);
   mainLogger.info("Starting Development Server");
@@ -202,23 +181,45 @@ initializeRefreshMechanism();
 startWebSocketServer();
 initiateNewsFetch();
 
+//app.use(cookieParser()); //using this cookie parser for csrf token to work
+//this is because session has its own cookie parser but someohow it is not working with csrf token
+
+// app.use((req, res, next) => {
+//   const headers = req.headers;
+//   mainLogger.info(`Request Headers: ${JSON.stringify(headers)}`);
+//   next();
+// });
+
+
 //routes
-app.use("/api", userRouter);
+app.use("/api", userRouter);  //this route is protected with csrf token
 app.get("/", dynamicRoutes);
 app.get("/news", getNews);
 app.get("/ping", (req, res) => {
   res.send("Hello there");
 });
 
-// app.use((req, res, next) => {
-//   res.sendStatus(200);
-// });
-
 //error handling
 app.use((req, res) => {
   res.status(404).json({ error: 'Not Found', message: 'The requested resource was not found on this server.' });
 });
 
+redisclient.on("error", (error) => {
+  mainLogger.error("Redis client error:", error);
+});
+
+app.on("close", () => {
+  redisclient.disconnect();
+});
+
+// app.use((err, req, res, next) => {
+//   if (err.code === 'EBADCSRFTOKEN') {
+//     res.status(403).json({ error: 'Invalid CSRF token' });
+//   } else {
+//     console.log(err);
+//     res.status(err.status || 500).json({ error: 'Internal Server Error' });
+//   }
+// });
 
 //exports
 export default app;

@@ -1,3 +1,4 @@
+/* eslint-disable no-undef */
 import winston from "winston";
 
 const consoleLogEnabled = process.env.CONSOLE_LOG_ENABLED === 'true';

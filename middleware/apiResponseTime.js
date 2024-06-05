@@ -7,7 +7,7 @@ export function responseTimeMiddleware(req, res, next) {
     const responseTime = Date.now() - start;
 
     const logData = {
-      user: req.session.userEmail || 'anonymous',
+      user: req.session?.userEmail || 'anonymous',
       //  sessionID: req.cookies['connect.sid'] || 'no session', spams the logs //tenpaisa.session
       method: req.method,
       url: req.originalUrl,

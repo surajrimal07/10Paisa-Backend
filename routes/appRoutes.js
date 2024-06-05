@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { AllIndicesData, AssetMergedData, AssetMergedDataBySector, AvailableNepseSymbols, CombinedIndexData, CommodityData, DashBoardData, IndexData, SingeAssetMergedData, TopGainersData, TopHeavyStocks, TopLoosersData, TopTransData, TopTurnoverData, TopVolumeData, WorldMarketData, fetchAndMergeDailyNepsePrice, fetchIntradayCompanyGraph, fetchMetalPrices, getCompanyOHLCNepseAlpha, nepseDailyGraphData, refreshCommodityData, refreshMetalsData, refreshWorldMarketData } from '../controllers/assetControllers.js';
+import { AllIndicesData, AssetMergedData, AvailableNepseSymbols, CombinedIndexData, CommodityData, DashBoardData, IndexData, SingeAssetMergedData, TopGainersData, TopHeavyStocks, TopLoosersData, TopTransData, TopTurnoverData, TopVolumeData, WorldMarketData, fetchAndMergeDailyNepsePrice, fetchIntradayCompanyGraph, fetchMetalPrices, getCompanyOHLCNepseAlpha, nepseDailyGraphData, refreshCommodityData, refreshMetalsData, refreshWorldMarketData } from '../controllers/assetControllers.js';
 import { NrbBankingDataAll, combinedNrbData, nrbForexData, refreshNRBData } from '../controllers/extraDataControllers.js';
 //import { allowOnly } from '../middleware/methodAllowed.js';
 import adminrouter from './adminRoutes.js';
@@ -12,7 +12,6 @@ router.get('/commodity', CommodityData);
 router.get('/metal', fetchMetalPrices);
 router.get('/sharesansardata', AssetMergedData);
 router.post('/singlesharesansardata', SingeAssetMergedData);
-router.post('/sectorsharesansardata', AssetMergedDataBySector);
 
 //homepage data
 router.get('/topgainers', TopGainersData);
@@ -59,10 +58,10 @@ router.use('/admin', adminrouter); //https://localhost:4000/api/admin/allportfol
 //user router
 router.use('/user', userrouter); //https://localhost:4000/api/user/login
 
-router.get('/active-users', (req, res) => {
-    const activeUsersCount = Object.keys(req.session.activeUsers).length;
-    res.json({ activeUsers: activeUsersCount });
-});
+// router.get('/active-users', (req, res) => {
+//     const activeUsersCount = Object.keys(req.session.activeUsers).length;
+//     res.json({ activeUsers: activeUsersCount });
+// });
 
 
 export default router;

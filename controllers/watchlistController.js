@@ -36,6 +36,7 @@ export const createWatchlist = async (req, res) => {
 
       return respondWithData(res, 'SUCCESS', 'Watchlist created successfully', userWatchlists);
     } catch (error) {
+      
       return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'An error occurred while creating the watchlist');
     }
   };

@@ -1,23 +1,20 @@
 import bcrypt from 'bcrypt';
 import { v2 as cloudinary } from 'cloudinary';
-import jwt from 'jsonwebtoken';
 import { forgetPassword } from '../controllers/otpControllers.js';
 import Portfolio from '../models/portfolioModel.js';
 import User from '../models/userModel.js';
 import Watchlist from '../models/watchlistModel.js';
 import { notifyRoomClients } from '../server/websocket.js';
 import { LDAcheck, NameorEmailinPassword, validateEmail, validateName, validatePassword, validatePhoneNumber } from '../utils/dataValidation_utils.js';
-import { encryptData } from '../utils/encryption.js';
 import globalVariables from '../utils/globalVariables.js';
 import { userLogger } from '../utils/logger/userlogger.js';
 import { respondWithData, respondWithError, respondWithSuccess } from '../utils/response_utils.js';
 import { deleteFromCache, fetchFromCache, saveToCache } from './savefetchCache.js';
-import { formatUserData, updateUserField } from './userHelper.js';
+import { formatUserData, signJWTandEncrypt, updateUserField } from './userHelper.js';
 
 //
 
 function setUserDetails({ name, phone, email }) {
-  console.log("Setting user global details");
   if (name) globalVariables.setUsername(name);
   if (phone) globalVariables.setPhone(phone);
   if (email) globalVariables.setEmail(email);
@@ -143,6 +140,7 @@ export const createUser = async (req, res) => {
   }
 
   const emailLowercase = email.toLowerCase();
+  const hashedPassword = await bcrypt.hash(password, 10);
 
   try {
     setUserDetails({ name, phone, emailLowercase });
@@ -156,17 +154,17 @@ export const createUser = async (req, res) => {
     await User.create({
       name,
       email: emailLowercase,
-      password: password,
+      password: hashedPassword,
       phone,
       portfolio: [samplePortfolio._id]
     });
 
     let userData = await User.findOne({ email: emailLowercase }).populate('portfolio').then(user => formatUserData(user));
 
-    // eslint-disable-next-line no-undef
-    const token = jwt.sign({ email: emailLowercase }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRY_TIME });
+    await signJWTandEncrypt(userData, emailLowercase, req, res);
+    // const token = jwt.sign({ email: emailLowercase }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRY_TIME });
 
-    userData.token = await encryptData(token);
+    // userData.token = await encryptData(token);
 
     userLogger.info(`User created successfully`);
     return respondWithData(res, 'CREATED', "User created successfully", userData);
@@ -232,16 +230,16 @@ export const loginUser = async (req, res) => {
 
       let userData = await formatUserData(user);
 
-      // eslint-disable-next-line no-undef
-      const token = jwt.sign({ email: email }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRY_TIME });
+      await signJWTandEncrypt(userData, email, req, res)
+      // const token = jwt.sign({ email: email }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRY_TIME });
 
-      const encryptedToken = await encryptData(token);
+      // const encryptedToken = await encryptData(token);
 
-      userData.token = encryptedToken;
+      // userData.token = encryptedToken;
 
-      req.session.userEmail = email;
+      // req.session.userEmail = email;
 
-      req.session.jwtToken = `Bearer ${encryptedToken}`;
+      // req.session.jwtToken = `Bearer ${encryptedToken}`;
 
       notifyRoomClients('profile', { type: 'notification', title: 'Login', description: "User " + user.name + " logged in", image: user.dpImage, url: "https://10paisa.com" }, email);
 
@@ -323,6 +321,10 @@ export const updateUser = async (req, res) => {
     return respondWithError(res, 'BAD_REQUEST', "Email, field or value is missing");
   };
 
+  if (fieldToUpdate === 'isAdmin') {
+    return respondWithError(res, 'FORBIDDEN', "You are not allowed to change this field");
+  }
+
   try {
     let user = await User.findOne({ email: email.toLowerCase() }).populate('portfolio');
     if (!user) {
@@ -339,10 +341,12 @@ export const updateUser = async (req, res) => {
     let userData = await formatUserData(user);
 
     if (fieldToUpdate === 'email' || fieldToUpdate === 'password') {
-      // eslint-disable-next-line no-undef
-      const token = jwt.sign({ email: email }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRY_TIME });
-      userData.token = await encryptData(token);
-      req.session.userEmail = email;
+      await signJWTandEncrypt(userData, email, req, res)
+      // const token = await encryptData(jwt.sign({ email: email }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRY_TIME }));
+
+      // userData.token = token;
+      // req.session.userEmail = email;
+      // req.session.jwtToken = `Bearer ${token}`;
     }
 
     return respondWithData(res, 'SUCCESS', fieldToUpdate + " updated successfully", userData);
@@ -376,19 +380,26 @@ export const deleteAccount = async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    const user = await User.findOne({ email: email });
+    const user = await User.findOne({ email });
 
     if (!user || !(await bcrypt.compare(password, user.password))) {
       return respondWithError(res, 'NOT_FOUND', "User not found or invalid password");
     }
 
     await Promise.all([
-      Portfolio.deleteMany({ userEmail: email }), ////many or findOneAndDelete
+      Portfolio.deleteMany({ userEmail: email }),
       Watchlist.deleteMany({ userEmail: email }),
-      User.deleteOne({ email: email })
+      User.deleteOne({ email })
     ]);
-    req.session.userEmail = null;
-    return respondWithSuccess(res, 'SUCCESS', "User deleted successfully");
+
+    req.session.destroy((err) => {
+      if (err) {
+        return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'Failed to destroy session');
+      }
+
+      res.clearCookie('tenpaisa.session');
+      return respondWithSuccess(res, 'SUCCESS', "User deleted successfully");
+    });
 
   } catch (error) {
     return respondWithError(res, 'INTERNAL_SERVER_ERROR', error.toString());
@@ -434,10 +445,11 @@ export const updateUserData = async (req, res) => {
     const userData = formatUserData(user);
 
     if (fieldsToUpdate.email || fieldsToUpdate.password) {
-      // eslint-disable-next-line no-undef
-      const token = jwt.sign({ email: user.email }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRY_TIME });
-      userData.token = await encryptData(token);
-      req.session.userEmail = user.email;
+      await signJWTandEncrypt(userData, user.email, req, res);
+      // const token = jwt.sign({ email: user.email }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRY_TIME });
+      // userData.token = await encryptData(token);
+      // req.session.userEmail = user.email;
+
     }
     return respondWithData(res, 'SUCCESS', "User data updated successfully", user);
 

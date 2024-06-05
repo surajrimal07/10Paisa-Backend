@@ -43,7 +43,10 @@ const newSchema = new Schema({
   },
   userAmount: {
     type: Number,
-    default: 0
+    default: 0,
+    min: 0,
+    set: v => Math.round(v * 100) / 100,
+    get: v => Math.round(v * 100) / 100 //remove this code later, set is enough
   },
   portfolio: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Portfolio' }],
 
@@ -70,6 +73,7 @@ const newSchema = new Schema({
 
 //password expiration
 newSchema.methods.isPasswordExpired = function () {
+  // eslint-disable-next-line no-undef
   const expirationDays = process.env.PASSWORD_EXPIRATION_DAYS || 30;
   const currentDate = new Date();
   const lastPasswordChangeDate = this.LastPasswordChangeDate || currentDate;

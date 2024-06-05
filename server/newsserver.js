@@ -232,6 +232,7 @@ async function startFetchingRSS(url, source) {
             img_url = imageUrlMatch ? imageUrlMatch[1] : '';
 
           } else if (source === 'Himalayan Times') {
+            console.log(item_elem);
             img_url = item_elem['media:thumbnail'][0].$.url;
             description = cleanDescription(item_elem.description[0]);
           } else {
@@ -268,6 +269,7 @@ async function startFetchingRSS(url, source) {
     if (error.response && error.response.status === 403) {
       newsLogger.error(`Error fetching news on : ${source} : Sarping is blocked by the server`);
     }
+    console.log(error);
     newsLogger.error(`Error fetching news data: ${url} : ${error}`);
   }
 }

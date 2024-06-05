@@ -6,13 +6,11 @@ import {
   saveToCache,
 } from "../controllers/savefetchCache.js";
 import {
-  FetchOldData,
   FetchSingleCompanyDatafromAPI,
   FetchSingularDataOfAsset,
   fetchAvailableNepseSymbol,
   fetchCompanyIntradayGraph,
   fetchFunctionforNepseAlphaORSystemxlite,
-  fetchIndexes,
   filterDuplicatesfromSystemX,
   getIndexIntraday,
   intradayIndexGraph,
@@ -40,30 +38,17 @@ import { apiLogger, assetLogger, nepseLogger } from '../utils/logger/logger.js';
 export const AssetMergedData = async (req, res) => {
   try {
     const refreshParam = req.query.refresh || "";
-    if (refreshParam.toLowerCase() === "refresh") {
-      await deleteFromCache("FetchSingularDataOfAssets");
-      await deleteFromCache("FetchOldData");
-    }
+    const refresh = refreshParam.toLowerCase() === "refresh"
 
-    const [todayData, liveData] = await Promise.all([
-      FetchSingularDataOfAsset(),
-      FetchOldData(),
-    ]);
+    const todayData = await FetchSingularDataOfAsset(refresh);
 
-    const liveDataMap = new Map(liveData.map((item) => [item.symbol, item]));
-
-    const mergedData = todayData.map((item) => ({
-      ...item,
-      ...(liveDataMap.get(item.symbol) || {}),
-    }));
-
-    await saveToCache("AssetMergedDataShareSansar", mergedData);
+    await saveToCache("AssetMergedDataShareSansar", todayData);
 
     return respondWithData(
       res,
       "SUCCESS",
       "Data Fetched Successfully",
-      mergedData
+      todayData
     );
   } catch (error) {
     apiLogger.error(`Error fetching asset data: ${error.message}`);
@@ -101,21 +86,6 @@ export const SingeAssetMergedData = async (req, res) => {
       );
     }
 
-    // const [todayData, liveData] = await Promise.all([
-    //   FetchSingularDataOfAsset(),
-    //   FetchOldData(),
-    // ]);
-
-    // const liveDataMap = new Map(liveData.map((item) => [item.symbol, item]));
-    // const mergedData = todayData.map((item) => ({
-    //   ...item,
-    //   ...(liveDataMap.get(item.symbol) || {}),
-    // }));
-
-    // const filteredMergedData = companyDetails.filter(
-    //   (item) => item.symbol === symbol
-    // );
-
     return respondWithData(
       res,
       "SUCCESS",
@@ -133,82 +103,82 @@ export const SingeAssetMergedData = async (req, res) => {
   }
 };
 
-//filtering based on sector
-export const AssetMergedDataBySector = async (req, res) => {
-  apiLogger.info("Sharesansar Asset Data Requested by Sector");
+// //filtering based on sector
+// export const AssetMergedDataBySector = async (req, res) => {
+//   apiLogger.info("Sharesansar Asset Data Requested by Sector");
 
-  const sector = req.body.sector;
-  const assettype = req.body.category;
+//   const sector = req.body.sector;
+//   const assettype = req.body.category;
 
-  if (!sector && !assettype) {
-    respondWithError(
-      res,
-      "BAD_REQUEST",
-      "No sector or asset type provided in the request"
-    );
-  }
+//   if (!sector && !assettype) {
+//     respondWithError(
+//       res,
+//       "BAD_REQUEST",
+//       "No sector or asset type provided in the request"
+//     );
+//   }
 
-  try {
-    const refreshParam = req.query.refresh || "";
-    if (refreshParam.toLowerCase() === "refresh") {
-      await deleteFromCache("FetchSingularDataOfAssets");
-      await deleteFromCache("FetchOldData");
-    }
+//   try {
+//     const refreshParam = req.query.refresh || "";
+//     if (refreshParam.toLowerCase() === "refresh") {
+//       await deleteFromCache("FetchSingularDataOfAssets");
+//       await deleteFromCache("FetchOldData");
+//     }
 
-    const [todayData, liveData] = await Promise.all([
-      FetchSingularDataOfAsset(),
-      FetchOldData(),
-    ]);
+//     const [todayData, liveData] = await Promise.all([
+//       FetchSingularDataOfAsset(),
+//       FetchOldData(),
+//     ]);
 
-    const liveDataMap = new Map(liveData.map((item) => [item.symbol, item]));
-    const mergedData = todayData.map((item) => ({
-      ...item,
-      ...(liveDataMap.get(item.symbol) || {}),
-    }));
+//     const liveDataMap = new Map(liveData.map((item) => [item.symbol, item]));
+//     const mergedData = todayData.map((item) => ({
+//       ...item,
+//       ...(liveDataMap.get(item.symbol) || {}),
+//     }));
 
-    let filteredData;
+//     let filteredData;
 
-    if (sector) {
-      filteredData = mergedData.filter((item) => item.sector === sector);
-    } else if (assettype === "Assets") {
-      filteredData = mergedData.filter((item) => item.category === "Assets");
-    } else if (assettype === "Mutual Fund") {
-      filteredData = mergedData.filter(
-        (item) => item.category === "Mutual Fund"
-      );
-    } else if (assettype === "Debenture") {
-      filteredData = cachedData.filter((item) => item.category === "Debenture");
-    } else {
-      respondWithError(
-        res,
-        "BAD_REQUEST",
-        "Invalid asset type provided in the request"
-      );
-    }
+//     if (sector) {
+//       filteredData = mergedData.filter((item) => item.sector === sector);
+//     } else if (assettype === "Assets") {
+//       filteredData = mergedData.filter((item) => item.category === "Assets");
+//     } else if (assettype === "Mutual Fund") {
+//       filteredData = mergedData.filter(
+//         (item) => item.category === "Mutual Fund"
+//       );
+//     } else if (assettype === "Debenture") {
+//       filteredData = mergedData.filter((item) => item.category === "Debenture");
+//     } else {
+//       respondWithError(
+//         res,
+//         "BAD_REQUEST",
+//         "Invalid asset type provided in the request"
+//       );
+//     }
 
-    if (filteredData.length === 0) {
-      respondWithError(
-        res,
-        "NOT_FOUND",
-        "No data found based on the provided criteria"
-      );
-    }
+//     if (filteredData.length === 0) {
+//       respondWithError(
+//         res,
+//         "NOT_FOUND",
+//         "No data found based on the provided criteria"
+//       );
+//     }
 
-    return respondWithData(
-      res,
-      "SUCCESS",
-      "Data Fetched Successfully",
-      filteredData
-    );
-  } catch (error) {
-    apiLogger.error(`Error fetching asset data by sector: ${error.message}`);
-    return respondWithError(
-      res,
-      "INTERNAL_SERVER_ERROR",
-      "Failed to fetch commodity data."
-    );
-  }
-};
+//     return respondWithData(
+//       res,
+//       "SUCCESS",
+//       "Data Fetched Successfully",
+//       filteredData
+//     );
+//   } catch (error) {
+//     apiLogger.error(`Error fetching asset data by sector: ${error.message}`);
+//     return respondWithError(
+//       res,
+//       "INTERNAL_SERVER_ERROR",
+//       "Failed to fetch commodity data."
+//     );
+//   }
+// };
 
 //get metal
 export const fetchMetalPrices = async (req, res) => {
@@ -534,12 +504,9 @@ export const AllIndicesData = async (req, res) => {
 
   try {
     const refreshParam = req.query.refresh || "";
-    if (refreshParam.toLowerCase() === "refresh") {
-      apiLogger.info("Refreshing all indices data");
-      deleteFromCache("allindices_sourcedata");
-    }
+    const refresh = refreshParam.toLowerCase() === "refresh";
 
-    const allIndicesData = await fetchIndexes();
+    const allIndicesData = await FetchSingularDataOfAsset(refresh);
     if (!allIndicesData) {
       return respondWithError(
         res,
@@ -551,7 +518,7 @@ export const AllIndicesData = async (req, res) => {
       res,
       "SUCCESS",
       "Data Fetched Successfully",
-      allIndicesData
+      allIndicesData['stockIndexData']
     );
   } catch (error) {
     apiLogger.error(`Error fetching all indices data: ${error.message}`);
@@ -569,11 +536,6 @@ export const IndexData = async (req, res) => {
   try {
     const refreshParam = req.query.refresh || "";
     if (refreshParam.toLowerCase() === "refresh") {
-      // if (await getIsMarketOpen() === false){
-      //   console.log('serving from cache of controller');
-      //   const cachedData = await fetchFromCache('intradayIndexData');
-      //   return respondWithData(res,'SUCCESS','Data Fetched Successfully',cachedData);
-      // }
       apiLogger.info("Refreshing index data");
       await deleteFromCache("intradayIndexData");
     }
@@ -742,10 +704,10 @@ export const getCompanyOHLCNepseAlpha = async (req, res) => {
   try {
     //checking in cache
     const [fileData, lastUpdatedTime, lastIndexUpdatedEpochTime, isNepseOn] = await Promise.all([
-      fs.promises.readFile(fileName, 'utf8').catch(err => null),
-      fs.promises.readFile(lastUpdatedFileName, 'utf8').catch(err => null),
-      fetchFromCache('intradayGraph').catch(err => null),
-      fetchFromCache('isMarketOpen').catch(err => null)
+      fs.promises.readFile(fileName, 'utf8').catch(err => console.log(err)),
+      fs.promises.readFile(lastUpdatedFileName, 'utf8').catch(err => console.log(err)),
+      fetchFromCache('intradayGraph').catch(err => console.log(err)),
+      fetchFromCache('isMarketOpen').catch(err => console.log(err)),
     ]);
     const lastTimeEpochFromIndex = lastIndexUpdatedEpochTime && lastIndexUpdatedEpochTime.length ? lastIndexUpdatedEpochTime[lastIndexUpdatedEpochTime.length - 1].timeepoch : Math.floor(Date.now() / 1000);
 
@@ -767,7 +729,7 @@ export const getCompanyOHLCNepseAlpha = async (req, res) => {
         const response = await fetchFunctionforNepseAlphaORSystemxlite(symbolIndex, timeFrame, fromEpochTime, currentEpochTime, force_key);
 
         if (!response || !isValidData(response)) {
-          const fileData = await fs.promises.readFile(fileName, 'utf8').catch(err => null);
+          const fileData = await fs.promises.readFile(fileName, 'utf8').catch(err => console.log(err));
           if (fileData) {
             return res.status(200).json(JSON.parse(fileData));
           }
@@ -814,7 +776,7 @@ export const getCompanyOHLCNepseAlpha = async (req, res) => {
 
     if (!response || !isValidData(response)) {
       assetLogger.error('Failed to fetch data from both nepsealpha.com and systemxlite.com, trying to read from file.');
-      const fileData = await fs.promises.readFile(fileName, 'utf8').catch(err => null);
+      const fileData = await fs.promises.readFile(fileName, 'utf8').catch(err => console.log(err));
       if (fileData) {
         return res.status(200).json(JSON.parse(fileData));
       }
@@ -836,7 +798,7 @@ export const getCompanyOHLCNepseAlpha = async (req, res) => {
     return res.status(200).json(response);
   } catch (error) {
     assetLogger.error(`Error fetching data: ${error.message}`);
-    const fileData = await fs.promises.readFile(fileName, 'utf8').catch(err => null);
+    const fileData = await fs.promises.readFile(fileName, 'utf8').catch(err => console.log(err));
     if (fileData) {
       return res.status(200).json(fileData);
     }
@@ -866,8 +828,9 @@ export const TopHeavyStocks = async (req, res) => {
 
   try {
     const topStocks = topCompanies();
-    const todayData = await FetchSingularDataOfAsset();
-    const allIndicesData = await fetchIndexes();
+    let todayData = await FetchSingularDataOfAsset(false);
+    const allIndicesData = todayData['stockIndexData'];
+    todayData = todayData['stockDataWithoutName'];
 
     const result = topStocks.map((stock) => {
       const matchingData = todayData.find(
@@ -910,6 +873,7 @@ export const TopHeavyStocks = async (req, res) => {
     res.json(jsonResponse);
   } catch (error) {
     apiLogger.error(`Error fetching data: ${error.message}`);
+    console.log(error);
     respondWithError(res, "INTERNAL_SERVER_ERROR", "Internal Server Error");
   }
 };
@@ -1339,6 +1303,7 @@ export const fetchIntradayCompanyGraph = async (req, res) => {
   }
 };
 
+
 export default {
   fetchIntradayCompanyGraph,
   refreshMetalsData,
@@ -1354,7 +1319,6 @@ export default {
   topLosersShare,
   AssetMergedData,
   SingeAssetMergedData,
-  AssetMergedDataBySector,
   CommodityData,
   TopGainersData,
   DashBoardData,

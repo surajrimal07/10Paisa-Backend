@@ -2,9 +2,7 @@ import axios from "axios";
 import storage from 'node-persist';
 import { sendPeriodicPortfolioData } from '../controllers/portfolioControllers.js';
 import {
-  FetchOldData,
   FetchSingularDataOfAsset,
-  fetchIndexes,
   getIndexIntraday,
   intradayIndexGraph,
   topLosersShare,
@@ -13,11 +11,9 @@ import {
   topTurnoversShare,
   topgainersShare,
 } from "../server/assetServer.js";
-import { is_NepseOpen } from '../server/nepse_server/nepseServer.js';
 import { notifyRoomClients, wss } from "../server/websocket.js";
 import { nepseLogger } from '../utils/logger/logger.js';
 import { saveToCache } from "./savefetchCache.js";
-
 
 //initilizing storage here to prevent code racing
 const defaultDirectory = '/tmp/.node-persist';
@@ -36,6 +32,17 @@ const NEPSE_API_URL2 = process.env.NEPSE_API_URL_BACKUP;
 // eslint-disable-next-line no-undef
 export let NEPSE_ACTIVE_API_URL = process.env.NEPSE_API_URL1;
 
+//bugged , this dosen't check if the server is active or not
+export async function switchServer() {
+  try {
+    NEPSE_ACTIVE_API_URL = NEPSE_ACTIVE_API_URL === NEPSE_API_URL1 ? NEPSE_API_URL2 : NEPSE_API_URL1;
+    return true;
+  } catch (error) {
+    console.error(`Error switching server: ${error.message}`);
+    return false;
+  }
+}
+
 export async function ActiveServer() {
   await new Promise(resolve => setTimeout(resolve, 5000)); //wait for python unicorn server to start
   try {
@@ -44,7 +51,6 @@ export async function ActiveServer() {
       NEPSE_ACTIVE_API_URL = NEPSE_API_URL1;
       nepseLogger.info(`Nepse API Server 1 is active. ${NEPSE_ACTIVE_API_URL}`);
     }
-    // eslint-disable-next-line no-unused-vars
   } catch (error) {
     try {
       const url2Response = await axios.get(NEPSE_API_URL2);
@@ -53,49 +59,38 @@ export async function ActiveServer() {
         nepseLogger.info(`Nepse API Server 2 is active. ${NEPSE_ACTIVE_API_URL}`);
       }
     } catch (error2) {
-      nepseLogger.error(`Warning both servers are down. ${error2.message}`);
+      nepseLogger.error(`warning both servers are down. ${error2.message}`);
     }
+    nepseLogger.error(`warning server 1 is down. ${error.message}`);
   }
 }
 
 export async function isNepseOpen() {
-  const isNepseOpen = await is_NepseOpen();
-  if (isNepseOpen.isOpen === "CLOSE") {
-    nepseLogger.info(`Nepse is closed using Local Node server.`);
-    await saveToCache("isMarketOpen", false);
-  } else if (isNepseOpen.isOpen === "OPEN" || isNepseOpen.isOpen === "Pre Open") {
-    nepseLogger.info(`Nepse is open using Local Node server.`);
-    await saveToCache("isMarketOpen", true);
-
-    //remove below code later
-  } else {
+  try {
+    const initialResponse = await axios.get(NEPSE_ACTIVE_API_URL + "/IsNepseOpen");
+    return await handleisNepseOpenResponse(initialResponse, NEPSE_ACTIVE_API_URL);
+  } catch (error) {
+    nepseLogger.error(
+      `Error fetching Nepse status from Active URL: ${error.message}`
+    );
     try {
-      const initialResponse = await axios.get(NEPSE_ACTIVE_API_URL + "/IsNepseOpen");
-      return await handleisNepseOpenResponse(initialResponse, NEPSE_ACTIVE_API_URL);
+      const primaryResponse = await axios.get(NEPSE_API_URL1 + "/IsNepseOpen");
+      return await handleisNepseOpenResponse(primaryResponse, NEPSE_API_URL1);
     } catch (error) {
       nepseLogger.error(
-        `Error fetching Nepse status from Active URL: ${error.message}`
+        `Error fetching Nepse status from primary URL: ${error.message}`
       );
       try {
-        const primaryResponse = await axios.get(NEPSE_API_URL1 + "/IsNepseOpen");
-        return await handleisNepseOpenResponse(primaryResponse, NEPSE_API_URL1);
-      } catch (error) {
+        const backupResponse = await axios.get(NEPSE_API_URL2 + "/IsNepseOpen");
+        return await handleisNepseOpenResponse(backupResponse, NEPSE_API_URL2);
+      } catch (errorBackup) {
         nepseLogger.error(
-          `Error fetching Nepse status from primary URL: ${error.message}`
+          `Error fetching Nepse status from backuo URL: ${errorBackup.message}`
         );
-        try {
-          const backupResponse = await axios.get(NEPSE_API_URL2 + "/IsNepseOpen");
-          return await handleisNepseOpenResponse(backupResponse, NEPSE_API_URL2);
-        } catch (errorBackup) {
-          nepseLogger.error(
-            `Error fetching Nepse status from backuo URL: ${errorBackup.message}`
-          );
-          return false;
-        }
+        return false;
       }
     }
   }
-
 }
 
 async function handleisNepseOpenResponse(response, apiUrl) {
@@ -118,15 +113,13 @@ async function handleisNepseOpenResponse(response, apiUrl) {
 async function wipeCachesAndRefreshData() {
   try {
     const fetchFunctions = [
-      fetchIndexes,
       intradayIndexGraph,
       topgainersShare,
       topLosersShare,
       topTurnoversShare,
       topTradedShares,
       topTransactions,
-      FetchSingularDataOfAsset,
-      FetchOldData
+      FetchSingularDataOfAsset
     ];
 
     for (const fetchFunction of fetchFunctions) {
@@ -136,7 +129,7 @@ async function wipeCachesAndRefreshData() {
 
     let newIndexData = await getIndexIntraday(true);
     if (newIndexData) {
-      notifyRoomClients('asset', { type: "index", data: newIndexData });
+      notifyRoomClients('news', { type: "index", data: newIndexData });
     }
 
     //send the updated portfolio to those who subscribed to live portfolio using websocket
@@ -165,9 +158,8 @@ export default async function initializeRefreshMechanism() {
     await new Promise(resolve => setTimeout(resolve, 8000));
     nepseLogger.info("Initializing Nepse refresh mechanism.");
     let isNepseOpenPrevious = await isNepseOpen(); // Store the initial state
-    if (isNepseOpenPrevious) {
-      await wipeCachesAndRefreshData(); // Refresh data if Nepse is initially open
-    }
+    let closeCounter = 0;
+    await wipeCachesAndRefreshData(); // Refresh data if Nepse is initially open
 
     setInterval(async () => {
       const isNepseOpenNow = await isNepseOpen(); // Check the current state
@@ -175,13 +167,17 @@ export default async function initializeRefreshMechanism() {
         if (!isNepseOpenNow) {
           await wipeCachesAndRefreshData(); // Refresh data last time when Nepse closes
           //notify clients that market is closed
+          closeCounter = 5;
           // notifyClients({ type: "marketStatus", data: false });
         }
         isNepseOpenPrevious = isNepseOpenNow; // Update previous state
       }
 
-      if (isNepseOpenNow) {
+      if (isNepseOpenNow || closeCounter > 0) {
         await wipeCachesAndRefreshData(); // Refresh data if Nepse is currently open
+        if (!isNepseOpenNow) {
+          closeCounter--; // Decrease the counter if Nepse is closed
+        }
       }
     }, 60 * 1000);
   } catch (error) {

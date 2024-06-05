@@ -106,8 +106,6 @@ class TokenManager {
         this.salts = salts;
         this.tokenTimeStamp = Math.floor(Date.now() / 1000);
 
-        console.log(`accessToken: ${accessToken}, refreshToken: ${refreshToken}, salts: ${salts}`);
-
         return { accessToken, refreshToken, salts };
     }
 

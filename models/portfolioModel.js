@@ -6,34 +6,44 @@ const StockToPortfolio = new mongoose.Schema({
         type: String,
         default: 'Unknown'
     },
-    ltp: Number,
+    ltp: {
+        type: Number,
+        set: v => Math.round(v * 100) / 100,
+        min: 0
+    },
     symbol: String,
     quantity: Number,
-    wacc: Number,
+    wacc: {
+    type: Number,
+    set: v => Math.round(v * 100) / 100
+},
     costprice: {
-        type: Number,
-        default: function () {
-            return (this.quantity * this.wacc).toFixed(2);
-        }
-    },
-    currentprice: {
-        type: Number,
-        default: function () {
-            return (this.quantity * this.ltp).toFixed(2);
-        }
-    },
-    netgainloss: {
-        type: Number,
-        default: function () {
-            return (this.currentprice - this.costprice).toFixed(2);
-        }
-    },
-    time: {
-        type: Number,
-        default: function () {
-            return Math.floor(Date.now() / 1000);
-        }
+    type: Number,
+    set: v => Math.round(v * 100) / 100,
+    default: function () {
+        return (this.quantity * this.wacc).toFixed(2);
     }
+},
+    currentprice: {
+    type: Number,
+    set: v => Math.round(v * 100) / 100,
+    default: function () {
+        return (this.quantity * this.ltp).toFixed(2);
+    }
+},
+    netgainloss: {
+    type: Number,
+    set: v => Math.round(v * 100) / 100,
+    default: function () {
+        return (this.currentprice - this.costprice).toFixed(2);
+    }
+},
+    time: {
+    type: Number,
+    default: function () {
+        return Math.floor(Date.now() / 1000);
+    }
+}
 
 });
 
@@ -50,14 +60,17 @@ const portfolioSchema = new mongoose.Schema({
 
     portfoliocost: {
         type: Number,
+        set: v => Math.round(v * 100) / 100
     },
 
     portfoliovalue: {
         type: Number,
+        set: v => Math.round(v * 100) / 100
     },
     portgainloss: {
         type: Number,
-        default: 0
+        default: 0,
+        set: v => Math.round(v * 100) / 100
     },
     portfolioGoal: {
         type: String,
@@ -74,12 +87,14 @@ const portfolioSchema = new mongoose.Schema({
     },
     totalStocks: {
         type: Number,
-        default: 0
+        default: 0,
+        min: 0
     },
 
     totalunits: {
         type: Number,
-        default: 0
+        default: 0,
+        min: 0
     }
 });
 

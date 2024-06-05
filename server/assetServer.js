@@ -1,73 +1,207 @@
-import axios from "axios";
-import cheerio from "cheerio";
+import * as cheerio from 'cheerio';
 import fs from 'fs';
-import { JSDOM } from "jsdom";
 import path from 'path';
-import { NEPSE_ACTIVE_API_URL } from "../controllers/refreshController.js";
+import { fileURLToPath } from 'url';
+import { NEPSE_ACTIVE_API_URL, switchServer } from "../controllers/refreshController.js";
 import { fetchFromCache, saveToCache } from "../controllers/savefetchCache.js";
 
 import { assetLogger } from '../utils/logger/logger.js';
 
-//preparing to switch to sharesansar as data provider //bad code
-export async function FetchSingularDataOfAsset(refresh) {
-  const liveTradingUrl = "https://www.sharesansar.com/live-trading";
+const nepseIndexe = [
+  "Banking SubIndex",
+  "Development Bank Ind.",
+  "Finance Index",
+  "Float Index",
+  "Hotels And Tourism",
+  "HydroPower Index",
+  "Investment",
+  "Life Insurance",
+  "Manufacturing And Pr.",
+  "Microfinance Index",
+  "Mutual Fund",
+  "NEPSE Index",
+  "Non Life Insurance",
+  "Others Index",
+  "Sensitive Float Inde.",
+  "Sensitive Index",
+  "Trading Index",
+];
 
+
+const nepseIndexes = [
+  { field: "Banking SubIndex", symbol: "BANKING", name: "Commercial Banking" },
+  { field: "Development Bank Ind.", symbol: "DEVBANK", name: "Development Bank" },
+  { field: "Finance Index", symbol: "FINANCE", name: "Finance" },
+  { field: "Float Index", symbol: "FLOAT", name: "Float index" },
+  { field: "Hotels And Tourism", symbol: "HOTELS", name: "Hotels and Tourism" },
+  { field: "HydroPower Index", symbol: "HYDROPOWER", name: "Hydropower" },
+  { field: "Investment", symbol: "INVESTMENT", name: "Investment" },
+  { field: "Life Insurance", symbol: "LIFEINSU", name: "Life Insurance" },
+  { field: "Manufacturing And Pr.", symbol: "MANUFACTURE", name: "Manufacturing and Processing" },
+  { field: "Microfinance Index", symbol: "MICROFINANCE", name: "Microfinance" },
+  { field: "Mutual Fund", symbol: "MUTUAL", name: "Mutual Fund Index" },
+  { field: "NEPSE Index", symbol: "NEPSE", name: "NEPAL STOCK EXCHANGE" },
+  { field: "Non Life Insurance", symbol: "NONLIFEINSU", name: "Nonlife Insurance" },
+  { field: "Others Index", symbol: "OTHERS", name: "Others" },
+  { field: "Sensitive Float Inde.", symbol: "SENFLOAT", name: "Sensitive Float Index" },
+  { field: "Sensitive Index", symbol: "SENSITIVE", name: "Sensitive Index" },
+  { field: "Trading Index", symbol: "TRADING", name: "Trading" },
+];
+
+// export async function FetchSingularDataOfAsset(refresh) {
+
+//   try {
+//     const cachedData = await fetchFromCache("FetchSingularDataOfAssets");
+//     if (!refresh && cachedData != null) {
+//       return cachedData;
+//     }
+
+//     const response = await fetch(NEPSE_ACTIVE_API_URL + "/TradeTurnoverTransactionSubindices");
+//     if (!response.ok && cachedData != null) {
+//       assetLogger.error(`HTTP error! status: ${response.status}`);
+//       return cachedData;
+//     }
+//     const singleData = await response.json();
+//     await saveToCache("FetchSingularDataOfAssets", singleData);
+
+//     return singleData;
+//   } catch (error) {
+//     assetLogger.error(`Error at FetchSingularDataOfAsset : ${error.message}`);
+//     return null;
+//   }
+// }
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const parentDir = path.resolve(__dirname, '..');
+
+const filePath = path.join(parentDir, 'public', 'index_data', 'SymbolNameMap.json');
+
+const jsonData = fs.readFileSync(filePath, 'utf8');
+const symbolNameMap = JSON.parse(jsonData);
+
+const symbolToNameMap = new Map();
+const nameToSymbolMap = new Map();
+
+symbolNameMap.forEach(item => {
+  symbolToNameMap.set(item.symbol, item.description);
+  nameToSymbolMap.set(item.companyname, item.symbol);
+});
+
+export async function UpdateNameSymbolMapJSON() {
   try {
-    if (!refresh) {
-      const cachedData = await fetchFromCache("FetchSingularDataOfAssets");
-      if (cachedData != null) {
-        return cachedData;
-      }
-    }
-
-    const responseLiveTrading = await axios.get(liveTradingUrl);
-
-    if (!responseLiveTrading.data) {
-      assetLogger.error(`Failed to fetch live trading data. Status: ${responseLiveTrading.status}`);
-      return null;
-    }
-
-    const domLiveTrading = new JSDOM(responseLiveTrading.data);
-    const documentLiveTrading = domLiveTrading.window.document;
-
-    const stockDataWithoutName = [];
-
-    const rowsLiveTrading = documentLiveTrading.querySelectorAll(
-      "#headFixed tbody tr"
-    );
-
-    rowsLiveTrading.forEach((row) => {
-      const columns = row.querySelectorAll("td");
-
-      const stockInfo = {
-        symbol: columns[1].querySelector("a").textContent.trim(),
-        ltp: parseFloat(
-          columns[2].textContent.trim().replace(/,(?=\d{3})/g, "")
-        ),
-        pointchange: parseFloat(columns[3].textContent.trim()),
-        percentchange: parseFloat(columns[4].textContent.trim()),
-        open: parseFloat(
-          columns[5].textContent.trim().replace(/,(?=\d{3})/g, "")
-        ),
-        high: parseFloat(
-          columns[6].textContent.trim().replace(/,(?=\d{3})/g, "")
-        ),
-        low: parseFloat(
-          columns[7].textContent.trim().replace(/,(?=\d{3})/g, "")
-        ),
-        volume: parseFloat(
-          columns[8].textContent.trim().replace(/,(?=\d{3})/g, "")
-        ),
-        previousclose: parseFloat(
-          columns[9].textContent.trim().replace(/,(?=\d{3})/g, "")
-        ),
-      };
-
-      stockDataWithoutName.push(stockInfo);
+    let symbolNameMap = await fetch("https://www.nepsealpha.com/trading/1/search?limit=500&query=", {
+      "headers": {
+        "accept": "application/json, text/plain, */*",
+        "sec-ch-ua": "\"Microsoft Edge\";v=\"125\", \"Chromium\";v=\"125\", \"Not.A/Brand\";v=\"24\"",
+        "sec-ch-ua-arch": "\"x86\"",
+        "sec-ch-ua-bitness": "\"64\"",
+        "sec-ch-ua-full-version": "\"125.0.2535.79\"",
+        "sec-ch-ua-full-version-list": "\"Microsoft Edge\";v=\"125.0.2535.79\", \"Chromium\";v=\"125.0.6422.112\", \"Not.A/Brand\";v=\"24.0.0.0\"",
+        "sec-ch-ua-mobile": "?0",
+        "sec-ch-ua-model": "\"\"",
+        "sec-ch-ua-platform": "\"Windows\"",
+        "sec-ch-ua-platform-version": "\"15.0.0\"",
+        "x-requested-with": "XMLHttpRequest",
+        "Referer": "https://www.nepsealpha.com/trading/chart",
+        "Referrer-Policy": "strict-origin-when-cross-origin"
+      },
+      "method": "GET"
     });
 
-    await saveToCache("FetchSingularDataOfAssets", stockDataWithoutName);
-    return stockDataWithoutName;
+    symbolNameMap = await symbolNameMap.json();
+
+    if (!symbolNameMap.ok) {
+      assetLogger.error(`HTTP error! status: ${symbolNameMap.status}`);
+      return;
+    }
+    fs.writeFileSync(filePath, JSON.stringify(symbolNameMap, null, 2));
+
+  }
+  catch (error) {
+    assetLogger.error(`Error at UpdateNameSymbolMapJSON : ${error.message}`);
+  }
+}
+
+
+export async function FetchSingularDataOfAsset(refresh) {
+
+  try {
+    const cachedData = await fetchFromCache("FetchSingularDataOfAssets");
+    if (!refresh && cachedData != null) {
+      return cachedData;
+    }
+
+    const response = await fetch("https://www.sharesansar.com/live-trading", {
+      headers: {
+        "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+        "accept-language": "en-US,en;q=0.9",
+        "cache-control": "max-age=0",
+        "priority": "u=0, i",
+        "sec-ch-ua": "\"Microsoft Edge\";v=\"125\", \"Chromium\";v=\"125\", \"Not.A/Brand\";v=\"24\"",
+        "sec-ch-ua-mobile": "?0",
+        "sec-ch-ua-platform": "\"Windows\"",
+        "sec-fetch-dest": "document",
+        "sec-fetch-mode": "navigate",
+        "sec-fetch-site": "none",
+        "sec-fetch-user": "?1",
+        "upgrade-insecure-requests": "1",
+        "cookie": "_ga=GA1.1.226892968.1702885063; _ga_FPXFBP3MT9=GS1.1.1702885062.1.1.1702886988.60.0.0; XSRF-TOKEN=eyJpdiI6Ik9lOFV0ZW9UZkRlNkVUWFRQcjZkcXc9PSIsInZhbHVlIjoiNkk4QkVyQk5wNWN5ODhraC83dnYyekJPZmx0bzM0UU1UV2E3Wm9lSjB3cEJOVFNSQzkxVjdZMDlKT1pCL0xWSFp5YU05WXZZcFFIQmwraEVTRDE5c3k0RGpaSE4renFRdzZJOXdESGp3RVIrOUNQMGFRNjBBU3Q5cWU2T1d5eWIiLCJtYWMiOiI5YjlkMGVkMzE1ZDFiZDBlNDFmZjMxZmQ0MjIyYjczODIzYmRmNjM3MTlkZTg4ODI2ZTNlNWFkNTRmMWYwNGE3In0%3D; sharesansar_session=eyJpdiI6InVKSzVlQzB5V1FIZldvdzZBR1lqZEE9PSIsInZhbHVlIjoiRForNWt2L2YvLy9oODdVMjRlR3h6WXBrdEhSaUhjZVRiNHZuK000Y1RHTTkzWGpnMVlKdFJ1M0dDcWZNMWxiOXNTRUpvV2hobHE2QmRLUGFwcUY5UVNrRkpHd1cwLzNiODdSczFBTW03WEF1UFdXWitSeGtoWmJFR3VnYXVlWnQiLCJtYWMiOiI1MTk0YTY1ZTgwOGQ3ZDFiY2RiY2EyMTZiNjBhNzQ2OTMyZjQzZDAwYzJlNTM3MTM3OGZmMzYxYmM3OTZiOWViIn0%3D"
+      },
+      referrerPolicy: "strict-origin-when-cross-origin",
+      method: "GET"
+    });
+
+    if (!response.ok && cachedData != null) {
+      assetLogger.error(`HTTP error! status: ${response.status}`);
+      return cachedData;
+    }
+
+    const $ = cheerio.load(await response.text());
+
+    const stockDataWithoutName = [];
+    const stockIndexData = {};
+
+    $('#headFixed tbody tr').each((index, element) => {
+      const columns = $(element).find('td');
+
+      stockDataWithoutName.push({
+        symbol: $(columns[1]).find('a').text().trim(),
+        name: symbolToNameMap.get($(columns[1]).find('a').text().trim()) || "",
+        ltp: parseFloat($(columns[2]).text().trim().replace(/,/g, "")),
+        pointchange: parseFloat($(columns[3]).text().trim()),
+        percentchange: parseFloat($(columns[4]).text().trim()),
+        open: parseFloat($(columns[5]).text().trim().replace(/,/g, "")),
+        high: parseFloat($(columns[6]).text().trim().replace(/,/g, "")),
+        low: parseFloat($(columns[7]).text().trim().replace(/,/g, "")),
+        volume: parseFloat($(columns[8]).text().trim().replace(/,/g, "")),
+        previousclose: parseFloat($(columns[9]).text().trim().replace(/,/g, ""))
+      });
+
+    });
+
+    nepseIndexes.forEach(({ field, symbol, name }) => {
+      const $element = $(`h4:contains('${field}')`).closest(".mu-list");
+      if ($element.length) {
+        stockIndexData[field] = {
+          symbol: symbol,
+          name: name,
+          volume: parseInt($element.find(".mu-price").text().replace(/,/g, ""), 10) || 0,
+          index: parseFloat($element.find(".mu-value").text().replace(/,/g, "")) || 0,
+          percent: parseFloat($element.find(".mu-percent").text().replace(/%/g, "")) || 0
+        };
+      }
+    });
+
+    const isNepseOpen = $(".btn.btn-danger").text().trim() !== "Market Closed";
+    const lastUpdated = $("#dDate").text().trim();
+
+    const returnData = { stockDataWithoutName, stockIndexData, isNepseOpen, lastUpdated };
+
+    await saveToCache("FetchSingularDataOfAssets", returnData);
+    await saveToCache("allindices_sourcedata", stockIndexData);
+
+    return returnData;
   } catch (error) {
     assetLogger.error(`Error at FetchSingularDataOfAsset : ${error.message}`);
     return null;
@@ -177,187 +311,187 @@ export async function FetchSingleCompanyDatafromAPI(symbol) {
   }
 }
 
-export async function AddCategoryAndSector(stockData) {
-  try {
-    stockData.forEach((stockInfo) => {
-      const lowerCaseName = stockInfo.name.toLowerCase();
+// export async function AddCategoryAndSector(stockData) {
+//   try {
+//     stockData.forEach((stockInfo) => {
+//       const lowerCaseName = stockInfo.name.toLowerCase();
 
-      if (stockInfo.ltp < 20 && lowerCaseName.includes("mutual fund")) {
-        stockInfo.category = "Mutual Fund";
-        stockInfo.sector = "Mutual Fund";
-      } else if (lowerCaseName.includes("debenture")) {
-        stockInfo.category = "Debenture";
-        stockInfo.sector = "Debenture";
-      } else {
-        if (
-          !stockInfo.sector &&
-          !lowerCaseName.includes("debenture") &&
-          !lowerCaseName.includes("mutual")
-        ) {
-          if (
-            lowerCaseName.includes("bank") &&
-            !lowerCaseName.includes("debenture") &&
-            !lowerCaseName.includes("promotor share")
-          ) {
-            stockInfo.sector = "Bank";
-          } else if (lowerCaseName.includes("finance")) {
-            stockInfo.sector = "Finance";
-          } else if (
-            lowerCaseName.includes("hydro") ||
-            lowerCaseName.includes("Hydro") ||
-            lowerCaseName.includes("power") ||
-            lowerCaseName.includes("Jal Vidhyut") ||
-            lowerCaseName.includes("Khola")
-          ) {
-            stockInfo.sector = "Hydropower";
-          } else if (
-            lowerCaseName.includes("bikas") ||
-            lowerCaseName.includes("development")
-          ) {
-            stockInfo.sector = "Development Banks";
-          } else if (
-            lowerCaseName.includes("microfinance") ||
-            lowerCaseName.includes("laghubitta")
-          ) {
-            stockInfo.sector = "Microfinance";
-          } else if (lowerCaseName.includes("life insurance")) {
-            stockInfo.sector = "Life Insurance";
-          } else if (lowerCaseName.includes("insurance")) {
-            stockInfo.sector = "Insurance";
-          } else if (lowerCaseName.includes("investment")) {
-            stockInfo.sector = "Investment";
-          } else {
-            stockInfo.sector = "unknown";
-          }
-        }
+//       if (stockInfo.ltp < 20 && lowerCaseName.includes("mutual fund")) {
+//         stockInfo.category = "Mutual Fund";
+//         stockInfo.sector = "Mutual Fund";
+//       } else if (lowerCaseName.includes("debenture")) {
+//         stockInfo.category = "Debenture";
+//         stockInfo.sector = "Debenture";
+//       } else {
+//         if (
+//           !stockInfo.sector &&
+//           !lowerCaseName.includes("debenture") &&
+//           !lowerCaseName.includes("mutual")
+//         ) {
+//           if (
+//             lowerCaseName.includes("bank") &&
+//             !lowerCaseName.includes("debenture") &&
+//             !lowerCaseName.includes("promotor share")
+//           ) {
+//             stockInfo.sector = "Bank";
+//           } else if (lowerCaseName.includes("finance")) {
+//             stockInfo.sector = "Finance";
+//           } else if (
+//             lowerCaseName.includes("hydro") ||
+//             lowerCaseName.includes("Hydro") ||
+//             lowerCaseName.includes("power") ||
+//             lowerCaseName.includes("Jal Vidhyut") ||
+//             lowerCaseName.includes("Khola")
+//           ) {
+//             stockInfo.sector = "Hydropower";
+//           } else if (
+//             lowerCaseName.includes("bikas") ||
+//             lowerCaseName.includes("development")
+//           ) {
+//             stockInfo.sector = "Development Banks";
+//           } else if (
+//             lowerCaseName.includes("microfinance") ||
+//             lowerCaseName.includes("laghubitta")
+//           ) {
+//             stockInfo.sector = "Microfinance";
+//           } else if (lowerCaseName.includes("life insurance")) {
+//             stockInfo.sector = "Life Insurance";
+//           } else if (lowerCaseName.includes("insurance")) {
+//             stockInfo.sector = "Insurance";
+//           } else if (lowerCaseName.includes("investment")) {
+//             stockInfo.sector = "Investment";
+//           } else {
+//             stockInfo.sector = "unknown";
+//           }
+//         }
 
-        stockInfo.category = "Assets";
-      }
-    });
+//         stockInfo.category = "Assets";
+//       }
+//     });
 
-    return stockData;
-  } catch (error) {
-    console.error(error);
-    throw error;
-  }
-}
+//     return stockData;
+//   } catch (error) {
+//     console.error(error);
+//     throw error;
+//   }
+// }
 
-export async function GetMutualFund() {
-  try {
-    const stockData = await fetchAndExtractStockData();
-    const mutualFundStocks = stockData.filter((stock) => stock.LTP < 20);
+// export async function GetMutualFund() {
+//   try {
+//     const stockData = await fetchAndExtractStockData();
+//     const mutualFundStocks = stockData.filter((stock) => stock.LTP < 20);
 
-    return mutualFundStocks;
-  } catch (error) {
-    console.error(error);
-    throw error;
-  }
-}
+//     return mutualFundStocks;
+//   } catch (error) {
+//     console.error(error);
+//     throw error;
+//   }
+// }
 
-export async function GetDebentures() {
-  try {
-    const stockData = await fetchAndExtractStockData();
-    const debentureStocks = stockData.filter((stock) =>
-      stock.name.toLowerCase().includes("debenture")
-    );
+// export async function GetDebentures() {
+//   try {
+//     const stockData = await fetchAndExtractStockData();
+//     const debentureStocks = stockData.filter((stock) =>
+//       stock.name.toLowerCase().includes("debenture")
+//     );
 
-    return debentureStocks;
-  } catch (error) {
-    console.error(error);
-    throw error;
-  }
-}
+//     return debentureStocks;
+//   } catch (error) {
+//     console.error(error);
+//     throw error;
+//   }
+// }
 
 //not live but good and complete
-export async function FetchOldData(refresh) {
-  const hardcodedUrl = "https://www.sharesansar.com/today-share-price";
+// export async function FetchOldData(refresh) {
+//   const hardcodedUrl = "https://www.sharesansar.com/today-share-price";
 
-  try {
-    if (!refresh) {
-      const cachedData = await fetchFromCache("FetchOldData");
-      if (cachedData != null) {
-        return cachedData;
-      }
-    }
+//   try {
+//     if (!refresh) {
+//       const cachedData = await fetchFromCache("FetchOldData");
+//       if (cachedData != null) {
+//         return cachedData;
+//       }
+//     }
 
-    const response = await axios.get(hardcodedUrl);
+//     const response = await axios.get(hardcodedUrl);
 
-    if (!response.data) {
-      assetLogger.error(`Failed to fetch data at FetchOldData. Status: ${response.status}`);
-      return null;
-    }
+//     if (!response.data) {
+//       assetLogger.error(`Failed to fetch data at FetchOldData. Status: ${response.status}`);
+//       return null;
+//     }
 
-    const dom = new JSDOM(response.data);
-    const document = dom.window.document;
+//     const dom = new JSDOM(response.data);
+//     const document = dom.window.document;
 
-    const scriptElements = document.querySelectorAll("script");
-    let cmpjsonArray = [];
+//     const scriptElements = document.querySelectorAll("script");
+//     let cmpjsonArray = [];
 
-    scriptElements.forEach((scriptElement) => {
-      if (scriptElement.textContent.includes("var cmpjson")) {
-        const scriptContent = scriptElement.textContent;
-        const jsonMatch = scriptContent.match(/var cmpjson = (\[.*\]);/);
+//     scriptElements.forEach((scriptElement) => {
+//       if (scriptElement.textContent.includes("var cmpjson")) {
+//         const scriptContent = scriptElement.textContent;
+//         const jsonMatch = scriptContent.match(/var cmpjson = (\[.*\]);/);
 
-        if (jsonMatch && jsonMatch[1]) {
-          const jsonContent = jsonMatch[1];
-          cmpjsonArray = JSON.parse(jsonContent);
-        }
-      }
-    });
+//         if (jsonMatch && jsonMatch[1]) {
+//           const jsonContent = jsonMatch[1];
+//           cmpjsonArray = JSON.parse(jsonContent);
+//         }
+//       }
+//     });
 
-    const symbolToNameMap = cmpjsonArray.reduce((map, item) => {
-      map[item.symbol] = item.companyname;
-      return map;
-    }, {});
+//     const symbolToNameMap = cmpjsonArray.reduce((map, item) => {
+//       map[item.symbol] = item.companyname;
+//       return map;
+//     }, {});
 
-    const stockDataWithoutName = [];
+//     const stockDataWithoutName = [];
 
-    const rows = document.querySelectorAll("#headFixed tbody tr");
+//     const rows = document.querySelectorAll("#headFixed tbody tr");
 
-    rows.forEach((row) => {
-      const columns = row.querySelectorAll("td");
+//     rows.forEach((row) => {
+//       const columns = row.querySelectorAll("td");
 
-      const stockInfo = {
-        symbol: columns[1].querySelector("a").textContent.trim(),
-        vwap: parseInt(columns[7].textContent.trim()),
-        Turnover: parseInt(columns[10].textContent.replace(/,/g, "")), //controvercial
-        day120: parseInt(columns[17].textContent.replace(/,/g, "")),
-        day180: parseInt(columns[18].textContent.replace(/,/g, "")),
-        week52high: parseInt(columns[19].textContent.replace(/,/g, "")),
-        week52low: parseInt(columns[20].textContent.replace(/,/g, "")),
-        name:
-          symbolToNameMap[columns[1].querySelector("a").textContent.trim()] ||
-          "",
-      };
+//       const stockInfo = {
+//         symbol: columns[1].querySelector("a").textContent.trim(),
+//         vwap: parseInt(columns[7].textContent.trim()),
+//         Turnover: parseInt(columns[10].textContent.replace(/,/g, "")), //controvercial
+//         day120: parseInt(columns[17].textContent.replace(/,/g, "")),
+//         day180: parseInt(columns[18].textContent.replace(/,/g, "")),
+//         week52high: parseInt(columns[19].textContent.replace(/,/g, "")),
+//         week52low: parseInt(columns[20].textContent.replace(/,/g, "")),
+//         name:
+//           symbolToNameMap[columns[1].querySelector("a").textContent.trim()] ||
+//           "",
+//       };
 
-      stockDataWithoutName.push(stockInfo);
-    });
+//       stockDataWithoutName.push(stockInfo);
+//     });
 
-    const enrichedData = await AddCategoryAndSector(stockDataWithoutName);
-    await saveToCache("FetchOldDatas", enrichedData);
+//     const enrichedData = await AddCategoryAndSector(stockDataWithoutName);
+//     await saveToCache("FetchOldDatas", enrichedData);
 
-    return enrichedData;
-  } catch (error) {
-    assetLogger.error(`Error at FetchOldData : ${error.message}`);
-  }
-}
+//     return enrichedData;
+//   } catch (error) {
+//     assetLogger.error(`Error at FetchOldData : ${error.message}`);
+//   }
+// }
 //nepseapi top gainers
 export const topgainersShare = async (refresh) => {
   const url = NEPSE_ACTIVE_API_URL + "/TopGainers";
 
   try {
-    if (!refresh) {
-      const cachedData = await fetchFromCache("topgainersShare");
-      if (cachedData != null) {
-        return cachedData;
-      }
+    const cachedData = await fetchFromCache("topgainersShare");
+    if (!refresh && cachedData != null) {
+      return cachedData;
     }
 
     const data = await fetch(url).then((response) => response.json());
 
-    if (!Array.isArray(data)) {
+    if (!Array.isArray(data) && cachedData != null) {
+
+      await switchServer();
       assetLogger.error("Invalid data received from the API in topgainersShare.");
-      return null;
+      return cachedData;
     }
 
     const processedData = data.map((item) => ({
@@ -379,17 +513,16 @@ export const topgainersShare = async (refresh) => {
 export const topLosersShare = async (refresh) => {
   const url = NEPSE_ACTIVE_API_URL + "/TopLosers";
   try {
-    if (!refresh) {
-      const cachedData = await fetchFromCache("topLosersShare");
-      if (cachedData != null) {
-        return cachedData;
-      }
+    const cachedData = await fetchFromCache("topLosersShare");
+    if (!refresh && cachedData != null) {
+      return cachedData;
     }
 
     const data = await fetch(url).then((response) => response.json());
-    if (!Array.isArray(data)) {
+    if (!Array.isArray(data) && cachedData != null) {
+      await switchServer();
       assetLogger.error("Invalid data received from the API in topLosersShare.");
-      return null;
+      return cachedData;
     }
 
     const processedData = data.map((item) => ({
@@ -412,18 +545,17 @@ export const topTurnoversShare = async (refresh) => {
   const url = NEPSE_ACTIVE_API_URL + "/TopTenTurnoverScrips";
 
   try {
-    if (!refresh) {
-      const cachedData = await fetchFromCache("topTurnoversShare");
-      if (cachedData != null) {
-        return cachedData;
-      }
+    const cachedData = await fetchFromCache("topTurnoversShare");
+    if (!refresh && cachedData != null) {
+      return cachedData;
     }
 
     const data = await fetch(url).then((response) => response.json());
 
-    if (!Array.isArray(data)) {
-      assetLogger.error("Invalid data received from the API in topTurnoversShare.");
-      return null;
+    if (!Array.isArray(data) && cachedData != null) {
+      await switchServer();
+      assetLogger.error("Invalid data received from the API in topTurnoversShare");
+      return cachedData;
     }
 
     const processedData = data.map((item) => ({
@@ -444,18 +576,17 @@ export const topTurnoversShare = async (refresh) => {
 export const topTradedShares = async (refresh) => {
   const url = NEPSE_ACTIVE_API_URL + "/TopTenTradeScrips";
   try {
-    if (!refresh) {
-      const cachedData = await fetchFromCache("topTradedShares");
-      if (cachedData != null) {
-        return cachedData;
-      }
+    const cachedData = await fetchFromCache("topTradedShares");
+    if (!refresh && cachedData != null) {
+      return cachedData;
     }
 
     const data = await fetch(url).then((response) => response.json());
 
-    if (!Array.isArray(data)) {
+    if (!Array.isArray(data) && cachedData != null) {
+      await switchServer();
       assetLogger.error("Invalid data received from the API in TopTenTradeScrips.");
-      return null;
+      return cachedData;
     }
 
     const processedData = data.map((item) => ({
@@ -476,18 +607,17 @@ export const topTradedShares = async (refresh) => {
 export const topTransactions = async (refresh) => {
   const url = NEPSE_ACTIVE_API_URL + "/TopTenTransactionScrips";
   try {
-    if (!refresh) {
-      const cachedData = await fetchFromCache("topTransactions");
-      if (cachedData != null) {
-        return cachedData;
-      }
+    const cachedData = await fetchFromCache("topTransactions");
+    if (!refresh && cachedData != null) {
+      return cachedData;
     }
 
     const data = await fetch(url).then((response) => response.json());
+    if (!Array.isArray(data) && cachedData != null) {
 
-    if (!Array.isArray(data)) {
-      assetLogger.error("Invalid data received from the API in toptransaction.");
-      return null;
+      await switchServer();
+      assetLogger.error("Invalid data received from the API in toptransaction. Switching server.");
+      return cachedData;
     }
 
     const processedData = data.map((item) => ({
@@ -505,82 +635,6 @@ export const topTransactions = async (refresh) => {
 };
 
 //used for machine learning model
-export async function fetchIndexes(refresh) {
-  //to do switch to self made python api
-  try {
-    if (!refresh) {
-      const cachedData = await fetchFromCache("allindices_sourcedata");
-      if (cachedData != null) {
-        return cachedData;
-      }
-    }
-
-    const url = "https://www.sharesansar.com/live-trading";
-    const response = await axios.get(url);
-    const html = response.data;
-    const $ = cheerio.load(html);
-
-    const fieldsToExtract = [
-      "Banking SubIndex",
-      "Development Bank Ind.",
-      "Finance Index",
-      "Float Index",
-      "Hotels And Tourism",
-      "HydroPower Index",
-      "Investment",
-      "Life Insurance",
-      "Manufacturing And Pr.",
-      "Microfinance Index",
-      "Mutual Fund",
-      "NEPSE Index",
-      "Non Life Insurance",
-      "Others Index",
-      "Sensitive Float Inde.",
-      "Sensitive Index",
-      "Trading Index",
-    ];
-
-    const extractedData = {};
-
-    fieldsToExtract.forEach((field) => {
-      const $element = $(`h4:contains('${field}')`).closest(".mu-list");
-      const time = $("#dDate").text();
-      const volume = parseInt(
-        $element.find(".mu-price").text().replace(/,/g, ""),
-        10
-      );
-      const index = parseFloat(
-        $element.find(".mu-value").text().replace(/,/g, "")
-      );
-      const percent = parseFloat(
-        $element.find(".mu-percent").text().replace(/%/g, "")
-      );
-
-      extractedData[field] = { volume, index, percent, time };
-    });
-
-    await saveToCache("allindices_sourcedata", extractedData);
-    return extractedData;
-  } catch (error) {
-    assetLogger.error(`Error at fetchIndexes : ${error.message}`);
-  }
-}
-
-//NEW fetchIndexes
-export async function fetchIndexess(refresh) {
-  try {
-    if (!refresh) {
-      const cachedData = await fetchFromCache("allindices_sourcedata");
-      if (cachedData != null) {
-        return cachedData;
-      }
-    }
-  }
-  catch (error) {
-    assetLogger.error(`Error at fetchIndexes : ${error.message}`);
-  }
-}
-
 
 //intraday index using NepseAPI
 export async function getIndexIntraday(refresh) {
@@ -588,11 +642,9 @@ export async function getIndexIntraday(refresh) {
   const url2 = NEPSE_ACTIVE_API_URL + "/Summary";
 
   try {
-    if (!refresh) {
-      const cachedData = await fetchFromCache("intradayIndexData");
-      if (cachedData != null) {
-        return cachedData;
-      }
+    const cachedData = await fetchFromCache("intradayIndexData");
+    if (!refresh && cachedData != null) {
+      return cachedData;
     }
 
     const [nepseIndexData, nepseSummaryData, open, isOpen] = await Promise.all([
@@ -602,9 +654,15 @@ export async function getIndexIntraday(refresh) {
       fetchFromCache('isMarketOpen')
     ]);
 
-    if (!nepseIndexData || !nepseSummaryData || open === null || isOpen === null) {
-      assetLogger.error("NEPSE Index data is missing or undefined.");
-      return null;
+    if (open === null || isOpen === null) {
+      assetLogger.error("Open or isOpen data is missing or undefined.");
+      return cachedData;
+    }
+
+    if (cachedData != null && !nepseIndexData || !nepseSummaryData) {
+      await switchServer();
+      assetLogger.error("NEPSE Index data is missing or undefined. Switching server");
+      return cachedData;
     }
 
     const nepseIndex = nepseIndexData["NEPSE Index"];
@@ -644,17 +702,17 @@ export async function getIndexIntraday(refresh) {
 export async function intradayIndexGraph(refresh) {
   const url = NEPSE_ACTIVE_API_URL + "/DailyNepseIndexGraph";
   try {
-    if (!refresh) {
-      const cachedData = await fetchFromCache("intradayIndexGraph");
-      if (cachedData != null) {
-        return cachedData;
-      }
+    const cachedData = await fetchFromCache("intradayIndexGraph");
+    if (!refresh && cachedData != null) {
+      return cachedData;
     }
 
     const data = await fetch(url).then((response) => response.json());
-    if (!Array.isArray(data)) {
+    if (!Array.isArray(data) && cachedData != null) {
+
+      await switchServer();
       assetLogger.error("Invalid data received from the API in DailyNepseIndexGraph.");
-      return null;
+      return cachedData;
     }
 
     const processedData = data.map((entry) => ({
@@ -897,10 +955,7 @@ export default {
   fetchCompanyIntradayGraph,
   intradayIndexGraph,
   getIndexIntraday,
-  fetchIndexes,
   FetchSingularDataOfAsset,
-  GetDebentures,
-  FetchOldData,
   filterDuplicatesfromSystemX,
   topgainersShare,
   topLosersShare,

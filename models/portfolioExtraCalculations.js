@@ -252,10 +252,9 @@ import { portfolioLogger } from '../utils/logger/logger.js';
 //version 3
 export const addExtraPortfolioData = async (portfolios) => {
     try {
-        const asset = await fetchFromCache('AssetMergedDataShareSansar');
+        const asset = await fetchFromCache('FetchSingularDataOfAssets');
         if (!asset) {
             portfolioLogger.error('Asset not found');
-            throw new Error('Asset not found');
         }
 
         // Filter out portfolios without stocks and process only valid portfolios
@@ -267,12 +266,29 @@ export const addExtraPortfolioData = async (portfolios) => {
 
             // Process portfolio with stocks
             portfolio.stocks.forEach(stock => {
-                const assetLTP = asset.find(item => item.symbol === stock.symbol);
+                let assetLTP = asset['stockDataWithoutName'].find(item => item.symbol === stock.symbol);
                 if (assetLTP) {
                     stock.ltp = assetLTP.ltp;
                     stock.costprice = (stock.quantity * stock.wacc);
                     stock.name = assetLTP.name;
                     stock.currentprice = (assetLTP.ltp * stock.quantity).toFixed(2);
+                    stock.netgainloss = (stock.currentprice - stock.costprice).toFixed(2);
+                } else {
+                    const stockIndexData = asset['stockIndexData'];
+                    for (const key in stockIndexData) {
+                        if (Object.prototype.hasOwnProperty.call(stockIndexData, key)) {
+                            const index = stockIndexData[key];
+                            if (index && index.symbol === stock.symbol) {
+                                assetLTP = index;
+                                break;
+                            }
+                        }
+                    }
+
+                    stock.ltp = assetLTP.index || 0;
+                    stock.costprice = (stock.quantity * stock.wacc);
+                    stock.name = assetLTP.name || 'N/A';
+                    stock.currentprice = (assetLTP.index * stock.quantity).toFixed(2);
                     stock.netgainloss = (stock.currentprice - stock.costprice).toFixed(2);
                 }
             });
