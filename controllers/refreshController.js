@@ -159,7 +159,7 @@ export default async function initializeRefreshMechanism() {
     nepseLogger.info("Initializing Nepse refresh mechanism.");
     let isNepseOpenPrevious = await isNepseOpen(); // Store the initial state
     let closeCounter = 0;
-    await wipeCachesAndRefreshData(); // Refresh data if Nepse is initially open
+    //await wipeCachesAndRefreshData(); // Refresh data if Nepse is initially open
 
     setInterval(async () => {
       const isNepseOpenNow = await isNepseOpen(); // Check the current state
@@ -174,7 +174,7 @@ export default async function initializeRefreshMechanism() {
       }
 
       if (isNepseOpenNow || closeCounter >= 0) {
-        console.log(`Nepse is open now. Close counter: ${closeCounter}`)
+        nepseLogger.info(`performing Nepse data fetch. Close counter: ${closeCounter}`)
         await wipeCachesAndRefreshData(); // Refresh data if Nepse is currently open
         if (!isNepseOpenNow) {
           closeCounter--; // Decrease the counter if Nepse is closed
