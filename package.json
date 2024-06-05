@@ -17,16 +17,12 @@
   "dependencies": {
     "axios": "^1.7.2",
     "bcrypt": "^5.1.1",
-    "body-parser": "^1.19.0",
     "cheerio": "^1.0.0-rc.12",
     "cloudinary": "^2.2.0",
     "compression": "^1.7.4",
     "connect-multiparty": "^2.2.0",
     "connect-redis": "^7.1.1",
-    "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
-    "csrf-csrf": "^3.0.6",
-    "csrf-redi": "^1.0.4",
     "dotenv": "^16.4.5",
     "express": "^4.17.1",
     "express-rate-limit": "^7.2.0",
@@ -46,18 +42,15 @@
     "rate-limit-redis": "^4.2.0",
     "redis": "^4.6.14",
     "simple-in-memory-cache": "^0.3.1",
-    "svg-captcha": "^1.4.0",
-    "tiny-csrf": "^1.1.4",
     "uuid": "^9.0.1",
-    "webassemblyjs": "^1.12.1",
     "winston": "^3.13.0",
     "winston-mongodb": "github:Bharat94389/winston-mongodb#master",
     "ws": "^8.17.0",
     "xml2js": "^0.6.2"
   },
   "devDependencies": {
-    "@eslint/js": "^9.3.0",
-    "eslint": "^9.3.0",
+    "@eslint/js": "^9.4.0",
+    "eslint": "^9.4.0",
     "eslint-config-prettier": "^9.1.0",
     "globals": "^15.3.0"
   }
