@@ -11,8 +11,8 @@ export default function classifyNews(text) {
         'Food': ['food', 'restaurant', 'cooking', 'recipes', 'cuisine'],
         'Science': ['science', 'research', 'discovery', 'experiment', 'lab'],
         'Politics': ['politics', 'government', 'election', 'democracy', 'policy'],
-        'National': ['nepal', 'kathmandu', 'pokhara', 'biratnagar', 'lalitpur'],
-        'Nepse': ['nepse', 'stock', 'share', 'trading', 'invest', 'share', 'bajar', 'nepal stock', 'cdsc', 'ipo', 'dividend', 'bonus', 'right share', 'stock market', 'nepal stock exchange', 'nepal share market', 'nepal stock market',],
+        'National': ['nepal', 'kathmandu', 'pokhara', 'biratnagar', 'lalitpur', 'birjung', 'dharan', 'bharatpur', 'butwal', 'hetauda', 'nepali', 'nepalese', 'nepal government'],
+        'Nepse': ['nepse', 'stock', 'share', 'trading', 'invest', 'share', 'bajar', 'nepal stock', 'cdsc', 'ipo', 'dividend', 'bonus', 'right share', 'stock market', 'nepal stock exchange', 'nepal share market', 'nepal stock market'],
     };
 
     text = text.toLowerCase();
