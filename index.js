@@ -116,7 +116,7 @@ const corsOptions = {
   origin: isDevelopment ? 'https://localhost:3000' : 'https://tenpaisa.tech',
   methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE'],
   credentials: true,
-  allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization', 'x-csrf-token']
+  allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization', 'xsrf-token']
 };
 app.use(cors(corsOptions));
 
@@ -163,7 +163,7 @@ if (isDevelopment) {
 //rate limiting middleware // 100 requests per 15 minutes
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  limit: 100,
+  limit: 300,
   standardHeaders: 'draft-7',
   legacyHeaders: false,
   message: 'Too many requests, please try again later.',

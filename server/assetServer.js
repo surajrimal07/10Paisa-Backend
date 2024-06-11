@@ -812,7 +812,7 @@ export async function fetchAvailableNepseSymbol(filterdeben = true, refresh) {
   const fileName = path.join(__dirname, `../public/stock/NEPSE_SYMBOLS.json`);
 
   try {
-    const response = await fetch("https://backendtradingview.systemxlite.com/tv/tv/search?limit=30&query=&type=&exchange=", {
+    const response = await fetch("https://api.npstocks.com/tv/tv/search?limit=30&query=&type=&exchange=", {
       "headers": {
         "accept": "*/*",
         "accept-language": "en-US,en;q=0.9,ne;q=0.8",
@@ -903,7 +903,7 @@ export function filterDuplicatesfromSystemX(existingData, newData) {
 
 //fetch dynamic ohlc data from systemx or nepsealpha
 export const fetchFunctionforNepseAlphaORSystemxlite = async (symbolIndex, timeFrame, fromEpochTime, currentEpochTime, force_key) => {
-  let response = await fetch(`https://backendtradingview.systemxlite.com/tv/tv/history?symbol=${symbolIndex}&resolution=${timeFrame}&from=${fromEpochTime}&to=${currentEpochTime}&countback=88`, {
+  let response = await fetch(`https://api.npstocks.com/tv/tv/history?symbol=${symbolIndex}&resolution=${timeFrame}&from=${fromEpochTime}&to=${currentEpochTime}&countback=88`, {
     "headers": {
       "accept": "*/*",
       "accept-language": "en-US,en;q=0.9,ne;q=0.8",
@@ -915,7 +915,7 @@ export const fetchFunctionforNepseAlphaORSystemxlite = async (symbolIndex, timeF
       "sec-fetch-mode": "cors",
       "sec-fetch-site": "same-site",
       "sec-gpc": "1",
-      "Referer": "https://tradingview.systemxlite.com/",
+      "Referer": "https://chart.npstocks.com/",
       "Referrer-Policy": "strict-origin-when-cross-origin"
     },
     "method": "GET"

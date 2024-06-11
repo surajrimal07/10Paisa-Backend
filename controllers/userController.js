@@ -114,15 +114,10 @@ export const createUser = async (req, res) => {
 
   userLogger.info(`Create user command passed`);
 
-  const existingUser = await User.findOne({ email: email.toLowerCase() });
-  const existingPhone = await User.findOne({ phone });
-
   if (!name || !email || !password || !phone) {
     return respondWithError(res, 'BAD_REQUEST', "Empty data passed. Please provide all required fields.");
   } else if (!validatePhoneNumber(phone)) {
     return respondWithError(res, 'BAD_REQUEST', "Invalid phone number. Please provide a 10-digit number.");
-  } else if (existingPhone) {
-    return respondWithError(res, 'BAD_REQUEST', "Phone number already exists.");
   }
   else if (!validateEmail(email)) {
     return respondWithError(res, 'BAD_REQUEST', "Invalid email format. Please provide a valid email address.");
@@ -138,6 +133,18 @@ export const createUser = async (req, res) => {
   }
   else if (!LDAcheck(password)) {
     return respondWithError(res, 'BAD_REQUEST', "Password is too common.");
+  }
+
+  const existingUser = await User.findOne({ email: email.toLowerCase() });
+
+  if (existingUser) {
+    return respondWithError(res, 'BAD_REQUEST', "Email already exists.");
+  }
+
+  const existingPhone = await User.findOne({ phone });
+
+  if (existingPhone) {
+    return respondWithError(res, 'BAD_REQUEST', "Phone number already exists.");
   }
 
   const emailLowercase = email.toLowerCase();

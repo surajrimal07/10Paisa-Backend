@@ -11,6 +11,13 @@ const router = Router();
 const multipartMiddleware = multipart(); //kai form ma yo middleware halya xaina hola
 //if error aaye ma yo middleware add garnu
 
+//get xsrf token
+router.get('/csrf-token', function (req, res) {
+    const token = generateXsrfToken();
+    req.session.csrfToken = token;
+    res.status(200).json({ token });
+});
+
 router.use(validateXsrfToken);
 
 //Unprotected routes
@@ -51,12 +58,5 @@ router.post('/renamewatchlist', authGuard, renameWatchlist);
 router.post('/deletewatchlist', authGuard, deleteWatchlist);
 router.post('/addstocktowatchlist', authGuard, addStockToWatchlist);
 router.post('/remstockfromwatchlist', authGuard, removeStockFromWatchlist);
-
-//get xsrf token
-router.get('/csrf-token', function (req, res) {
-    const token = generateXsrfToken();
-    req.session.csrfToken = token;
-    res.status(200).json({ token });
-});
 
 export default router;

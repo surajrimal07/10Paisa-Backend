@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import mongoose from 'mongoose';
 import mongoosePaginate from 'mongoose-paginate-v2';
 import mongooseSequence from 'mongoose-sequence';
+import classifyNews from './textClassify.js';
 
 const AutoIncrement = mongooseSequence(mongoose);
 
@@ -26,6 +27,8 @@ const newsSchema = new mongoose.Schema({
     required: true,
     unique: true,
   },
+  category: String,
+  readingTime: Number
 }, { collection: 'news' });
 
 newsSchema.plugin(AutoIncrement, { id: 'news_id', inc_field: 'id' });
@@ -40,6 +43,22 @@ newsSchema.pre('save', function (next) {
   next();
 });
 
+newsSchema.pre('save', function (next) {
+  this.category = classifyNews(this.title + this.description);
+  next();
+});
+
+newsSchema.pre('save', function (next) {
+
+  const readingTime = Math.ceil(this.description.split(' ').length / 3);
+  this.readingTime = readingTime;
+  next();
+});
+
+
+
 const newsModel = mongoose.model('newsModel', newsSchema);
 
 export default newsModel;
+
+
