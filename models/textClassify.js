@@ -8,7 +8,11 @@ export default function classifyNews(text) {
         'Health': ['health', 'medical', 'doctor', 'hospital', 'wellness'],
         'Sports': ['sports', 'football', 'basketball', 'soccer', 'fitness'],
         'Entertainment': ['entertainment', 'movies', 'music', 'celebrities', 'art'],
-        'Food': ['food', 'restaurant', 'cooking', 'recipes', 'cuisine']
+        'Food': ['food', 'restaurant', 'cooking', 'recipes', 'cuisine'],
+        'Science': ['science', 'research', 'discovery', 'experiment', 'lab'],
+        'Politics': ['politics', 'government', 'election', 'democracy', 'policy'],
+        'National': ['nepal', 'kathmandu', 'pokhara', 'biratnagar', 'lalitpur'],
+        'Nepse': ['nepse', 'stock', 'share', 'trading', 'invest', 'share', 'bajar', 'nepal stock', 'cdsc', 'ipo', 'dividend', 'bonus', 'right share', 'stock market', 'nepal stock exchange', 'nepal share market', 'nepal stock market',],
     };
 
     text = text.toLowerCase();
