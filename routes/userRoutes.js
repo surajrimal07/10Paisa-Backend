@@ -13,8 +13,9 @@ const multipartMiddleware = multipart(); //kai form ma yo middleware halya xaina
 
 //get xsrf token
 router.get('/csrf-token', function (req, res) {
-    const token = generateXsrfToken();
+    let token = generateXsrfToken();
     req.session.csrfToken = token;
+    token = token.token;
     res.status(200).json({ token });
 });
 

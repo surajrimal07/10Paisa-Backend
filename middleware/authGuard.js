@@ -24,7 +24,8 @@ export const authGuard = async (req, res, next) => {
 
     if (scheme !== 'Bearer' || !token || token === 'undefined' || token === 'null') {
         userLogger.error("Token not provided or improperly formatted");
-        return respondWithError(res, 'UNAUTHORIZED', "Token not provided or improperly formatted");
+        //return respondWithError(res, 'TOKEN_MISSING', "Token not provided or improperly formatted");
+        return res.redirect('/login');
     }
 
     try {
@@ -35,7 +36,7 @@ export const authGuard = async (req, res, next) => {
 
         if (decoded.exp && decoded.exp < Date.now() / 1000) {
             userLogger.error("User Token has expired");
-            return respondWithError(res, 'UNAUTHORIZED', "Token has expired");
+            return respondWithError(res, 'TOKEN_EXPIRED', "Token has expired");
         }
 
         const user = await User.findOne({ email: decoded.email }, { LastPasswordChangeDate: 1 });
@@ -71,7 +72,7 @@ export const authGuardAdmin = async (req, res, next) => {
     //check if jwt token matches the one in session
     if (authHeader !== authHeaderInSession) {
         userLogger.error(`Token mismatch, ${authHeader} and ${authHeaderInSession}`);
-        return respondWithError(res, 'UNAUTHORIZED', "Token mismatch, please login again or pass correct token");
+        return respondWithError(res, 'TOKEN_MISSING', "Token mismatch, please login again or pass correct token");
     }
 
 
@@ -96,7 +97,7 @@ export const authGuardAdmin = async (req, res, next) => {
 
         if (Math.floor(user.LastPasswordChangeDate.getTime() / 1000) > decoded.iat || !user || !user.isAdmin) {
             userLogger.error("Token is invalid/expired or user not found");
-            return respondWithError(res, 'UNAUTHORIZED', "Token is invalid/expired or user not found");
+            return respondWithError(res, 'TOKEN_EXPIRED', "Token is invalid/expired or user not found");
         }
 
         req.user = { email: decoded.email, isAdmin: user.isAdmin };

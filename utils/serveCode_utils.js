@@ -15,4 +15,6 @@ export class ApiStatus {
     static GATEWAY_TIMEOUT = 504;
     static INVALID_INPUT = 422;
     static TOO_MANY_REQUESTS = 429;
+    static TOKEN_MISSING = 498;
+    static TOKEN_EXPIRED = 440;
   }

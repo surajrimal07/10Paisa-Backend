@@ -319,9 +319,7 @@ export async function fetchNews(page = 1, limit = 100, source = null, keyword = 
     };
   } else if (source) {
     query = { source: source };
-  } else if (keyword) {   //return news with keyword
-    //but modify the code like this, if keyword matches with category then returm news with that category
-    //else return news with keyword in title or description
+  } else if (keyword) { 
     const categoryMatch = await newsModel.findOne({ category: { $regex: keyword, $options: 'i' } });
 
     if (categoryMatch) {
