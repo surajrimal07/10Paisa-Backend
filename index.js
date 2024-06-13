@@ -162,8 +162,8 @@ if (isDevelopment) {
 
 //rate limiting middleware // 100 requests per 15 minutes
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  limit: 300,
+  windowMs: 5 * 60 * 1000,
+  limit: 500,
   standardHeaders: 'draft-7',
   legacyHeaders: false,
   message: 'Too many requests, please try again later.',

@@ -4,7 +4,7 @@ import Portfolio from '../models/portfolioModel.js';
 import Watchlist from '../models/watchlistModel.js';
 import User from '../models/userModel.js';
 import { adminLogger } from '../utils/logger/adminlogger.js';
-import { respondWithData, respondWithError,respondWithSuccess } from '../utils/response_utils.js';
+import { respondWithData, respondWithError, respondWithSuccess } from '../utils/response_utils.js';
 
 export const getAllUsers = async (req, res) => {
     try {
@@ -112,25 +112,30 @@ export const fetchUserLogs = async (req, res) => {
         // eslint-disable-next-line no-undef
         await db.connect(process.env.NEW_DB_URL, clientOptions);
         const collection = db.connection.collection('sessionlogs');
-        const logsCursor = collection.find({});
-        const logs = await logsCursor.toArray();
+        const logs = await collection.find({}).toArray();
+
 
         const formattedLogs = logs.map(log => {
-            const message = JSON.parse(log.message);
-            return {
-                user: message.user,
-                method: message.method,
-                url: message.url,
-                statusCode: message.statusCode,
-                responseTime: message.responseTime,
-                clientIP: message.clientIP,
-                serverHostname: log.hostname,
-                environment: message.environment,
-                timestamp: log.timestamp,
-                clientAddress: message.clientAddress,
-                sessionID: message.sessionID
-            };
-        });
+            try {
+                const message = JSON.parse(log.message);
+                return {
+                    user: message.user,
+                    method: message.method,
+                    url: message.url,
+                    statusCode: message.statusCode,
+                    responseTime: message.responseTime,
+                    clientIP: message.clientIP,
+                    serverHostname: log.hostname,
+                    environment: message.environment,
+                    timestamp: log.timestamp,
+                    clientAddress: message.clientAddress,
+                    sessionID: message.sessionID
+                };
+            } catch (err) {
+                adminLogger.error(`Error parsing log message: ${log.message}, Error: ${err}`);
+                return null;
+            }
+        }).filter(log => log !== null);
 
         await db.disconnect();
         return respondWithData(res, 'SUCCESS', 'Logs fetched successfully', formattedLogs);

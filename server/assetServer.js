@@ -7,27 +7,6 @@ import { fetchFromCache, saveToCache } from "../controllers/savefetchCache.js";
 
 import { assetLogger } from '../utils/logger/logger.js';
 
-const nepseIndexe = [
-  "Banking SubIndex",
-  "Development Bank Ind.",
-  "Finance Index",
-  "Float Index",
-  "Hotels And Tourism",
-  "HydroPower Index",
-  "Investment",
-  "Life Insurance",
-  "Manufacturing And Pr.",
-  "Microfinance Index",
-  "Mutual Fund",
-  "NEPSE Index",
-  "Non Life Insurance",
-  "Others Index",
-  "Sensitive Float Inde.",
-  "Sensitive Index",
-  "Trading Index",
-];
-
-
 const nepseIndexes = [
   { field: "Banking SubIndex", symbol: "BANKING", name: "Commercial Banking" },
   { field: "Development Bank Ind.", symbol: "DEVBANK", name: "Development Bank" },
@@ -252,6 +231,43 @@ export async function FetchAllCompaniesDataFromAPI(refresh = false) {
 //not good for high frequency api requests
 export async function FetchSingleCompanyDatafromAPI(symbol) {
   const url = NEPSE_ACTIVE_API_URL + `/CompanyDetails?symbol=${symbol}`;
+  //const url2 = NEPSE_ACTIVE_API_URL + "/CompanyList";
+
+  // let data2 = '';
+
+  // const cachedData = await fetchFromCache("CompanyListNepseAPI");
+
+  // if (cachedData !== null && cachedData !== undefined) {
+  //   data2 = cachedData;
+  // }
+
+  // try {
+  //   const data = await fetch(url).then((data) => data.json());
+
+  //   if (data2 == null || data2 == undefined) {
+  //     data2 = await fetch(url2).then((response) => response.json());
+  //     await saveToCache("CompanyListNepseAPI", data2);
+  //   }
+
+  //   if (!data || !data2) {
+  //     return null;
+  //   }
+
+  //   const company = data2.find((companyData) => companyData.symbol === symbol);
+
+  //   const mergedData = {
+  //     ...data,
+  //     general: {
+  //       id: company.id,
+  //       companyName: company.companyName,
+  //       status: company.status,
+  //       companyEmail: company.companyEmail,
+  //       website: company.website,
+  //       sectorName: company.sectorName,
+  //       regulatoryBody: company.regulatoryBody,
+  //       instrumentType: company.instrumentType,
+  //     },
+  //   };
 
   try {
     const data = await fetch(url).then((data) => data.json());
@@ -281,9 +297,9 @@ export async function FetchSingleCompanyDatafromAPI(symbol) {
     delete data.security.shareGroupId;
     delete data.security.cdsStockRefId;
     delete data.security.securityTradeCycle;
-    delete data.security.companyId;
-    delete data.security.instrumentType;
-    delete data.security.sectorMaster;
+   // delete data.security.companyId;
+    //delete data.security.instrumentType;
+   // delete data.security.sectorMaster;
     delete data.security.highRangeDPR;
     delete data.security.issuerName;
     delete data.security.parentId;

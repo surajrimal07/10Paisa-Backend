@@ -1,5 +1,5 @@
 import axios from 'axios';
-import cheerio from 'cheerio';
+import * as cheerio from 'cheerio';
 import { fetchFromCache, saveToCache } from '../controllers/savefetchCache.js';
 
 export async function extractNrbForexData () {

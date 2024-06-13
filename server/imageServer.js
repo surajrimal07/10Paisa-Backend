@@ -8,9 +8,8 @@ async function extractFeaturedImage(url, publisher) {
   const headers = createheaders(url);
   try {
     const response = await axios.get(url, { headers });
-    const html = response.data;
 
-    const $ = cheerio.load(html);
+    const $ = cheerio.load(response.data);
 
     let featuredImageUrl;
 

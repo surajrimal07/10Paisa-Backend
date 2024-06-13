@@ -1,5 +1,5 @@
 import axios from 'axios';
-import cheerio from 'cheerio';
+import * as cheerio from 'cheerio';
 import { createheaders } from '../utils/headers.js';
 
 
@@ -7,8 +7,8 @@ export async function oilExtractor(url = 'https://www.ktm2day.com/petrol-diesel-
     const headers = createheaders(url);
     try {
         const response = await axios.get(url, { headers });
-        const html = response.data;
-        const $ = cheerio.load(html);
+
+        const $ = cheerio.load(response.data);
 
         const fuelPrices = [];
 

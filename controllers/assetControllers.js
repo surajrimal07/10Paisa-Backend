@@ -65,7 +65,7 @@ export const SingeAssetMergedData = async (req, res) => {
   apiLogger.info("Sharesansar Single Asset Data Requested");
 
 
-  if (!req.body.symbol) {
+  if (!req.query.symbol) {
     apiLogger.error("No symbol provided in the request");
     return respondWithError(
       res,
@@ -73,7 +73,7 @@ export const SingeAssetMergedData = async (req, res) => {
       "No symbol provided in the request"
     );
   }
-  const symbol = (req.body.symbol).toUpperCase();
+  const symbol = (req.query.symbol).toUpperCase();
 
   try {
 

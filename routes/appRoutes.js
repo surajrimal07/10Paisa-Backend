@@ -11,7 +11,7 @@ const router = Router();
 router.get('/commodity', CommodityData);
 router.get('/metal', fetchMetalPrices);
 router.get('/sharesansardata', AssetMergedData);
-router.post('/singlesharesansardata', SingeAssetMergedData);
+router.get('/singlesharesansardata', SingeAssetMergedData);
 
 //homepage data
 router.get('/topgainers', TopGainersData);

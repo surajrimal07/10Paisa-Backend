@@ -576,6 +576,7 @@ export function createWebSocketServer() {
     wss = new WebSocketServer({ server });
 
     wss.on('connection', async function connection(ws, req) {
+      socketLogger.info("New client request received");
       const { searchParams } = new URL(req.url, `${protocol}://${req.headers.host}`);
       const room = searchParams.get('room');
       const jwtToken = searchParams.get('jwt');

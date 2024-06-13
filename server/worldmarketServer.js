@@ -1,19 +1,28 @@
 import axios from 'axios';
-import cheerio from 'cheerio';
+import * as cheerio from 'cheerio';
 import { fetchFromCache, saveToCache } from '../controllers/savefetchCache.js';
 
 
-export async function extractWorldMarketData() {
-    const url = 'https://en.stockq.org/';
-    try {
+const axiosInstance = axios.create();
 
-        const cachedData = await fetchFromCache('worldmarket');
+const WORLD_MARKET_CACHE_KEY = 'worldmarket';
+const URL = 'https://en.stockq.org/';
+const CRYPTO_URL = 'https://en.stockq.org/market/cryptocurrency.php';
+
+export async function extractWorldMarketData() {
+
+    try {
+        const cachedData = await fetchFromCache(WORLD_MARKET_CACHE_KEY);
         if (cachedData) {
             return cachedData;
         }
+        const [response, responseCrypto] = await Promise.all([
+            axiosInstance.get(URL),
+            axiosInstance.get(CRYPTO_URL)
+        ]);
 
-        const response = await axios.get(url);
         const $ = cheerio.load(response.data);
+        const $crypto = cheerio.load(responseCrypto.data);
 
         const marketData = {
             cryptocurrency: [],
@@ -31,14 +40,7 @@ export async function extractWorldMarketData() {
                     const tds = $(row).find('td');
                     const rowData = {};
 
-                    if (title.includes('Cryptocurrency')) {
-                        rowData.symbol = $(tds[1]).text().trim();
-                        rowData.currency = $(tds[0]).text().trim();
-                        rowData.rate = parseFloat($(tds[2]).text().trim());
-                        rowData.change = parseFloat($(tds[3]).text().trim());
-
-                        marketData.cryptocurrency.push(rowData);
-                    } else if (title.includes('Currency Exchange Rates')) {
+                    if (title.includes('Currency Exchange Rates')) {
                         rowData.currency = $(tds[0]).text().trim();
                         rowData.rate = parseFloat($(tds[1]).text().trim());
                         rowData.change = parseFloat($(tds[2]).text().trim());
@@ -68,9 +70,6 @@ export async function extractWorldMarketData() {
                 }
             });
 
-            if (marketData.cryptocurrency.length > 0 && marketData.cryptocurrency[0].symbol === 'Symbol') {
-                marketData.cryptocurrency.shift();
-            }
             if (marketData.currencyExchangeRates.length > 0 && marketData.currencyExchangeRates[0].currency === 'Currency') {
                 marketData.currencyExchangeRates.shift();
             }
@@ -85,7 +84,19 @@ export async function extractWorldMarketData() {
             }
         });
 
-        await saveToCache('worldmarket', marketData);
+        $crypto('tr.row1, tr.row2').each((index, element) => {
+            const crypto = {};
+            crypto.symbol = $crypto(element).find('td:nth-child(4)').text().trim();
+            crypto.currency = $crypto(element).find('td:nth-child(3)').text().trim();
+            crypto.rate = $crypto(element).find('td:nth-child(5)').text().trim();
+            crypto.change = $crypto(element).find('td:nth-child(6)').text().trim();
+            crypto.marketCap = $crypto(element).find('td:nth-child(8)').attr('title');
+            crypto.volume24h = $crypto(element).find('td:nth-child(9)').attr('title');
+
+            marketData.cryptocurrency.push(crypto);
+        });
+
+        await saveToCache(WORLD_MARKET_CACHE_KEY, marketData);
 
         return marketData;
     } catch (error) {
@@ -93,7 +104,3 @@ export async function extractWorldMarketData() {
         return null;
     }
 }
-
-// extractMarketDataFromURL()
-//     .then(data => console.log(data))
-//     .catch(error => console.error(error));
