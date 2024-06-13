@@ -15,11 +15,15 @@ async function fetchUserGeoLocationData(ipAddress, ipandsession) {
 
   if (!userGeoData) {
     const userinfo = {
-      city: 'Unknown',
-      country: 'Unknown',
-      timezone: 'Unknown',
-      isp: 'Unknown',
-      region: 'Unknown'
+      country_code: 'Unknown',
+      country_name: 'Unknown',
+      region_name: 'Unknown',
+      city_name: 'Unknown',
+      latitude: 'Unknown',
+      longitude: 'Unknown',
+      zip_code: 'Unknown',
+      time_zone: 'Unknown',
+      as: 'Unknown',
     };
 
     return userinfo;
@@ -33,11 +37,15 @@ export async function responseTimeMiddleware(req, res, next) {
   const start = Date.now();
 
   let userinfo = {
-    city: 'Localhost',
-    country: 'Localhost',
-    timezone: 'Localhost',
-    isp: 'Localhost',
-    region: 'Localhost'
+    country_code: 'Localhost',
+    country_name: 'Localhost',
+    region_name: 'Localhost',
+    city_name: 'Localhost',
+    latitude: 'Localhost',
+    longitude: 'Localhost',
+    zip_code: 'Localhost',
+    time_zone: 'Localhost',
+    as: 'Localhost',
   };
 
   if (req.ip !== '::1') { //::1 is localhost
@@ -51,9 +59,12 @@ export async function responseTimeMiddleware(req, res, next) {
     userinfo = {
       city: userInfo.city_name,
       country: userInfo.country_name,
+      region: userInfo.region_name,
       timezone: userInfo.time_zone,
-      isp: userInfo.organization_name,
-      region: userInfo.as
+      longitude: userInfo.longitude,
+      latitude: userInfo.latitude,
+      time_zone: userInfo.time_zone,
+      isp: userInfo.as,
     }
   }
 
