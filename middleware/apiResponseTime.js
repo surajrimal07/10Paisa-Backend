@@ -45,6 +45,7 @@ export async function responseTimeMiddleware(req, res, next) {
 
     const userInfo = await fetchUserGeoLocationData(req.ip, ipandsession)
 
+    console.log('User Info: Requested IP is' + req.ip);
     console.log(userInfo);
 
     userinfo = {
