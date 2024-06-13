@@ -16,6 +16,7 @@ export function validateXsrfToken(req, res, next) {
     const token = req.headers['xsrf-token'] || req.body._csrf || req.query._csrf;
     const expectedToken = req.session.csrfToken;
 
+    console.log(req.headers);
     console.log(`expectedToken: ${expectedToken.token}`);
     console.log(`token: ${token}`);
 
