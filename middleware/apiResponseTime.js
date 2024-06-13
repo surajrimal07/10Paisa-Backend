@@ -5,16 +5,35 @@ import {
 import { sessionLogger } from "../utils/logger/logger.js";
 
 async function fetchUserGeoLocationData(ipAddress, ipandsession) {
-  const cachedData = fetchFromCache(ipandsession);
+  try {
+    const cachedData = fetchFromCache(ipandsession);
+    if (cachedData) {
+      return cachedData;
+    }
 
-  if (cachedData) {
-    return cachedData;
-  }
-  const userGeoData = await fetch(`https://api.ip2location.io/?key=3B2CB46C0C0491F35A3A7A08CEFF8B20&ip=${ipAddress}`)
-    .then(response => response.json())
+    const response = await fetch(`https://api.ip2location.io/?key=3B2CB46C0C0491F35A3A7A08CEFF8B20&ip=${ipAddress}`);
+    const userGeoData = await response.json();
 
-  if (!userGeoData) {
-    const userinfo = {
+    if (!userGeoData || !userGeoData.city_name) {
+      sessionLogger.warn(`No data found for IP: ${ipAddress}`);
+      return {
+        country_code: 'Unknown',
+        country_name: 'Unknown',
+        region_name: 'Unknown',
+        city_name: 'Unknown',
+        latitude: 'Unknown',
+        longitude: 'Unknown',
+        zip_code: 'Unknown',
+        time_zone: 'Unknown',
+        as: 'Unknown',
+      };
+    }
+
+    saveToCache(ipandsession, userGeoData);
+    return userGeoData;
+  } catch (error) {
+    sessionLogger.error(`Error fetching geolocation data for IP: ${ipAddress} - ${error.message}`);
+    return {
       country_code: 'Unknown',
       country_name: 'Unknown',
       region_name: 'Unknown',
@@ -25,12 +44,7 @@ async function fetchUserGeoLocationData(ipAddress, ipandsession) {
       time_zone: 'Unknown',
       as: 'Unknown',
     };
-
-    return userinfo;
   }
-
-  saveToCache(ipandsession, userGeoData);
-  return userGeoData;
 }
 
 export async function responseTimeMiddleware(req, res, next) {
