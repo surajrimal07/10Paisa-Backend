@@ -1,9 +1,10 @@
 import { Mongoose } from 'mongoose';
 import { clientOptions } from '../database/db.js';
 import Portfolio from '../models/portfolioModel.js';
+import Watchlist from '../models/watchlistModel.js';
 import User from '../models/userModel.js';
 import { adminLogger } from '../utils/logger/adminlogger.js';
-import { respondWithData, respondWithError } from '../utils/response_utils.js';
+import { respondWithData, respondWithError,respondWithSuccess } from '../utils/response_utils.js';
 
 export const getAllUsers = async (req, res) => {
     try {
@@ -16,6 +17,7 @@ export const getAllUsers = async (req, res) => {
 
         return respondWithData(res, 'SUCCESS', 'Users fetched successfully', users);
     } catch (error) {
+        adminLogger.error(`Error while fetching users: ${error}`);
         return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'An error occurred while fetching users');
     }
 };
@@ -41,6 +43,7 @@ export const deleteUserByEmail = async (req, res) => {
         adminLogger.info(`User deleted successfully for email:${email}`);
         return respondWithData(res, 'SUCCESS', 'User deleted successfully', deletedUser);
     } catch (error) {
+        adminLogger.error(`Error while deleting user: ${error}`);
         return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'An error occurred while deleting the user');
     }
 };
@@ -56,6 +59,7 @@ export const getAllPortfolios = async (req, res) => {
 
         return respondWithData(res, 'SUCCESS', 'Portfolios fetched successfully', portfolios);
     } catch (error) {
+        adminLogger.error(`Error while fetching portfolios: ${error}`);
         return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'An error occurred while fetching portfolios');
     }
 };
@@ -73,6 +77,7 @@ export const editUserByEmail = async (req, res) => {
 
         return respondWithData(res, 'SUCCESS', 'User updated successfully', updatedUser);
     } catch (error) {
+        adminLogger.error(`Error while updating user: ${error}`);
         return respondWithError(res, 'INTERNAL_SERVER_ERROR', 'An error occurred while updating the user');
     }
 };
@@ -104,6 +109,7 @@ export const makeadmin = async (req, res) => {
 export const fetchUserLogs = async (req, res) => {
     let db = new Mongoose();
     try {
+        // eslint-disable-next-line no-undef
         await db.connect(process.env.NEW_DB_URL, clientOptions);
         const collection = db.connection.collection('sessionlogs');
         const logsCursor = collection.find({});
@@ -120,7 +126,9 @@ export const fetchUserLogs = async (req, res) => {
                 clientIP: message.clientIP,
                 serverHostname: log.hostname,
                 environment: message.environment,
-                timestamp: log.timestamp
+                timestamp: log.timestamp,
+                clientAddress: message.clientAddress,
+                sessionID: message.sessionID
             };
         });
 
