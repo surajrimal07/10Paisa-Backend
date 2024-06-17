@@ -19,8 +19,6 @@ router.get('/csrf-token', function (req, res) {
     res.status(200).json({ token });
 });
 
-///router.use(validateXsrfToken);
-
 router.post('*', validateXsrfToken); //validate all post requests
 
 //Unprotected routes

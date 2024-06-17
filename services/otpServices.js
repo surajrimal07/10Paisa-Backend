@@ -4,35 +4,33 @@ import emailServices from '../services/emailerServices.js';
 import context from '../utils/globalVariables.js';
 
 const key = "test123";
-const logo = '../AssetData/images/logo.png';
 
 //logo is broken, it need to be hosted in cloud for it to work.
 
 export const sendOTP = (params, callback) => {
-    const otp = otpGenerator.generate(4, {
-        digits: true,
-        upperCaseAlphabets: false,
-        specialChars: false,
-        lowerCaseAlphabets: false
-    });
+  const otp = otpGenerator.generate(4, {
+    digits: true,
+    upperCaseAlphabets: false,
+    specialChars: false,
+    lowerCaseAlphabets: false
+  });
 
-    console.log("Otp generated from backend "+ otp)
-    const ttl = 5 * 60 * 1000;
-    const expires = Date.now() + ttl;
-    const data = `${params.email}.${otp}.${expires}`;
-    const hash = crypto.createHmac("sha256", key).update(data).digest("hex");
-    const fullhash = `${hash}.${expires}`;
-    const currentDate = new Date().toLocaleString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-        hour: 'numeric',
-        minute: 'numeric',
-        hour12: true,
-    });
-    const expiresIn = new Date(Date.now() + ttl).toLocaleTimeString();
-    const dynamicReasonBody = "to complete the procedure of registration process"
-    const otpMessage = `<!DOCTYPE html>
+  const ttl = 5 * 60 * 1000;
+  const expires = Date.now() + ttl;
+  const data = `${params.email}.${otp}.${expires}`;
+  const hash = crypto.createHmac("sha256", key).update(data).digest("hex");
+  const fullhash = `${hash}.${expires}`;
+  const currentDate = new Date().toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: 'numeric',
+    hour12: true,
+  });
+  const expiresIn = new Date(Date.now() + ttl).toLocaleTimeString();
+  const dynamicReasonBody = "to complete the procedure of registration process"
+  const otpMessage = `<!DOCTYPE html>
     <html lang="en">
     <head>
         <meta charset="UTF-8" />
@@ -74,8 +72,8 @@ export const sendOTP = (params, callback) => {
               <td>
                 <img
                   alt=""
-                  src=${logo}
-                  height="30px"
+                  src= "https://res.cloudinary.com/dio3qwd9q/image/upload//fl_attachment:logo_kxzvpx//v1718382948/logo_kxzvpx.png"
+                  height="70px"
                 />
               </td>
               <td style="text-align: right;">
@@ -119,7 +117,7 @@ export const sendOTP = (params, callback) => {
                 font-weight: 500;
               "
             >
-              Hey ${context.username},
+              Hey ${context.email},
             </p>
             <p
               style="
@@ -252,55 +250,55 @@ export const sendOTP = (params, callback) => {
     </html>
     `;
 
-    const model = {
-        email: params.email,
-        subject: "Welcome to 10Paisa",
-        body: otpMessage
-    };
+  const model = {
+    email: params.email,
+    subject: "Welcome to 10Paisa",
+    body: otpMessage
+  };
 
-    emailServices.sendEmail(model, (error, result) => {
-        if (error) {
-            return callback(error);
-        }
-        return callback(null, fullhash);
-    });
+  emailServices.sendEmail(model, (error, result) => {
+    if (error) {
+      return callback(error);
+    }
+    return callback(null, fullhash);
+  });
 };
 
 export const verifyOTP = (params, callback) => {
 
-    if (!params.email || !params.otp || !params.hash) {
-        return callback("Invalid OTP");
-    }
-    const [hashValue, expires] = params.hash.split('.');
-    const now = Date.now();
-
-    if (now > parseInt(expires)) {
-        return callback("OTP Expired");
-    }
-
-    const data = `${params.email}.${params.otp}.${expires}`;
-    const newCalculatedHash = crypto.createHmac("sha256", key).update(data).digest("hex");
-    if (newCalculatedHash === hashValue) {
-        return callback(null, "Success");
-    }
+  if (!params.email || !params.otp || !params.hash) {
     return callback("Invalid OTP");
+  }
+  const [hashValue, expires] = params.hash.split('.');
+  const now = Date.now();
+
+  if (now > parseInt(expires)) {
+    return callback("OTP Expired");
+  }
+
+  const data = `${params.email}.${params.otp}.${expires}`;
+  const newCalculatedHash = crypto.createHmac("sha256", key).update(data).digest("hex");
+  if (newCalculatedHash === hashValue) {
+    return callback(null, "Success");
+  }
+  return callback("Invalid OTP");
 };
 
 export const forgotpass = (emails, callback) => {
-    const otp = otpGenerator.generate(4, {
-        digits: true,
-        upperCaseAlphabets: false,
-        specialChars: false,
-        lowerCaseAlphabets: false
-    });
+  const otp = otpGenerator.generate(4, {
+    digits: true,
+    upperCaseAlphabets: false,
+    specialChars: false,
+    lowerCaseAlphabets: false
+  });
 
-    const ttl = 5 * 60 * 1000;
-    const expires = Date.now() + ttl;
-    const data = `${emails}.${otp}.${expires}`; //
-    const hash = crypto.createHmac("sha256", key).update(data).digest("hex");
-    const fullhash = `${hash}.${expires}`;
+  const ttl = 5 * 60 * 1000;
+  const expires = Date.now() + ttl;
+  const data = `${emails}.${otp}.${expires}`; //
+  const hash = crypto.createHmac("sha256", key).update(data).digest("hex");
+  const fullhash = `${hash}.${expires}`;
 
-    const otpMessage = `Dear User,
+  const otpMessage = `Dear ${context.email},
 
         We've received a request to reset your password. Your One-Time Password (OTP) for password reset is: ${otp}
         Please use this OTP to reset your password. For security reasons, please do not share this OTP with anyone.
@@ -310,18 +308,17 @@ export const forgotpass = (emails, callback) => {
         The 10Paisa Team`;
 
 
-    const model = {
-        email: emails,
-        subject: "10Paisa Password Reset",
-        body: otpMessage
-    };
+  const model = {
+    email: emails,
+    subject: "10Paisa Password Reset",
+    body: otpMessage
+  };
 
-    emailServices.sendEmail(model, (error, result) => {
-        if (error) {
-            return callback(error);
-        } else{
-            console.log(callback);
-            return callback(null, fullhash);
+  emailServices.sendEmail(model, (error, result) => {
+    if (error) {
+      return callback(error);
+    } else {
+      return callback(null, fullhash);
     }
-    });
+  });
 };

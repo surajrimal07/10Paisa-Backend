@@ -24,7 +24,6 @@ export const authGuard = async (req, res, next) => {
 
     if (scheme !== 'Bearer' || !token || token === 'undefined' || token === 'null') {
         userLogger.error("Token not provided or improperly formatted");
-        //return respondWithError(res, 'TOKEN_MISSING', "Token not provided or improperly formatted");
         return res.redirect('/login');
     }
 
@@ -58,10 +57,6 @@ export const authGuard = async (req, res, next) => {
 
 //for admins
 export const authGuardAdmin = async (req, res, next) => {
-    //const authHeader = req.headers.authorization;
-    //using JWT token from session which we added during login.
-    //this eleminates the need to send token in every request
-    //also secures token because it no longer need to reside in client localsotrage //flawed logic
     const authHeader = req.headers.authorization;
     const authHeaderInSession = req.session.jwtToken;
 
@@ -69,7 +64,6 @@ export const authGuardAdmin = async (req, res, next) => {
         return respondWithError(res, 'UNAUTHORIZED', "Admin Token not provided");
     }
 
-    //check if jwt token matches the one in session
     if (authHeader !== authHeaderInSession) {
         userLogger.error(`Token mismatch, ${authHeader} and ${authHeaderInSession}`);
         return respondWithError(res, 'TOKEN_MISSING', "Token mismatch, please login again or pass correct token");

@@ -34,3 +34,34 @@ export const mainLogger = winston.createLogger({
   ),
   transports
 });
+
+const errorHandler = (err, req, res, next) => {
+  mainLogger.error(err.stack);
+
+  const response = {
+    message: 'An internal server error occurred',
+  };
+
+  if (process.env.NODE_ENV !== 'production') {
+    response.error = err.message;
+  }
+
+  res.status(err.status || 500).json(response);
+};
+
+
+export const setupErrorHandling = (app) => {
+  app.use((err, req, res, next) => {
+    errorHandler(err, req, res, next);
+  });
+
+  process.on('uncaughtException', (err) => {
+    mainLogger.error(`Uncaught Exception: ${err.message}`);
+    errorHandler(err);
+  });
+
+  process.on('unhandledRejection', (reason, promise) => {
+    mainLogger.error(`Unhandled Rejection at: ${promise}, reason: ${reason}`);
+    errorHandler(reason);
+  });
+};

@@ -1,5 +1,6 @@
 import bcrypt from 'bcrypt';
 import { v2 as cloudinary } from 'cloudinary';
+import mime from 'mime/lite';
 import { forgetPassword } from '../controllers/otpControllers.js';
 import { addExtraPortfolioData } from '../models/portfolioExtraCalculations.js';
 import Portfolio from '../models/portfolioModel.js';
@@ -170,9 +171,6 @@ export const createUser = async (req, res) => {
     let userData = await User.findOne({ email: emailLowercase }).populate('portfolio').then(user => formatUserData(user));
 
     await signJWTandEncrypt(userData, emailLowercase, req, res);
-    // const token = jwt.sign({ email: emailLowercase }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRY_TIME });
-
-    // userData.token = await encryptData(token);
 
     userLogger.info(`User created successfully`);
     return respondWithData(res, 'CREATED', "User created successfully", userData);
@@ -458,7 +456,6 @@ export const updateUserData = async (req, res) => {
 
 //image part //upload
 export const updateUserProfilePicture = async (req, res) => {
-  console.log(req.body);
 
   const oldEmail = req.body.oldEmail;
 
@@ -472,12 +469,19 @@ export const updateUserProfilePicture = async (req, res) => {
 
   const { dpImage } = req.files;
 
-  const allowedExtensions = ['.jpg', '.jpeg', '.png'];
-  const fileExtension = dpImage.originalFilename.substring(dpImage.originalFilename.lastIndexOf('.')).toLowerCase();
+  //const allowedExtensions = ['.jpg', '.jpeg', '.png'];
 
-  if (!allowedExtensions.includes(fileExtension)) {
-    return respondWithError(res, 'BAD_REQUEST', "Only JPG and PNG files are allowed");
-  }
+  const fileMimeType = mime.getType(dpImage.path);
+
+  if (!fileMimeType || !fileMimeType.includes('image')) {
+    return respondWithError(res, 'BAD_REQUEST', "Only image files are allowed");
+  };
+
+  //const fileExtension = dpImage.originalFilename.substring(dpImage.originalFilename.lastIndexOf('.')).toLowerCase();
+
+  // if (!allowedExtensions.includes(fileExtension)) {
+  //   return respondWithError(res, 'BAD_REQUEST', "Only JPG and PNG files are allowed");
+  // }
 
   try {
     const user = await User.findOne({ email: oldEmail }).populate('portfolio');

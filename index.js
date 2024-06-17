@@ -28,7 +28,7 @@ import userRouter from "./routes/appRoutes.js";
 import { getNews, initiateNewsFetch } from "./server/newsserver.js";
 import { redisclient } from "./server/redisServer.js";
 import { startWebSocketServer } from "./server/websocket.js";
-import { mainLogger } from './utils/logger/logger.js';
+import { mainLogger, setupErrorHandling } from './utils/logger/logger.js';
 import dynamicRoutes from "./utils/routesforIndex.js";
 
 //Express Middlewares
@@ -56,7 +56,6 @@ app.use(session({
   store: new RedisStore({ client: redisclient }),
   saveUninitialized: true,
   cookie: {
-    //give name to the cookie
     httpsOnly: true,
     secure: true,
     sameSite: true,
@@ -66,14 +65,36 @@ app.use(session({
   },
 }));
 
+// app.use(
+//   helmet.hidePoweredBy,
+//   helmet.noSniff(),
+//   helmet.xssFilter(),
+//   helmet.frameguard(),
+//   helmet.dnsPrefetchControl(),
+//   helmet.contentSecurityPolicy({
+//     directives: {
+//       defaultSrc: ["'self'"],
+//       scriptSrc: ["'self'", "'unsafe-inline'"],
+//       styleSrc: ["'self'", "'unsafe-inline'"],
+//       imgSrc: ["'self'"],
+//       scriptSrcAttr: ["'unsafe-inline'"]
+//     },
+//   })
+// );
+
 app.use(
+  helmet.hidePoweredBy(),
+  helmet.noSniff(),
+  helmet.xssFilter(),
+  helmet.frameguard(),
+  helmet.dnsPrefetchControl(),
   helmet.contentSecurityPolicy({
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'"],
+      styleSrc: ["'self'"],
       imgSrc: ["'self'"],
-      scriptSrcAttr: ["'unsafe-inline'"]
+      objectSrc: ["'none'"]
     },
   })
 );
@@ -105,7 +126,7 @@ app.use(
     sql: true,
     sqlLevel: 5,
     noSqlLevel: 5,
-    allowedKeys: ["user"], //fixing user being removed from req.body
+    allowedKeys: ["user"],
   },
     whiteList
   )
@@ -114,11 +135,30 @@ app.use(
 const corsOptions = {
   flightContinue: true,
   origin: isDevelopment ? 'https://localhost:3000' : 'https://tenpaisa.tech',
-  methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE'],
+  methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST'],
   credentials: true,
   allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization', 'xsrf-token']
 };
 app.use(cors(corsOptions));
+
+
+// const allowedOrigins = [
+//   process.env.CLIENT,
+//   process.env.LOCAL
+// ]
+// var corsOptions = {
+//   origin: function (origin, callback) {
+//       if (!origin || allowedOrigins.includes(origin)) {
+//           callback(null, true);
+//       } else {
+//           callback(new Error('Not allowed by CORS'));
+//       }
+//   },
+//   optionsSuccessStatus: 200
+// }
+
+// app.use(cors(corsOptions));
+
 
 //session middleware
 app.use(responseTimeMiddleware);
@@ -204,6 +244,8 @@ app.use((req, res) => {
   res.status(404).json({ error: 'Not Found', message: 'The requested resource was not found on this server.' });
 });
 
+setupErrorHandling(app); //global error handling
+
 redisclient.on("error", (error) => {
   mainLogger.error("Redis client error:", error);
 });
@@ -212,14 +254,4 @@ app.on("close", () => {
   redisclient.disconnect();
 });
 
-// app.use((err, req, res, next) => {
-//   if (err.code === 'EBADCSRFTOKEN') {
-//     res.status(403).json({ error: 'Invalid CSRF token' });
-//   } else {
-//     console.log(err);
-//     res.status(err.status || 500).json({ error: 'Internal Server Error' });
-//   }
-// });
-
-//exports
 export default app;

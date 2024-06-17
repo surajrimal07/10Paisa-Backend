@@ -33,7 +33,7 @@ export const validatePassword = (password) => {
     if (!/[0-9]/.test(password)) {
         return "Password should contain at least one number";
     }
-    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+    if (!/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password)) {
         return "Password should contain at least one special character";
     }
     if (/(\w)\1{2,}/.test(password)) {

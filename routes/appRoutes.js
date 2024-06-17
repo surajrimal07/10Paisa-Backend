@@ -58,6 +58,8 @@ router.use('/admin', adminrouter); //https://localhost:4000/api/admin/allportfol
 //user router
 router.use('/user', userrouter); //https://localhost:4000/api/user/login
 
+
+
 // router.get('/active-users', (req, res) => {
 //     const activeUsersCount = Object.keys(req.session.activeUsers).length;
 //     res.json({ activeUsers: activeUsersCount });
