@@ -35,6 +35,7 @@ export const mainLogger = winston.createLogger({
   transports
 });
 
+// eslint-disable-next-line no-unused-vars
 const errorHandler = (err, req, res, next) => {
   mainLogger.error(err.stack);
 

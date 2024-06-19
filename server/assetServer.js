@@ -297,9 +297,9 @@ export async function FetchSingleCompanyDatafromAPI(symbol) {
     delete data.security.shareGroupId;
     delete data.security.cdsStockRefId;
     delete data.security.securityTradeCycle;
-   // delete data.security.companyId;
+    // delete data.security.companyId;
     //delete data.security.instrumentType;
-   // delete data.security.sectorMaster;
+    // delete data.security.sectorMaster;
     delete data.security.highRangeDPR;
     delete data.security.issuerName;
     delete data.security.parentId;
@@ -716,43 +716,52 @@ export async function getIndexIntraday(refresh) {
 }
 
 export async function intradayIndexGraph(refresh) {
-  const url = NEPSE_ACTIVE_API_URL + "/DailyNepseIndexGraph";
-  try {
-    const cachedData = await fetchFromCache("intradayIndexGraph");
-    if (!refresh && cachedData != null) {
-      return cachedData;
-    }
+  const maxRetries = 2;
+  let attempt = 0;
 
-    const data = await fetch(url).then((response) => response.json());
-    if (!Array.isArray(data) && cachedData != null) {
+  while (attempt < maxRetries) {
+    const url = NEPSE_ACTIVE_API_URL + "/DailyNepseIndexGraph";
 
+    try {
+      const cachedData = await fetchFromCache("intradayIndexGraph");
+      if (!refresh && cachedData != null) {
+        return cachedData;
+      }
+
+      const data = await fetch(url).then((response) => response.json());
+      if (!Array.isArray(data) && cachedData != null) {
+        await switchServer();
+        assetLogger.error("Invalid data received from the API in DailyNepseIndexGraph.");
+        attempt++;
+        continue;
+      }
+
+      const processedData = data.map((entry) => ({
+        timeepoch: entry[0],
+        time: new Date(entry[0] * 1000).toLocaleTimeString("en-US", {
+          hour: "numeric",
+          minute: "numeric",
+          second: "numeric",
+          hour12: true,
+        }),
+        index: entry[1],
+      }));
+
+      await Promise.all([
+        saveToCache("intradayIndexGraph", processedData),
+        saveToCache("intradayGraph", processedData)
+      ]);
+
+      return processedData;
+    } catch (error) {
       await switchServer();
-      assetLogger.error("Invalid data received from the API in DailyNepseIndexGraph.");
-      return cachedData;
+      attempt++;
+      assetLogger.error(`Error at intradayIndexGraph attempt ${attempt}: ${error.message}`);
     }
-
-    const processedData = data.map((entry) => ({
-      timeepoch: entry[0],
-      time: new Date(entry[0] * 1000).toLocaleTimeString("en-US", {
-        hour: "numeric",
-        minute: "numeric",
-        second: "numeric",
-        hour12: true,
-      }),
-      index: entry[1],
-    }));
-
-    await Promise.all([
-      saveToCache("intradayIndexGraph", processedData),
-      saveToCache("intradayGraph", processedData)
-    ]);
-
-    return processedData;
-  } catch (error) {
-    console.log(error);
-    assetLogger.error(`Error at intradayIndexGraph : ${error.message}`);
-    return null;
   }
+
+  console.error(`All attempts failed for intradayIndexGraph.`);
+  return null;
 }
 
 // export async function r(refresh) {

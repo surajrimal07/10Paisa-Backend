@@ -29,13 +29,30 @@ await storage.init({
 const NEPSE_API_URL1 = process.env.NEPSE_API_URL;
 // eslint-disable-next-line no-undef
 const NEPSE_API_URL2 = process.env.NEPSE_API_URL_BACKUP;
+
+// eslint-disable-next-line no-undef
+const NEPSE_API_URL3 = process.env.NEPSE_API_URL_BACKUP2
+
 // eslint-disable-next-line no-undef
 export let NEPSE_ACTIVE_API_URL = process.env.NEPSE_API_URL1;
 
 //bugged , this dosen't check if the server is active or not
+// export async function switchServer() {
+//   try {
+//     NEPSE_ACTIVE_API_URL = NEPSE_ACTIVE_API_URL === NEPSE_API_URL1 ? NEPSE_API_URL2 : NEPSE_API_URL1;
+//     return true;
+//   } catch (error) {
+//     console.error(`Error switching server: ${error.message}`);
+//     return false;
+//   }
+// }
+const serverUrls = [NEPSE_API_URL1, NEPSE_API_URL2, NEPSE_API_URL3];
+
 export async function switchServer() {
   try {
-    NEPSE_ACTIVE_API_URL = NEPSE_ACTIVE_API_URL === NEPSE_API_URL1 ? NEPSE_API_URL2 : NEPSE_API_URL1;
+    const currentIndex = serverUrls.indexOf(NEPSE_ACTIVE_API_URL);
+    const nextIndex = (currentIndex + 1) % serverUrls.length;
+    NEPSE_ACTIVE_API_URL = serverUrls[nextIndex];
     return true;
   } catch (error) {
     console.error(`Error switching server: ${error.message}`);
@@ -43,26 +60,56 @@ export async function switchServer() {
   }
 }
 
+
+// export async function ActiveServer() {
+//   await new Promise(resolve => setTimeout(resolve, 5000)); //wait for python unicorn server to start
+//   try {
+//     const url1Response = await axios.get(NEPSE_API_URL1);
+//     if (url1Response.status === 200) {
+//       NEPSE_ACTIVE_API_URL = NEPSE_API_URL1;
+//       nepseLogger.info(`Nepse API Server 1 is active. ${NEPSE_ACTIVE_API_URL}`);
+//     }
+//   } catch (error) {
+//     try {
+//       const url2Response = await axios.get(NEPSE_API_URL2);
+//       if (url2Response.status === 200) {
+//         NEPSE_ACTIVE_API_URL = NEPSE_API_URL2;
+//         nepseLogger.info(`Nepse API Server 2 is active. ${NEPSE_ACTIVE_API_URL}`);
+//       }
+//     } catch (error2) {
+//       nepseLogger.error(`warning server 1 and 2 are down. ${error2.message}`);
+//       try {
+//         const url1Response = await axios.get(NEPSE_API_URL3);
+//         if (url1Response.status === 200) {
+//           NEPSE_ACTIVE_API_URL = NEPSE_API_URL3;
+//           nepseLogger.info(`Nepse API Server 3 is active. ${NEPSE_ACTIVE_API_URL}`);
+//         }
+
+//       } catch {
+//         nepseLogger.error(`warning server 1,2 and 3 are down. ${error.message}`);
+//       }
+//     }
+//     nepseLogger.error(`warning server 1 is down. ${error.message}`);
+//   }
+// }
+
 export async function ActiveServer() {
-  await new Promise(resolve => setTimeout(resolve, 5000)); //wait for python unicorn server to start
-  try {
-    const url1Response = await axios.get(NEPSE_API_URL1);
-    if (url1Response.status === 200) {
-      NEPSE_ACTIVE_API_URL = NEPSE_API_URL1;
-      nepseLogger.info(`Nepse API Server 1 is active. ${NEPSE_ACTIVE_API_URL}`);
-    }
-  } catch (error) {
+  await new Promise(resolve => setTimeout(resolve, 5000)); // wait for python unicorn server to start
+
+  for (const url of serverUrls) {
     try {
-      const url2Response = await axios.get(NEPSE_API_URL2);
-      if (url2Response.status === 200) {
-        NEPSE_ACTIVE_API_URL = NEPSE_API_URL2;
-        nepseLogger.info(`Nepse API Server 2 is active. ${NEPSE_ACTIVE_API_URL}`);
+      const response = await axios.get(url);
+      if (response.status === 200) {
+        NEPSE_ACTIVE_API_URL = url;
+        nepseLogger.info(`Nepse API Server is active. ${NEPSE_ACTIVE_API_URL}`);
+        return;
       }
-    } catch (error2) {
-      nepseLogger.error(`warning both servers are down. ${error2.message}`);
+    } catch (error) {
+      nepseLogger.error(`warning ${url} is down. ${error.message}`);
     }
-    nepseLogger.error(`warning server 1 is down. ${error.message}`);
   }
+
+  nepseLogger.error('All Nepse API servers are down.');
 }
 
 export async function isNepseOpen() {
