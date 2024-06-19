@@ -8,6 +8,7 @@ import express from "express";
 import httpsOptions from "./certificate/httpOptions.js";
 
 //
+import io from '@pm2/io';
 import compression from "compression";
 import RedisStore from "connect-redis";
 import { rateLimit } from 'express-rate-limit';
@@ -18,6 +19,7 @@ import https from "https";
 import { clean } from "perfect-express-sanitizer";
 import { RedisStore as RateLimitRedisStore } from 'rate-limit-redis';
 import { v4 as uuidv4 } from 'uuid';
+
 
 //file imports
 import initializeRefreshMechanism, { ActiveServer } from "./controllers/refreshController.js";
@@ -197,6 +199,12 @@ if (isDevelopment) {
   mainLogger.info("Starting Production Server");
   app.listen(port, () => {
     mainLogger.info(`Production Server is running on port ${port}`);
+  });
+
+  io.init({
+    transactions: true,
+    http: true,
+    errors: true
   });
 }
 
