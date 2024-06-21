@@ -1,6 +1,6 @@
 /* eslint-disable no-undef */
 import winston from "winston";
-import { dbURL } from "./database/dbConfig.js";
+import { dbURL } from "../../database/dbConfig.js";
 
 const consoleLogEnabled = process.env.CONSOLE_LOG_ENABLED === 'true';
 
