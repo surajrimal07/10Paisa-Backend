@@ -2,6 +2,7 @@
 import winston from "winston";
 import { dbURL } from "../../database/dbConfig.js";
 // eslint-disable-next-line no-unused-vars
+import MongoDB from "winston-mongodb"
 
 
 export const consoleLogEnabled = process.env.CONSOLE_LOG_ENABLED === 'true';
