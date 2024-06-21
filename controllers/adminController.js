@@ -1,8 +1,9 @@
 import { Mongoose } from 'mongoose';
 import { clientOptions } from '../database/db.js';
+import { dbURL } from "../database/dbConfig.js";
 import Portfolio from '../models/portfolioModel.js';
-import Watchlist from '../models/watchlistModel.js';
 import User from '../models/userModel.js';
+import Watchlist from '../models/watchlistModel.js';
 import { adminLogger } from '../utils/logger/adminlogger.js';
 import { respondWithData, respondWithError, respondWithSuccess } from '../utils/response_utils.js';
 
@@ -109,8 +110,8 @@ export const makeadmin = async (req, res) => {
 export const fetchUserLogs = async (req, res) => {
     let db = new Mongoose();
     try {
-        // eslint-disable-next-line no-undef
-        await db.connect(process.env.NEW_DB_URL, clientOptions);
+
+        await db.connect(dbURL, clientOptions);
         const collection = db.connection.collection('sessionlogs');
         const logs = await collection.find({}).toArray();
 

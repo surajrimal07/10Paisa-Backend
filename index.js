@@ -1,10 +1,10 @@
+/* eslint-disable no-undef */
 //package imports
-//import bodyParser from "body-parser";
+import 'dotenv/config';
+import express from "express";
 import { v2 as cloudinary } from "cloudinary";
 import multipart from "connect-multiparty";
 import cors from "cors";
-import 'dotenv/config';
-import express from "express";
 import httpsOptions from "./certificate/httpOptions.js";
 
 //
@@ -39,6 +39,7 @@ app.use(helmet());
 
 //conect to redis earliy
 await redisclient.connect();
+
 mainLogger.info(
   redisclient.isOpen
     ? "Connected to Redis Server"
@@ -204,7 +205,11 @@ if (isDevelopment) {
   io.init({
     transactions: true,
     http: true,
-    errors: true
+    errors: true,
+    memory: true,
+    cpu: true,
+    eventLoop: true,
+    counter: true,
   });
 }
 
@@ -237,7 +242,11 @@ initiateNewsFetch();
 //   mainLogger.info(`Request Headers: ${JSON.stringify(headers)}`);
 //   next();
 // });
-
+// //add counter to any requests
+// app.use((req, res, next) => {
+//   counter.inc();
+//   next();
+// });
 
 //routes
 app.use("/api", userRouter);  //this route is protected with csrf token

@@ -1,5 +1,7 @@
+/* eslint-disable no-undef */
 import mongoose from 'mongoose';
 import { mainLogger } from '../utils/logger/logger.js';
+import { hostName } from './dbConfig.js';
 
 export const clientOptions = {
   minPoolSize: 10,
@@ -13,11 +15,17 @@ export const clientOptions = {
 export async function Database() {
   let isConnected = false;
   const retryDelay = 5000;
+  let dbURL = process.env.DB_URL_PROD;
+
+  if (hostName == 'instance-20240618-2207') {
+    dbURL = process.env.DB_URL_PROD_LOCAL;
+  }
+
 
   async function attemptConnection() {
     try {
-      // eslint-disable-next-line no-undef
-      await mongoose.connect(process.env.DB_URL, clientOptions);
+
+      await mongoose.connect(dbURL, clientOptions);
       isConnected = true;
       mainLogger.info(`Connected to the database. ReadyState is: ${mongoose.connection.readyState}`);
       mongoose.connection.on('disconnected', () => {

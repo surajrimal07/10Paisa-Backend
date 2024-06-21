@@ -232,7 +232,6 @@ async function startFetchingRSS(url, source) {
             img_url = imageUrlMatch ? imageUrlMatch[1] : '';
 
           } else if (source === 'Himalayan Times') {
-            console.log(item_elem);
             img_url = item_elem['media:thumbnail'][0].$.url;
             description = cleanDescription(item_elem.description[0]);
           } else {
@@ -319,7 +318,7 @@ export async function fetchNews(page = 1, limit = 100, source = null, keyword = 
     };
   } else if (source) {
     query = { source: source };
-  } else if (keyword) { 
+  } else if (keyword) {
     const categoryMatch = await newsModel.findOne({ category: { $regex: keyword, $options: 'i' } });
 
     if (categoryMatch) {
