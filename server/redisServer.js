@@ -6,7 +6,9 @@ import { mainLogger } from '../utils/logger/logger.js';
 export let redisclient;
 
 if (hostName == 'instance-20240618-2207') {
-    redisclient = createClient();
+    redisclient = createClient({
+        password: 'Ll+RXDbybHGJQuz996xK7iQ5aLygB8iRm42O1wj1JQyDcU3qrMf2tyx7DZOrVjViRYQYfBja/p+is4pC'
+    });
 } else {
     redisclient = createClient({
         password: process.env.REDIS_PASSWORD_PROD,

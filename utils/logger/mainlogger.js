@@ -53,7 +53,7 @@ const errorHandler = (err, req, res, next) => {
 };
 
 
-export const setupErrorHandling = (app) => {
+export const r = (app) => {
   app.use((err, req, res, next) => {
     errorHandler(err, req, res, next);
   });
