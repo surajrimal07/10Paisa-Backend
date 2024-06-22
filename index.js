@@ -275,8 +275,8 @@ process.on('uncaughtException', (err) => {
   mainLogger.error(`Uncaught Exception: ${err.message}`);
 });
 
-process.on('unhandledRejection', (reason, promise) => {
-  mainLogger.error(`Unhandled Rejection at: ${promise}, reason: ${reason}`);
+process.on('unhandledRejection', (reason) => {
+  mainLogger.error(`Unhandled Rejection, Reason is : ${reason}`);
 });
 
 export default app;
