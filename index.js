@@ -1,10 +1,10 @@
 /* eslint-disable no-undef */
 //package imports
-import 'dotenv/config';
-import express from "express";
 import { v2 as cloudinary } from "cloudinary";
 import multipart from "connect-multiparty";
 import cors from "cors";
+import 'dotenv/config';
+import express from "express";
 import httpsOptions from "./certificate/httpOptions.js";
 
 //
@@ -30,7 +30,7 @@ import userRouter from "./routes/appRoutes.js";
 import { getNews, initiateNewsFetch } from "./server/newsserver.js";
 import { redisclient } from "./server/redisServer.js";
 import { startWebSocketServer } from "./server/websocket.js";
-import { mainLogger, setupErrorHandling } from './utils/logger/logger.js';
+import { errorHandler, mainLogger } from './utils/logger/logger.js';
 import dynamicRoutes from "./utils/routesforIndex.js";
 
 //Express Middlewares
@@ -52,7 +52,7 @@ app.use(session({
     return uuidv4()
   },
   name: "tenpaisa.session",
-  // eslint-disable-next-line no-undef
+
   secret: process.env.SESSION_SECRET,
   resave: false,
   proxy: true,
@@ -103,9 +103,9 @@ app.use(
 );
 
 
-// eslint-disable-next-line no-undef
+
 const port = process.env.PORT || 4000;
-// eslint-disable-next-line no-undef
+
 const isDevelopment = process.env.NODE_ENV == "development";
 
 // Use express.json() middleware to parse JSON bodies
@@ -180,11 +180,11 @@ Database();
 
 //cloudnary config
 cloudinary.config({
-  // eslint-disable-next-line no-undef
+
   cloud_name: process.env.CLOUD_NAME,
-  // eslint-disable-next-line no-undef
+
   api_key: process.env.API_KEY,
-  // eslint-disable-next-line no-undef
+
   api_secret: process.env.API_SECRET,
 });
 
@@ -261,7 +261,7 @@ app.use((req, res) => {
   res.status(404).json({ error: 'Not Found', message: 'The requested resource was not found on this server.' });
 });
 
-setupErrorHandling(app); //global error handling
+errorHandler(app); //global error handling
 
 redisclient.on("error", (error) => {
   mainLogger.error("Redis client error:", error);
@@ -269,6 +269,14 @@ redisclient.on("error", (error) => {
 
 app.on("close", () => {
   redisclient.disconnect();
+});
+
+process.on('uncaughtException', (err) => {
+  mainLogger.error(`Uncaught Exception: ${err.message}`);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  mainLogger.error(`Unhandled Rejection at: ${promise}, reason: ${reason}`);
 });
 
 export default app;

@@ -36,34 +36,20 @@ export const mainLogger = winston.createLogger({
   transports
 });
 
-// eslint-disable-next-line no-unused-vars
-const errorHandler = (err, req, res, next) => {
-  mainLogger.error(err.stack);
 
-  const response = {
-    message: 'An internal server error occurred',
-  };
+export const errorHandler = (app) => {
+  app.use((err, req, res) => {
+    mainLogger.error(err.stack);
 
-  if (process.env.NODE_ENV !== 'production') {
-    response.error = err.message;
-  }
+    const response = {
+      message: 'An internal server error occurred',
+    };
 
-  res.status(err.status || 500).json(response);
-};
+    if (process.env.NODE_ENV !== 'production') {
+      response.error = err.message;
+    }
 
-
-export const setupErrorHandling = (app) => {
-  app.use((err, req, res, next) => {
-    errorHandler(err, req, res, next);
+    res.status(500).json(response);
   });
 
-  process.on('uncaughtException', (err) => {
-    mainLogger.error(`Uncaught Exception: ${err.message}`);
-    errorHandler(err);
-  });
-
-  process.on('unhandledRejection', (reason, promise) => {
-    mainLogger.error(`Unhandled Rejection at: ${promise}, reason: ${reason}`);
-    errorHandler(reason);
-  });
 };

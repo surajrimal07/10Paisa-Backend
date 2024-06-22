@@ -1,7 +1,7 @@
+import { extract } from '@extractus/feed-extractor';
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 import crypto from 'crypto';
-import xml2js from 'xml2js';
 import newsSources from '../middleware/newsUrl.js';
 import newsModel from '../models/newsModel.js';
 import { createheaders } from '../utils/headers.js';
@@ -9,9 +9,9 @@ import { newsLogger } from '../utils/logger/logger.js';
 import extractFeaturedImage from './imageServer.js';
 import { notifyRoomClients } from './websocket.js';
 
-function generateUniqueKey(title, pubDate) {
+function generateUniqueKey(title, pubDate, link) {
   const hash = crypto.createHash('sha256');
-  hash.update(title + pubDate);
+  hash.update(title + pubDate + link);
   return hash.digest('hex');
 }
 
@@ -52,7 +52,7 @@ async function scrapeShareSansar() {
       const title = $(element).find('h4.featured-news-title').text().trim();
       const img_url = $(element).find('img').attr('src');
       const pubDate = $(element).find('span.text-org').text().trim();
-      const unique_key = generateUniqueKey(title, pubDate);
+      const unique_key = generateUniqueKey(title, pubDate, link);
 
       try {
         if (!await isDuplicateArticle(unique_key)) {
@@ -100,7 +100,7 @@ async function scrapeMeroLagani() {
       news.title = mediaBody.find('.media-title a').text();
       news.pubDate = mediaBody.find('.media-label').text().trim();
       news.source = 'Mero Lagani';
-      news.unique_key = generateUniqueKey(news.title, news.pubDate);
+      news.unique_key = generateUniqueKey(news.title, news.pubDate, news.link);
 
       try {
         if (!await isDuplicateArticle(news.unique_key)) {
@@ -137,7 +137,7 @@ async function scrapeEkantipur() {
       const link = `https://ekantipur.com${$(element).find('h2 a').attr('href').trim()}`;
       const imageSrc = $(element).find('img').attr('data-src');
       const img_url = imageSrc ? decodeURIComponent(imageSrc.split('src=')[1]).replace(/&w=301&h=0$/, '') : '';
-      const unique_key = generateUniqueKey(title, pubDate);
+      const unique_key = generateUniqueKey(title, pubDate, link);
 
       if (await isDuplicateArticle(unique_key)) {
         return;
@@ -180,89 +180,153 @@ const cleanDescription = (desc) => {
     .trim();
 };
 
-//clickmandu desc broken
 async function startFetchingRSS(url, source) {
-  const fallbackDate = new Date('2023-01-01T00:00:00.000Z');
+  const fallbackDate = new Date();
   const headers = createheaders(url);
 
   try {
-    const response = await axios.get(url, { headers });
-    if (response.status === 200 && response.data) {
-      const result = await new xml2js.Parser().parseStringPromise(response.data);
+    const result = await extract(url, { normalization: true }, { headers });
 
-      if (
-        result.rss &&
-        result.rss.channel &&
-        result.rss.channel[0] &&
-        result.rss.channel[0].item
-      ) {
-        for (const item_elem of result.rss.channel[0].item) {
-          const title = cleanDescription(item_elem.title && item_elem.title[0]);
+    //     const response = await axios.get(url, { headers });
+    //     if (response.status === 200 && response.data) {
+    //       const result = await new xml2js.Parser().parseStringPromise(response.data);
 
-          const link = item_elem.link && item_elem.link[0].trim();
+    //       if (
+    //         result.rss &&
+    //         result.rss.channel &&
+    //         result.rss.channel[0] &&
+    //         result.rss.channel[0].item
+    //       ) {
+    //         for (const item_elem of result.rss.channel[0].item) {
+    //           const title = cleanDescription(item_elem.title && item_elem.title[0]);
 
-          const pubDateN = item_elem.pubDate && new Date(item_elem.pubDate[0]);
+    //           const link = item_elem.link && item_elem.link[0].trim();
 
-          const pubDate = pubDateN || fallbackDate;
+    //           const pubDateN = item_elem.pubDate && new Date(item_elem.pubDate[0]);
 
-          let img_url = '';
-          let description = '';
+    //           const pubDate = pubDateN || fallbackDate;
 
-          const unique_key = generateUniqueKey(title, pubDate);
+    //           let img_url = '';
+    //           let description = '';
 
-          if (await isDuplicateArticle(unique_key)) {
-            continue;
+    //           const unique_key = generateUniqueKey(title, pubDate);
+
+    //           if (await isDuplicateArticle(unique_key)) {
+    //             continue;
+    //           }
+
+    //           if (source === 'Nepal News') {
+    //             const contentEncoded = item_elem['content:encoded'] && item_elem['content:encoded'][0];
+    //             description = cleanDescription(contentEncoded);
+
+    //             const regex = /<img[^>]+src="([^">]+)/g;
+    //             const match = regex.exec(contentEncoded);
+    //             if (match && match[1]) {
+    //               img_url = match[1];
+    //             }
+    //           } else if (source === 'News Of Nepal') {
+    //             description = cleanDescription(item_elem.description && item_elem.description[0]);
+
+    //             const imageUrlRegex = /<img[^>]*src="([^"]*)"[^>]*>/;
+    //             const contentEncoded = item_elem['content:encoded'] && item_elem['content:encoded'][0];
+    //             const imageUrlMatch = contentEncoded.match(imageUrlRegex);
+    //             img_url = imageUrlMatch ? imageUrlMatch[1] : '';
+
+    //           } else if (source === 'Himalayan Times') {
+    //             img_url = item_elem['media:thumbnail'][0].$.url;
+    //             description = cleanDescription(item_elem.description[0]);
+    //           } else {
+    //             img_url = item_elem['media:content'] && item_elem['media:content'][0] && item_elem['media:content'][0].$ && item_elem['media:content'][0].$.url && item_elem['media:content'][0].$.url.trim();
+    //             description = cleanDescription(item_elem.description && item_elem.description[0]);
+    //           }
+
+    //           if (!img_url) {
+    //             img_url = await extractFeaturedImage(link, source);
+    //           };
+
+    //           const new_item_data = {
+    //             title,
+    //             link,
+    //             description,
+    //             img_url,
+    //             pubDate,
+    //             source,
+    //             unique_key
+    //           };
+
+    //           await newsModel.create(new_item_data);
+    //           NotifyClients(new_item_data);
+    //         }
+    //       }
+    //       else {
+    //         newsLogger.error(`RSS structure not found in: ${source} ${url}`);
+    //       }
+    //     }
+    //     else {
+    //       newsLogger.error(`fetching news from url failed: ${response.status} ${url}`);
+    //     }
+    //   } catch (error) {
+    //     if (error.response && error.response.status === 403) {
+    //       newsLogger.error(`Error fetching news on : ${source} : Sarping is blocked by the server`);
+    //     }
+    //     newsLogger.error(`Error fetching news data: ${url} : ${error}`);
+    //   }
+    // }
+    if (result && result.entries) {
+      for (const entry of result.entries) {
+        const title = cleanDescription(entry.title);
+
+        const link = entry.link.trim();
+        const pDate = entry.published;
+
+        let pubDate;
+
+        if (pDate) {
+          const ndate = new Date(pDate);
+          if (isNaN(ndate)) {
+            pubDate = fallbackDate;
           }
 
-          if (source === 'Nepal News') {
-            const contentEncoded = item_elem['content:encoded'] && item_elem['content:encoded'][0];
-            description = cleanDescription(contentEncoded);
+          pubDate = ndate;
 
-            const regex = /<img[^>]+src="([^">]+)/g;
-            const match = regex.exec(contentEncoded);
-            if (match && match[1]) {
-              img_url = match[1];
-            }
-          } else if (source === 'News Of Nepal') {
-            description = cleanDescription(item_elem.description && item_elem.description[0]);
-
-            const imageUrlRegex = /<img[^>]*src="([^"]*)"[^>]*>/;
-            const contentEncoded = item_elem['content:encoded'] && item_elem['content:encoded'][0];
-            const imageUrlMatch = contentEncoded.match(imageUrlRegex);
-            img_url = imageUrlMatch ? imageUrlMatch[1] : '';
-
-          } else if (source === 'Himalayan Times') {
-            img_url = item_elem['media:thumbnail'][0].$.url;
-            description = cleanDescription(item_elem.description[0]);
-          } else {
-            img_url = item_elem['media:content'] && item_elem['media:content'][0] && item_elem['media:content'][0].$ && item_elem['media:content'][0].$.url && item_elem['media:content'][0].$.url.trim();
-            description = cleanDescription(item_elem.description && item_elem.description[0]);
-          }
-
-          if (!img_url) {
-            img_url = await extractFeaturedImage(link, source);
-          };
-
-          const new_item_data = {
-            title,
-            link,
-            description,
-            img_url,
-            pubDate,
-            source,
-            unique_key
-          };
-
-          await newsModel.create(new_item_data);
-          NotifyClients(new_item_data);
+        } else {
+          pubDate = fallbackDate;
         }
-      }
-      else {
-        newsLogger.error(`RSS structure not found in: ${source} ${url}`);
+
+        let img_url = '';
+        const description = cleanDescription(entry.description);
+
+        const unique_key = generateUniqueKey(title, pubDate, link);
+
+        if (await isDuplicateArticle(unique_key)) {
+          continue;
+        }
+
+        img_url = entry.image ? entry.image.url : '';
+
+        if (!img_url) {
+          img_url = await extractFeaturedImage(link, source);
+        };
+
+        const new_item_data = {
+          title,
+          link,
+          description: description == '' ? 'No Description Found' : description,
+          img_url,
+          pubDate,
+          source,
+          unique_key
+        };
+
+        await newsModel.create(new_item_data);
+        NotifyClients(new_item_data);
+
+        await newsModel.create(new_item_data);
+
       }
     }
     else {
-      newsLogger.error(`fetching news from url failed: ${response.status} ${url}`);
+      newsLogger.error(`fetching news from url failed: ${url}`);
     }
   } catch (error) {
     if (error.response && error.response.status === 403) {

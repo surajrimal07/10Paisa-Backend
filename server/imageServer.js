@@ -4,9 +4,15 @@ import newsSources from '../middleware/newsUrl.js';
 import { createheaders } from '../utils/headers.js';
 import { newsLogger } from '../utils/logger/logger.js';
 
+
+const noImage = 'https://res.cloudinary.com/dio3qwd9q/image/upload/fl_preserve_transparency/v1718440959/10212377_ev7xiw.jpg';
+
 async function extractFeaturedImage(url, publisher) {
   const headers = createheaders(url);
   try {
+    if (publisher === newsSources[38].source) {
+      return noImage;
+    }
     const response = await axios.get(url, { headers });
 
     const $ = cheerio.load(response.data);
@@ -73,20 +79,26 @@ async function extractFeaturedImage(url, publisher) {
       featuredImageUrl = await extractUjayaloOnline($);
     } else if (publisher == newsSources[32].source) { //Rising Nepal Daily
       featuredImageUrl = await extraceGorkhaPatra($); //metapropery og image
+    } else if (publisher == newsSources[33].source || newsSources[34].source || newsSources[36].source) { //ArthaKendra Nepali
+      featuredImageUrl = await extraceGorkhaPatra($); //metapropery og image
     } else if (publisher == newsSources[35].source) { //BizKhabar
       featuredImageUrl = await extractBizKhabar($); //metapropery og image
+    } else if (publisher == newsSources[37].source || newsSources[39].source || newsSources[40].source) { //BharaKhari
+      featuredImageUrl = await extraceGorkhaPatra($); //metapropery og image
     }
 
     if (featuredImageUrl && featuredImageUrl.length > 0) {
       return featuredImageUrl;
     } else {
+      //console.log(`Featured image extraction failed for ${publisher} at ${url} response received: ${featuredImageUrl}`);
       newsLogger.error(`Featured image extraction failed for ${publisher} at ${url} response received: ${featuredImageUrl}`);
-      return null;
+      return noImage;
     }
   }
   catch (error) {
+    //console.log(`Error fetching article data from the specified ${url} : ${error}`);
     newsLogger.error(`Error fetching article data from the specified ${url} : ${error}`);
-    return null;
+    return noImage;
   }
 }
 // async function extractFeaturedImage(url, publisher) {
@@ -156,7 +168,11 @@ async function extractFeaturedImage(url, publisher) {
 // }
 
 async function extractUjayaloOnline($) {
-  const imageUrl = $('figure.uk-text-center img').attr('src');
+  let imageUrl = $('figure img').attr('src');
+
+  if (!imageUrl) {
+    imageUrl = $('figure.uk-text-center img').attr('src');
+  }
   return imageUrl;
 };
 
@@ -214,6 +230,7 @@ async function ratoen($) {
 }
 
 
+// eslint-disable-next-line no-unused-vars
 async function bizmandu($) {
   const ogImageTag = $('meta[property="og:image"]');
   return ogImageTag.attr('content');

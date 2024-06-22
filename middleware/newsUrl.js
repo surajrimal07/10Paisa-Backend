@@ -33,9 +33,13 @@ const newsSources = [
   { url: "https://ujyaaloonline.com/rss/", source: "Ujyaalo Online" }, //31
   { url: "https://risingnepaldaily.com/rss", source: "Rising Nepal Daily" }, //32
   { url: "https://arthakendra.com/rss", source: "ArthaKendra Nepali" }, //33 //need to extract image
-  {url : "https://english.arthakendra.com/rss", source: "ArthaKendra English"}, //34 //need to extract image
-  {url : "https://www.bizkhabar.com/feed", source: "BizKhabar"}, //35 //need to extract image
-
+  { url: "https://english.arthakendra.com/rss", source: "ArthaKendra English" }, //34 //need to extract image
+  { url: "https://www.bizkhabar.com/feed", source: "BizKhabar" }, //35 //need to extract image
+  { url: "https://www.news24nepal.com/feed", source: "News 24 Nepal" }, //36 //need to extract image
+  { url: "https://baahrakhari.com/feed", source: "BharaKhari" }, //37 //need to extract image
+  { url: "https://nepalkhabar.com/feed", source: "Nepal Khabar" }, //38 shitty site, feed is not fixed to provide the working link of the news, image link is broken
+  { url: "https://nepalsamaya.com/feed", source: "Nepal Samaye" }, //39 no desc in rss feed
+  { url: "https://www.techpana.com/feed", source: "TechPana" }, //40
 ];
 
 export default newsSources;
@@ -43,10 +47,8 @@ export default newsSources;
 //  { url: "https://nagariknews.nagariknetwork.com/feed", source: "OS Nepal" }, //8
 
 //new sources //will add later
-//https://www.news24nepal.com/feed //desc and image missing
-//https://baahrakhari.com/feed
-//https://thahakhabar.com/rss/
-//https://nepalkhabar.com/feed/ //only image missing
+//https://thahakhabar.com/rss/ //shitty site, has rate limiting in place
+//https://nepalkhabar.com/feed/ //shitty site, feed is not fixed to provide the working link of the news, image link is broken
 //https://nepalsamaya.com/feed //no desc and image
-//https://www.gadgetbytenepal.com/feed/
+//https://www.gadgetbytenepal.com/feed/ //blocks the request
 //https://www.techpana.com/feed
