@@ -361,7 +361,7 @@ export async function initiateNewsFetch() {
     } catch (error) {
       newsLogger.error('Error in fetch and scrape:', error.message);
     }
-    setTimeout(fetchAndScrape, 120 * 1000);
+    setTimeout(fetchAndScrape, 100 * 1000);
   }
 
   await fetchAndScrape();

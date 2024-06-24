@@ -1,7 +1,7 @@
 /* eslint-disable no-undef */
 import mongoose from 'mongoose';
 import { mainLogger } from '../utils/logger/logger.js';
-import { hostName } from './dbConfig.js';
+//import { hostName } from './dbConfig.js';
 
 export const clientOptions = {
   minPoolSize: 10,
@@ -15,11 +15,11 @@ export const clientOptions = {
 export async function Database() {
   let isConnected = false;
   const retryDelay = 5000;
-  let dbURL = process.env.DB_URL_PROD;
+  let dbURL = process.env.DB_URL;
 
-  if (hostName == 'instance-20240618-2207') {
-    dbURL = process.env.DB_URL_PROD_LOCAL;
-  }
+  // if (hostName == 'instance-20240618-2207') {
+  //   dbURL = process.env.DB_URL_PROD_LOCAL;
+  // }
 
 
   async function attemptConnection() {
@@ -59,9 +59,9 @@ export async function Database() {
 export default { Database };
 
 
-// process.on('SIGINT', () => {
-//   mongoose.connection.close().then(() => {
-//       console.info("Mongoose primary connection disconnected through app termination!");
-//       process.exit(0);
-//   });
-// });
+process.on('SIGINT', () => {
+  mongoose.connection.close().then(() => {
+    mainLogger.error(`Closing Mongodb due app termination`);
+    process.exit(0);
+  });
+});
