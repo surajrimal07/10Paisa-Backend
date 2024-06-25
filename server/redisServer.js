@@ -11,10 +11,10 @@ export let redisclient;
 //     });
 // } else {
 redisclient = createClient({
-    password: process.env.REDIS_PASSWORD, //when redis container works use REDIS_HOST_PROD
+    password: process.env.REDIS_PASSWORD_PROD, //when redis container works use REDIS_HOST_PROD
     socket: {
-        host: process.env.REDIS_HOST, //REDIS_PORT_PROD
-        port: process.env.REDIS_PORT //REDIS_PASSWORD_PROD
+        host: process.env.REDIS_HOST_PROD, //REDIS_PORT_PROD
+        port: process.env.REDIS_PORT_PROD //REDIS_PASSWORD_PROD
     },
     connect_timeout: parseInt(process.env.REDIS_TIMEOUT_PROD),
     retry_strategy: (options) => {
