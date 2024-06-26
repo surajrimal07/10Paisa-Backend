@@ -229,51 +229,38 @@ export async function FetchAllCompaniesDataFromAPI(refresh = false) {
 
 //not used in controller //gives very detailed data of a single company from nepseapi
 //not good for high frequency api requests
+
+async function fetchFunction(url) {
+  const completeUrl = NEPSE_ACTIVE_API_URL + `${url}`
+  try {
+    const response = await fetch(completeUrl);
+    if (!response.ok) {
+      assetLogger.error(`HTTP error! status: ${response.status}`);
+      return null;
+    }
+
+    return response.json();
+  } catch (error) {
+    assetLogger.error(`Error at fetchFunction : ${error.message}`);
+    return null;
+  }
+}
+
 export async function FetchSingleCompanyDatafromAPI(symbol) {
+
   const url = NEPSE_ACTIVE_API_URL + `/CompanyDetails?symbol=${symbol}`;
-  //const url2 = NEPSE_ACTIVE_API_URL + "/CompanyList";
-
-  // let data2 = '';
-
-  // const cachedData = await fetchFromCache("CompanyListNepseAPI");
-
-  // if (cachedData !== null && cachedData !== undefined) {
-  //   data2 = cachedData;
-  // }
-
-  // try {
-  //   const data = await fetch(url).then((data) => data.json());
-
-  //   if (data2 == null || data2 == undefined) {
-  //     data2 = await fetch(url2).then((response) => response.json());
-  //     await saveToCache("CompanyListNepseAPI", data2);
-  //   }
-
-  //   if (!data || !data2) {
-  //     return null;
-  //   }
-
-  //   const company = data2.find((companyData) => companyData.symbol === symbol);
-
-  //   const mergedData = {
-  //     ...data,
-  //     general: {
-  //       id: company.id,
-  //       companyName: company.companyName,
-  //       status: company.status,
-  //       companyEmail: company.companyEmail,
-  //       website: company.website,
-  //       sectorName: company.sectorName,
-  //       regulatoryBody: company.regulatoryBody,
-  //       instrumentType: company.instrumentType,
-  //     },
-  //   };
 
   try {
-    const data = await fetch(url).then((data) => data.json());
+    let data = await fetchFunction(url);
 
     if (!data) {
-      return null;
+      switchServer();
+      data = await fetchFunction(url);
+    }
+
+    if (!data) {
+      switchServer();
+      data = await fetchFunction(url);
     }
 
     data.securityDailyTradeDto.open = data.securityDailyTradeDto.openPrice;
@@ -297,9 +284,6 @@ export async function FetchSingleCompanyDatafromAPI(symbol) {
     delete data.security.shareGroupId;
     delete data.security.cdsStockRefId;
     delete data.security.securityTradeCycle;
-    // delete data.security.companyId;
-    //delete data.security.instrumentType;
-    // delete data.security.sectorMaster;
     delete data.security.highRangeDPR;
     delete data.security.issuerName;
     delete data.security.parentId;
@@ -322,7 +306,7 @@ export async function FetchSingleCompanyDatafromAPI(symbol) {
 
     return data;
   } catch (error) {
-    console.error("Fetch error:", error);
+    assetLogger.error(`Error at FetchSingleCompanyDatafromAPI : ${error.message}`);
     return null;
   }
 }

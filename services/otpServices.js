@@ -5,8 +5,6 @@ import context from '../utils/globalVariables.js';
 
 const key = "test123";
 
-//logo is broken, it need to be hosted in cloud for it to work.
-
 export const sendOTP = (params, callback) => {
   const otp = otpGenerator.generate(4, {
     digits: true,
