@@ -8,6 +8,7 @@ import {
 import {
   FetchSingleCompanyDatafromAPI,
   FetchSingularDataOfAsset,
+  SupplyDemandData,
   fetchAvailableNepseSymbol,
   fetchCompanyIntradayGraph,
   fetchFunctionforNepseAlphaORSystemxlite,
@@ -271,6 +272,35 @@ export const CommodityData = async (req, res) => {
     );
   }
 };
+
+export const fetchSupplyDemand = async (req, res) => {
+  assetLogger.info("SupplyDemand data requested");
+
+  try {
+    const refreshParam = req.query.refresh || "";
+
+    const data = await SupplyDemandData(refreshParam.toLowerCase() === "refresh");
+    if (!data) {
+      return respondWithError(
+        res,
+        "INTERNAL_SERVER_ERROR",
+        "Failed to fetch supply demand prices."
+      );
+
+    }
+
+    res.status(200).json(data);
+
+  } catch (error) {
+    assetLogger.error("Error fetching supply demand prices:", error.message);
+    return respondWithError(
+      res,
+      "INTERNAL_SERVER_ERROR",
+      "Failed to fetch supply demand data."
+    );
+  }
+};
+
 
 //top gainers //share sansar
 export const TopGainersData = async (req, res) => {

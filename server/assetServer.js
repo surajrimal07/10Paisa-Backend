@@ -2,7 +2,7 @@ import * as cheerio from 'cheerio';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { NEPSE_ACTIVE_API_URL, switchServer } from "../controllers/refreshController.js";
+import { NEPSE_ACTIVE_API_URL, isNepseOpen, switchServer } from "../controllers/refreshController.js";
 import { fetchFromCache, saveToCache } from "../controllers/savefetchCache.js";
 
 import { assetLogger } from '../utils/logger/logger.js';
@@ -310,6 +310,84 @@ export async function FetchSingleCompanyDatafromAPI(symbol) {
     return null;
   }
 }
+export async function SupplyDemandData(refresh = false) {
+  const url = "/SupplyDemand";
+
+  try {
+    if (!refresh || isNepseOpen === false) {
+      const cachedHighestSupply = await fetchFromCache("highestSupply");
+      const cachedHighestDemand = await fetchFromCache("highestDemand");
+      const cachedHighestQuantityperOrder = await fetchFromCache("highestQuantityperOrder");
+
+      if (cachedHighestSupply !== null && cachedHighestDemand !== null && cachedHighestQuantityperOrder !== null) {
+        return {
+          highestSupply: cachedHighestSupply,
+          highestDemand: cachedHighestDemand,
+          highestQuantityperOrder: cachedHighestQuantityperOrder
+        };
+      }
+    }
+
+    let data = await fetchFunction(url);
+
+    if (!data) {
+      switchServer();
+      data = await fetchFunction(url);
+
+      if (!data) {
+        switchServer();
+        data = await fetchFunction(url);
+      }
+    }
+
+    if (!data) {
+      throw new Error("Failed to fetch data from server.");
+    }
+
+    const { supplyList, demandList } = data;
+
+    const calculateQuantityPerOrder = (list, side) => {
+      return list
+        .filter(item => item.totalQuantity != null)
+        .map(item => {
+          if (item.totalOrder !== 0) {
+            item.quantityPerOrder = Math.floor(item.totalQuantity / item.totalOrder);
+          } else {
+            item.quantityPerOrder = 0;
+          }
+          item.orderSide = side;
+          return item;
+        });
+    };
+
+    const demandWithQuantityPerOrder = calculateQuantityPerOrder(demandList, 'Demand Side');
+    const supplyWithQuantityPerOrder = calculateQuantityPerOrder(supplyList, 'Supply Side');
+
+    const combineAndSortTopItems = (highestDemand, highestSupply) => {
+      const combinedList = [
+        ...highestDemand,
+        ...highestSupply
+      ];
+
+      return combinedList.sort((a, b) => b.quantityPerOrder - a.quantityPerOrder).slice(0, 40);
+    };
+
+    const highestDemand = demandWithQuantityPerOrder.slice(0, 40);
+    const highestSupply = supplyWithQuantityPerOrder.slice(0, 40);
+
+    const highestQuantityperOrder = combineAndSortTopItems(highestDemand, highestSupply);
+
+    await saveToCache("highestSupply", highestSupply);
+    await saveToCache("highestDemand", highestDemand);
+    await saveToCache("highestQuantityperOrder", highestQuantityperOrder);
+
+    return { highestDemand, highestSupply, highestQuantityperOrder };
+  } catch (error) {
+    assetLogger.error(`Error at SupplyDemandData: ${error.message}`);
+    return null;
+  }
+}
+
 
 // export async function AddCategoryAndSector(stockData) {
 //   try {
