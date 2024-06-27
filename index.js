@@ -1,12 +1,12 @@
 /* eslint-disable no-undef */
 //package imports
+import 'dotenv/config';
+import initializeRefreshMechanism from "./controllers/refreshController.js";
 import { v2 as cloudinary } from "cloudinary";
 import multipart from "connect-multiparty";
 import cors from "cors";
-import 'dotenv/config';
 import express from "express";
 import httpsOptions from "./certificate/httpOptions.js";
-
 //
 import io from '@pm2/io';
 import compression from "compression";
@@ -22,7 +22,6 @@ import { v4 as uuidv4 } from 'uuid';
 
 
 //file imports
-import initializeRefreshMechanism, { ActiveServer } from "./controllers/refreshController.js";
 import { Database } from "./database/db.js";
 import { responseTimeMiddleware } from "./middleware/apiResponseTime.js";
 //import { sessionMiddleware } from './middleware/session.js';
@@ -229,7 +228,6 @@ app.set('trust proxy', 1); // trust first proxy for rate limiting
 app.use(limiter);
 
 //others servers
-ActiveServer();
 initializeRefreshMechanism();
 startWebSocketServer();
 initiateNewsFetch();

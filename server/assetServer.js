@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url';
 import { NEPSE_ACTIVE_API_URL, isNepseOpen, switchServer } from "../controllers/refreshController.js";
 import { fetchFromCache, saveToCache } from "../controllers/savefetchCache.js";
 
+import { fetchFunction } from '../server/fetchFunction.js';
 import { assetLogger } from '../utils/logger/logger.js';
 
 const nepseIndexes = [
@@ -230,38 +231,12 @@ export async function FetchAllCompaniesDataFromAPI(refresh = false) {
 //not used in controller //gives very detailed data of a single company from nepseapi
 //not good for high frequency api requests
 
-async function fetchFunction(url) {
-  const completeUrl = NEPSE_ACTIVE_API_URL + `${url}`
-  try {
-    const response = await fetch(completeUrl);
-    if (!response.ok) {
-      assetLogger.error(`HTTP error! status: ${response.status}`);
-      return null;
-    }
-
-    return response.json();
-  } catch (error) {
-    assetLogger.error(`Error at fetchFunction : ${error.message}`);
-    return null;
-  }
-}
-
 export async function FetchSingleCompanyDatafromAPI(symbol) {
 
-  const url = NEPSE_ACTIVE_API_URL + `/CompanyDetails?symbol=${symbol}`;
+  const url = `/CompanyDetails?symbol=${symbol}`;
 
   try {
-    let data = await fetchFunction(url);
-
-    if (!data) {
-      switchServer();
-      data = await fetchFunction(url);
-    }
-
-    if (!data) {
-      switchServer();
-      data = await fetchFunction(url);
-    }
+    const data = await fetchFunction(url);
 
     data.securityDailyTradeDto.open = data.securityDailyTradeDto.openPrice;
     delete data.securityDailyTradeDto.openPrice;
@@ -310,6 +285,87 @@ export async function FetchSingleCompanyDatafromAPI(symbol) {
     return null;
   }
 }
+
+//send notifications if fake buy sell orders are detected
+const NotifyNepseClients = async (body) => {
+  try {
+    const response = fetch('https://notifications.surajr.com.np/NepseAlerts', {
+      method: 'POST',
+      body: JSON.stringify({ message: body }),
+      headers: {
+        'Content-Type': 'application/json',
+        'Title': 'Fake Orders Detected',
+        'Priority': 'urgent',
+        'Tags': 'warning'
+      }
+    });
+
+    if (!response.ok) {
+      assetLogger.error(`Failed to send notification to Nepse clients`);
+    }
+  } catch (error) {
+    assetLogger.error(`Error at NotifyNepseClients: ${error.message}`);
+  }
+};
+
+
+const mergeBuySellData = async (item, side, matchingList) => {
+  const modifiedItem = { ...item };
+
+  if (side === 'Demand Side') {
+    modifiedItem.totalBuyOrder = item.totalOrder;
+    modifiedItem.totalBuyQuantity = item.totalQuantity;
+
+    const matchingSellData = matchingList.find(sellItem => sellItem.symbol === item.symbol);
+    if (matchingSellData) {
+      modifiedItem.totalSellOrder = matchingSellData.totalOrder;
+      modifiedItem.totalSellQuantity = matchingSellData.totalQuantity;
+      modifiedItem.buyQuantityPerOrder = item.quantityPerOrder;
+      modifiedItem.sellQuantityPerOrder = matchingSellData.quantityPerOrder;
+    } else {
+      modifiedItem.totalSellOrder = 0;
+      modifiedItem.totalSellQuantity = 0;
+    }
+  } else if (side === 'Supply Side') {
+    modifiedItem.totalSellOrder = item.totalOrder;
+    modifiedItem.totalSellQuantity = item.totalQuantity;
+
+    const matchingBuyData = matchingList.find(buyItem => buyItem.symbol === item.symbol);
+    if (matchingBuyData) {
+      modifiedItem.totalBuyOrder = matchingBuyData.totalOrder;
+      modifiedItem.totalBuyQuantity = matchingBuyData.totalQuantity;
+      modifiedItem.sellQuantityPerOrder = item.quantityPerOrder;
+      modifiedItem.buyQuantityPerOrder = matchingBuyData.quantityPerOrder;
+    } else {
+      modifiedItem.totalBuyOrder = 0;
+      modifiedItem.totalBuyQuantity = 0;
+    }
+  }
+
+  modifiedItem.buyToSellOrderRatio = parseFloat((modifiedItem.totalBuyOrder / modifiedItem.totalSellOrder).toFixed(1));
+  modifiedItem.buyToSellQuantityRatio = parseFloat((modifiedItem.totalBuyQuantity / modifiedItem.totalSellQuantity).toFixed(1));
+
+  if (modifiedItem.buyToSellOrderRatio > 10 || modifiedItem.buyToSellQuantityRatio > 10) {
+    let ratioComparison;
+    if (modifiedItem.buyToSellOrderRatio > modifiedItem.buyToSellQuantityRatio) {
+      ratioComparison = `Buy order is ${modifiedItem.buyToSellOrderRatio.toFixed(1)} times higher than sell order`;
+    } else {
+      ratioComparison = `Sell order is ${modifiedItem.buyToSellQuantityRatio.toFixed(1)} times higher than buy order`;
+    }
+
+    const body = `${item.symbol} Buy order ${modifiedItem.totalBuyOrder}, Sell order ${modifiedItem.totalSellOrder}, Buy quantity ${modifiedItem.totalBuyQuantity}, Sell quantity ${modifiedItem.totalSellQuantity}
+    ${ratioComparison}`;
+
+    NotifyNepseClients(body);
+  }
+  delete modifiedItem.totalOrder;
+  delete modifiedItem.totalQuantity;
+  delete modifiedItem.quantityPerOrder;
+  delete item.orderSide;
+
+  return modifiedItem;
+};
+
 export async function SupplyDemandData(refresh = false) {
   const url = "/SupplyDemand";
 
@@ -321,28 +377,14 @@ export async function SupplyDemandData(refresh = false) {
 
       if (cachedHighestSupply !== null && cachedHighestDemand !== null && cachedHighestQuantityperOrder !== null) {
         return {
+          highestQuantityperOrder: cachedHighestQuantityperOrder,
           highestSupply: cachedHighestSupply,
-          highestDemand: cachedHighestDemand,
-          highestQuantityperOrder: cachedHighestQuantityperOrder
+          highestDemand: cachedHighestDemand
         };
       }
     }
 
-    let data = await fetchFunction(url);
-
-    if (!data) {
-      switchServer();
-      data = await fetchFunction(url);
-
-      if (!data) {
-        switchServer();
-        data = await fetchFunction(url);
-      }
-    }
-
-    if (!data) {
-      throw new Error("Failed to fetch data from server.");
-    }
+    const data = await fetchFunction(url);
 
     const { supplyList, demandList } = data;
 
@@ -356,6 +398,7 @@ export async function SupplyDemandData(refresh = false) {
             item.quantityPerOrder = 0;
           }
           item.orderSide = side;
+          delete item.securityId;
           return item;
         });
     };
@@ -365,11 +408,15 @@ export async function SupplyDemandData(refresh = false) {
 
     const combineAndSortTopItems = (highestDemand, highestSupply) => {
       const combinedList = [
-        ...highestDemand,
-        ...highestSupply
+        ...highestDemand.map(item => mergeBuySellData(item, 'Demand Side', supplyList)),
+        ...highestSupply.map(item => mergeBuySellData(item, 'Supply Side', demandList))
       ];
 
-      return combinedList.sort((a, b) => b.quantityPerOrder - a.quantityPerOrder).slice(0, 40);
+      const sortedList = combinedList
+        .sort((a, b) => b.quantityPerOrder - a.quantityPerOrder)
+        .slice(0, 40);
+
+      return sortedList;
     };
 
     const highestDemand = demandWithQuantityPerOrder.slice(0, 40);
@@ -381,7 +428,7 @@ export async function SupplyDemandData(refresh = false) {
     await saveToCache("highestDemand", highestDemand);
     await saveToCache("highestQuantityperOrder", highestQuantityperOrder);
 
-    return { highestDemand, highestSupply, highestQuantityperOrder };
+    return { highestQuantityperOrder, highestSupply, highestDemand };
   } catch (error) {
     assetLogger.error(`Error at SupplyDemandData: ${error.message}`);
     return null;
@@ -716,9 +763,6 @@ export const topTransactions = async (refresh) => {
 
 //intraday index using NepseAPI
 export async function getIndexIntraday(refresh) {
-  const url = NEPSE_ACTIVE_API_URL + "/NepseIndex";
-  const url2 = NEPSE_ACTIVE_API_URL + "/Summary";
-
   try {
     const cachedData = await fetchFromCache("intradayIndexData");
     if (!refresh && cachedData != null) {
@@ -726,22 +770,22 @@ export async function getIndexIntraday(refresh) {
     }
 
     const [nepseIndexData, nepseSummaryData, open, isOpen] = await Promise.all([
-      fetch(url).then((response) => response.json()),
-      fetch(url2).then((response) => response.json()),
+      fetchFunction("/NepseIndex"),
+      fetchFunction("/Summary"),
       fetchFromCache('intradayGraph'),
       fetchFromCache('isMarketOpen')
     ]);
 
-    if (open === null || isOpen === null) {
-      assetLogger.error("Open or isOpen data is missing or undefined.");
-      return cachedData;
-    }
+    // if (open === null || isOpen === null) {
+    //   assetLogger.error("Open or isOpen data is missing or undefined.");
+    //   return cachedData;
+    // }
 
-    if (cachedData != null && !nepseIndexData || !nepseSummaryData) {
-      await switchServer();
-      assetLogger.error("NEPSE Index data is missing or undefined. Switching server");
-      return cachedData;
-    }
+    // if (cachedData != null && !nepseIndexData || !nepseSummaryData) {
+    //   await switchServer();
+    //   assetLogger.error("NEPSE Index data is missing or undefined. Switching server");
+    //   return cachedData;
+    // }
 
     const nepseIndex = nepseIndexData["NEPSE Index"];
     const nepseSummaryArray = Object.values(nepseSummaryData);
@@ -767,7 +811,8 @@ export async function getIndexIntraday(refresh) {
 
     await Promise.all([
       saveToCache("intradayIndexData", nepseIndexDataObj),
-      saveToCache('previousIndexData', nepseIndexDataObj)
+      saveToCache('previousIndexData', nepseIndexDataObj),
+      saveToCache('lastBusinessDate', nepseIndex.generatedTime.split('T')[0])
     ]);
 
     return nepseIndexDataObj;

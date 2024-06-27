@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { AllIndicesData,fetchSupplyDemand, AssetMergedData, AvailableNepseSymbols, CombinedIndexData, CommodityData, DashBoardData, IndexData, SingeAssetMergedData, TopGainersData, TopHeavyStocks, TopLoosersData, TopTransData, TopTurnoverData, TopVolumeData, WorldMarketData, fetchAndMergeDailyNepsePrice, fetchIntradayCompanyGraph, fetchMetalPrices, getCompanyOHLCNepseAlpha, nepseDailyGraphData, refreshCommodityData, refreshMetalsData, refreshWorldMarketData } from '../controllers/assetControllers.js';
 import { NrbBankingDataAll, combinedNrbData, nrbForexData, refreshNRBData } from '../controllers/extraDataControllers.js';
-//import { allowOnly } from '../middleware/methodAllowed.js';
+import {fetchFloorsheetData} from '../controllers/floorsheetControllers.js';
 import adminrouter from './adminRoutes.js';
 import userrouter from './userRoutes.js';
 
@@ -44,6 +44,7 @@ router.get('/worldmarketdata', WorldMarketData); //crypto dead
 router.get('/allindices', AllIndicesData);
 router.get('/heavyStocks', TopHeavyStocks);
 router.get('/supplydemand', fetchSupplyDemand);
+router.get('/getfloorsheet', fetchFloorsheetData);
 
 //routes for chron server to fetch data per day automatically
 router.get('/refreshmetals', refreshMetalsData);

@@ -278,14 +278,24 @@ export const fetchSupplyDemand = async (req, res) => {
 
   try {
     const refreshParam = req.query.refresh || "";
+    const isSingleCompany = req.query.company || "";
 
-    const data = await SupplyDemandData(refreshParam.toLowerCase() === "refresh");
+    let data = await SupplyDemandData(refreshParam.toLowerCase() === "refresh");
+
     if (!data) {
       return respondWithError(
         res,
         "INTERNAL_SERVER_ERROR",
         "Failed to fetch supply demand prices."
       );
+
+    }
+    if (isSingleCompany) {
+      data = {
+        highestDemand: data.highestDemand.filter(item => item.symbol === isSingleCompany),
+        highestSupply: data.highestSupply.filter(item => item.symbol === isSingleCompany),
+        highestQuantityperOrder: data.highestQuantityperOrder.filter(item => item.symbol === isSingleCompany),
+      };
 
     }
 
@@ -579,7 +589,6 @@ export const IndexData = async (req, res) => {
       );
     }
 
-    apiLogger.info("Returning index data");
     return respondWithData(
       res,
       "SUCCESS",

@@ -3,6 +3,7 @@ import storage from 'node-persist';
 import { sendPeriodicPortfolioData } from '../controllers/portfolioControllers.js';
 import {
   FetchSingularDataOfAsset,
+  SupplyDemandData,
   getIndexIntraday,
   intradayIndexGraph,
   topLosersShare,
@@ -10,7 +11,6 @@ import {
   topTransactions,
   topTurnoversShare,
   topgainersShare,
-  SupplyDemandData,
 } from "../server/assetServer.js";
 import { notifyRoomClients, wss } from "../server/websocket.js";
 import { nepseLogger } from '../utils/logger/logger.js';
@@ -36,23 +36,10 @@ const NEPSE_API_URL2 = process.env.NEPSE_API_URL_BACKUP;
 // eslint-disable-next-line no-undef
 const NEPSE_API_URL3 = process.env.NEPSE_API_URL_BACKUP2
 
-// eslint-disable-next-line no-undef
-export let NEPSE_ACTIVE_API_URL = process.env.NEPSE_API_URL1;
+export const serverUrls = [NEPSE_API_URL_INTERNAL, NEPSE_API_URL1, NEPSE_API_URL2, NEPSE_API_URL3];
 
-//bugged , this dosen't check if the server is active or not
-// export async function switchServer() {
-//   try {
-//     NEPSE_ACTIVE_API_URL = NEPSE_ACTIVE_API_URL === NEPSE_API_URL1 ? NEPSE_API_URL2 : NEPSE_API_URL1;
-//     return true;
-//   } catch (error) {
-//     console.error(`Error switching server: ${error.message}`);
-//     return false;
-//   }
-// }
-
+export let NEPSE_ACTIVE_API_URL = NEPSE_API_URL_INTERNAL;
 export let isNepseOpen = false;
-
-const serverUrls = [NEPSE_API_URL_INTERNAL,NEPSE_API_URL1, NEPSE_API_URL2, NEPSE_API_URL3];
 
 export async function switchServer() {
   try {
@@ -66,58 +53,38 @@ export async function switchServer() {
   }
 }
 
-export async function ActiveServer() {
+export async function checkIsNepseOpen() {
   await new Promise(resolve => setTimeout(resolve, 5000)); // wait for python unicorn server to start
 
-  for (const url of serverUrls) {
-    try {
-      const response = await axios.get(url);
-      if (response.status === 200) {
-        NEPSE_ACTIVE_API_URL = url;
-        nepseLogger.info(`Nepse API Server is active. ${NEPSE_ACTIVE_API_URL}`);
-        return;
-      }
-    } catch (error) {
-      nepseLogger.error(`warning ${url} is down. ${error.message}`);
-    }
-  }
-
-  nepseLogger.error('All Nepse API servers are down.');
-}
-
-export async function checkIsNepseOpen() {
   try {
-    const initialResponse = await axios.get(NEPSE_ACTIVE_API_URL + "/checkIsNepseOpen");
-    return await handlecheckIsNepseOpenResponse(initialResponse, NEPSE_ACTIVE_API_URL);
-  } catch (error) {
-    nepseLogger.error(
-      `Error fetching Nepse status from Active URL: ${error.message}`
-    );
-    try {
-      const primaryResponse = await axios.get(NEPSE_API_URL1 + "/checkIsNepseOpen");
-      return await handlecheckIsNepseOpenResponse(primaryResponse, NEPSE_API_URL1);
-    } catch (error) {
-      nepseLogger.error(
-        `Error fetching Nepse status from primary URL: ${error.message}`
-      );
+    const response = await axios.get(NEPSE_ACTIVE_API_URL + "/IsNepseOpen");
+    if (response.status === 200) {
+      return await handlecheckIsNepseOpenResponse(response, NEPSE_ACTIVE_API_URL);
+    }
+  }
+  catch (error) {
+    nepseLogger.error(`Active URL down: ${error.message}`);
+    for (const url of serverUrls) {
       try {
-        const backupResponse = await axios.get(NEPSE_API_URL2 + "/checkIsNepseOpen");
-        return await handlecheckIsNepseOpenResponse(backupResponse, NEPSE_API_URL2);
-      } catch (errorBackup) {
-        nepseLogger.error(
-          `Error fetching Nepse status from backuo URL: ${errorBackup.message}`
-        );
-        return false;
+        const response = await axios.get(url + "/IsNepseOpen");
+        if (response.status === 200) {
+          NEPSE_ACTIVE_API_URL = url;
+          return await handlecheckIsNepseOpenResponse(response, url);
+        }
+      } catch (error) {
+        nepseLogger.error(`warning ${url} is down. ${error.message}`);
       }
     }
   }
+  nepseLogger.error('All Nepse API servers are down.');
+  return false;
 }
 
 async function handlecheckIsNepseOpenResponse(response, apiUrl) {
   if (response.data.isOpen === "CLOSE") {
     nepseLogger.info(`Nepse is closed (${apiUrl}).`);
     isNepseOpen = false;
-    await saveToCache("isMarketOpen", false);
+    await saveToCache("isMarketOpen", false)
     NEPSE_ACTIVE_API_URL = apiUrl;
     return false;
   } else if (response.data.isOpen === "OPEN" || response.data.isOpen === "Pre Open") {
@@ -127,7 +94,6 @@ async function handlecheckIsNepseOpenResponse(response, apiUrl) {
     NEPSE_ACTIVE_API_URL = apiUrl;
     return true;
   } else {
-    nepseLogger.info(`Error fetching Nepse status from ${apiUrl}`);
     return false;
   }
 }
