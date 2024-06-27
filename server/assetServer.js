@@ -309,6 +309,7 @@ const NotifyNepseClients = async (title, body) => {
 };
 
 
+const nepseNotification = process.env.IS_NEPSE_NOTIFICATION_ENABLED === 'true' ? true : false;
 const mergeBuySellData = async (item, side, matchingList) => {
   const modifiedItem = { ...item };
 
@@ -345,19 +346,21 @@ const mergeBuySellData = async (item, side, matchingList) => {
   modifiedItem.buyToSellOrderRatio = parseFloat((modifiedItem.totalBuyOrder / modifiedItem.totalSellOrder).toFixed(1));
   modifiedItem.buyToSellQuantityRatio = parseFloat((modifiedItem.totalBuyQuantity / modifiedItem.totalSellQuantity).toFixed(1));
 
-  if (modifiedItem.buyToSellOrderRatio > 10 || modifiedItem.buyToSellQuantityRatio > 10) {
-    let ratioComparison;
-    const title = "Fake Orders Detected";
+  if (nepseNotification) {
+    if (modifiedItem.buyToSellOrderRatio > 10 || modifiedItem.buyToSellQuantityRatio > 10) {
+      let ratioComparison;
+      const title = "Fake Orders Detected";
 
-    if (modifiedItem.buyToSellOrderRatio > modifiedItem.buyToSellQuantityRatio) {
-      ratioComparison = `Buy order is ${modifiedItem.buyToSellOrderRatio.toFixed(1)} times higher than sell order`;
-    } else {
-      ratioComparison = `Sell order is ${modifiedItem.buyToSellQuantityRatio.toFixed(1)} times higher than buy order`;
+      if (modifiedItem.buyToSellOrderRatio > modifiedItem.buyToSellQuantityRatio) {
+        ratioComparison = `Buy order is ${modifiedItem.buyToSellOrderRatio.toFixed(1)} times higher than sell order`;
+      } else {
+        ratioComparison = `Sell order is ${modifiedItem.buyToSellQuantityRatio.toFixed(1)} times higher than buy order`;
+      }
+
+      const body = `${item.symbol} Buy order ${modifiedItem.totalBuyOrder}, Sell order ${modifiedItem.totalSellOrder}, Buy quantity ${modifiedItem.totalBuyQuantity}, Sell quantity ${modifiedItem.totalSellQuantity}, ${ratioComparison}`;
+
+      NotifyNepseClients(title, body);
     }
-
-    const body = `${item.symbol} Buy order ${modifiedItem.totalBuyOrder}, Sell order ${modifiedItem.totalSellOrder}, Buy quantity ${modifiedItem.totalBuyQuantity}, Sell quantity ${modifiedItem.totalSellQuantity}, ${ratioComparison}`;
-
-    NotifyNepseClients(title, body);
   }
   delete modifiedItem.totalOrder;
   delete modifiedItem.totalQuantity;
