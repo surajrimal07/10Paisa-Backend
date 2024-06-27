@@ -4,7 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { NEPSE_ACTIVE_API_URL, isNepseOpen, switchServer } from "../controllers/refreshController.js";
 import { fetchFromCache, saveToCache } from "../controllers/savefetchCache.js";
-
+import {SendNotification} from '../server/notificationServer.js';
 import { fetchFunction } from '../server/fetchFunction.js';
 import { assetLogger } from '../utils/logger/logger.js';
 
@@ -263,28 +263,6 @@ export async function FetchSingleCompanyDatafromAPI(symbol) {
   }
 }
 
-//send notifications if fake buy sell orders are detected
-const NotifyNepseClients = async (title, body) => {
-  try {
-    const response = fetch('https://notifications.surajr.com.np/NepseAlerts', {
-      method: 'POST',
-      body: body,
-      headers: {
-        'Content-Type': 'application/json',
-        'Title': title,
-        'Priority': 'urgent',
-        'Tags': 'warning'
-      }
-    });
-
-    if (!response.ok) {
-      assetLogger.error(`Failed to send notification to Nepse clients`);
-    }
-  } catch (error) {
-    assetLogger.error(`Error at NotifyNepseClients: ${error.message}`);
-  }
-};
-
 
 // eslint-disable-next-line no-undef
 const nepseNotification = process.env.IS_NEPSE_NOTIFICATION_ENABLED === 'true' ? true : false;
@@ -343,15 +321,13 @@ const mergeBuySellData = (item, side, matchingList) => {
 
       const body = `${item.symbol} Buy order ${modifiedItem.totalBuyOrder}, Sell order ${modifiedItem.totalSellOrder}, Buy quantity ${modifiedItem.totalBuyQuantity}, Sell quantity ${modifiedItem.totalSellQuantity}, ${ratioComparison}`;
 
-      NotifyNepseClients(title, body);
+      SendNotification('all',title, body);
     }
   }
   delete modifiedItem.totalOrder;
   delete modifiedItem.totalQuantity;
   delete modifiedItem.quantityPerOrder;
   delete item.orderSide;
-
-  //console.log(modifiedItem);
 
   return modifiedItem;
 };
