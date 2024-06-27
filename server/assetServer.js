@@ -287,14 +287,14 @@ export async function FetchSingleCompanyDatafromAPI(symbol) {
 }
 
 //send notifications if fake buy sell orders are detected
-const NotifyNepseClients = async (body) => {
+const NotifyNepseClients = async (title, body) => {
   try {
     const response = fetch('https://notifications.surajr.com.np/NepseAlerts', {
       method: 'POST',
       body: JSON.stringify({ message: body }),
       headers: {
         'Content-Type': 'application/json',
-        'Title': 'Fake Orders Detected',
+        'Title': title,
         'Priority': 'urgent',
         'Tags': 'warning'
       }
@@ -347,16 +347,17 @@ const mergeBuySellData = async (item, side, matchingList) => {
 
   if (modifiedItem.buyToSellOrderRatio > 10 || modifiedItem.buyToSellQuantityRatio > 10) {
     let ratioComparison;
+    const title = "Fake Orders Detected";
+
     if (modifiedItem.buyToSellOrderRatio > modifiedItem.buyToSellQuantityRatio) {
       ratioComparison = `Buy order is ${modifiedItem.buyToSellOrderRatio.toFixed(1)} times higher than sell order`;
     } else {
       ratioComparison = `Sell order is ${modifiedItem.buyToSellQuantityRatio.toFixed(1)} times higher than buy order`;
     }
 
-    const body = `${item.symbol} Buy order ${modifiedItem.totalBuyOrder}, Sell order ${modifiedItem.totalSellOrder}, Buy quantity ${modifiedItem.totalBuyQuantity}, Sell quantity ${modifiedItem.totalSellQuantity}
-    ${ratioComparison}`;
+    const body = `${item.symbol} Buy order ${modifiedItem.totalBuyOrder}, Sell order ${modifiedItem.totalSellOrder}, Buy quantity ${modifiedItem.totalBuyQuantity}, Sell quantity ${modifiedItem.totalSellQuantity}, ${ratioComparison}`;
 
-    NotifyNepseClients(body);
+    NotifyNepseClients(title, body);
   }
   delete modifiedItem.totalOrder;
   delete modifiedItem.totalQuantity;
