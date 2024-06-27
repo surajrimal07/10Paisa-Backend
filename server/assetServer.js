@@ -28,29 +28,6 @@ const nepseIndexes = [
   { field: "Trading Index", symbol: "TRADING", name: "Trading" },
 ];
 
-// export async function FetchSingularDataOfAsset(refresh) {
-
-//   try {
-//     const cachedData = await fetchFromCache("FetchSingularDataOfAssets");
-//     if (!refresh && cachedData != null) {
-//       return cachedData;
-//     }
-
-//     const response = await fetch(NEPSE_ACTIVE_API_URL + "/TradeTurnoverTransactionSubindices");
-//     if (!response.ok && cachedData != null) {
-//       assetLogger.error(`HTTP error! status: ${response.status}`);
-//       return cachedData;
-//     }
-//     const singleData = await response.json();
-//     await saveToCache("FetchSingularDataOfAssets", singleData);
-
-//     return singleData;
-//   } catch (error) {
-//     assetLogger.error(`Error at FetchSingularDataOfAsset : ${error.message}`);
-//     return null;
-//   }
-// }
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const parentDir = path.resolve(__dirname, '..');
@@ -291,7 +268,7 @@ const NotifyNepseClients = async (title, body) => {
   try {
     const response = fetch('https://notifications.surajr.com.np/NepseAlerts', {
       method: 'POST',
-      body: JSON.stringify({ body }),
+      body: body,
       headers: {
         'Content-Type': 'application/json',
         'Title': title,
@@ -309,8 +286,9 @@ const NotifyNepseClients = async (title, body) => {
 };
 
 
+// eslint-disable-next-line no-undef
 const nepseNotification = process.env.IS_NEPSE_NOTIFICATION_ENABLED === 'true' ? true : false;
-const mergeBuySellData = async (item, side, matchingList) => {
+const mergeBuySellData = (item, side, matchingList) => {
   const modifiedItem = { ...item };
 
   if (side === 'Demand Side') {
@@ -347,14 +325,20 @@ const mergeBuySellData = async (item, side, matchingList) => {
   modifiedItem.buyToSellQuantityRatio = parseFloat((modifiedItem.totalBuyQuantity / modifiedItem.totalSellQuantity).toFixed(1));
 
   if (nepseNotification) {
-    if (modifiedItem.buyToSellOrderRatio > 10 || modifiedItem.buyToSellQuantityRatio > 10) {
-      let ratioComparison;
-      const title = "Fake Orders Detected";
+    if (modifiedItem.buyToSellOrderRatio > 7 || modifiedItem.buyToSellQuantityRatio > 7) {
+      let ratioComparison = '';
+      const title = "Bulk Orders Detected";
 
-      if (modifiedItem.buyToSellOrderRatio > modifiedItem.buyToSellQuantityRatio) {
-        ratioComparison = `Buy order is ${modifiedItem.buyToSellOrderRatio.toFixed(1)} times higher than sell order`;
+      if (modifiedItem.buyToSellOrderRatio > 1) {
+        ratioComparison += `Buy order is ${modifiedItem.buyToSellOrderRatio.toFixed(1)} times higher than sell order and `;
       } else {
-        ratioComparison = `Sell order is ${modifiedItem.buyToSellQuantityRatio.toFixed(1)} times higher than buy order`;
+        ratioComparison += `Sell order is ${(1 / modifiedItem.buyToSellOrderRatio).toFixed(1)} times higher than buy order and `;
+      }
+
+      if (modifiedItem.buyToSellQuantityRatio > 1) {
+        ratioComparison += `buy quantity is ${modifiedItem.buyToSellQuantityRatio.toFixed(1)} times higher than sell quantity`;
+      } else {
+        ratioComparison += `sell quantity is ${(1 / modifiedItem.buyToSellQuantityRatio).toFixed(1)} times higher than buy quantity`;
       }
 
       const body = `${item.symbol} Buy order ${modifiedItem.totalBuyOrder}, Sell order ${modifiedItem.totalSellOrder}, Buy quantity ${modifiedItem.totalBuyQuantity}, Sell quantity ${modifiedItem.totalSellQuantity}, ${ratioComparison}`;
@@ -366,6 +350,8 @@ const mergeBuySellData = async (item, side, matchingList) => {
   delete modifiedItem.totalQuantity;
   delete modifiedItem.quantityPerOrder;
   delete item.orderSide;
+
+  //console.log(modifiedItem);
 
   return modifiedItem;
 };
