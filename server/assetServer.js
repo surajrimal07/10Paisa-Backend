@@ -291,7 +291,7 @@ const NotifyNepseClients = async (title, body) => {
   try {
     const response = fetch('https://notifications.surajr.com.np/NepseAlerts', {
       method: 'POST',
-      body: JSON.stringify({ message: body }),
+      body: JSON.stringify({ body }),
       headers: {
         'Content-Type': 'application/json',
         'Title': title,
