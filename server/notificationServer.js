@@ -17,7 +17,7 @@ export const SendNotification = (where = "all", title, body) => {
     } if (where === "all") {
         NotifyNepseClients(title, body);
         NotifyTelegram(body);
-        NotifyFirebase(title, body);
+        // NotifyFirebase(title, body);
     }
     else {
         mainLogger.error(`Invalid notification type: ${where}`);
@@ -27,7 +27,7 @@ export const SendNotification = (where = "all", title, body) => {
 export const NotifyTelegram = (body) => {
     try {
         bot.sendMessage(channelId, body);
-    // eslint-disable-next-line no-unused-vars
+        // eslint-disable-next-line no-unused-vars
     } catch (error) {
         //console.log(error);
         assetLogger.error(`Failed to send notification to Telegram`);
