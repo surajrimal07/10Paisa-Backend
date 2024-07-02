@@ -67,7 +67,7 @@ async function NotifyClients(data) {
     }
   );
 
-  await NotifyNewsClients(data.title, data.description);
+  await NotifyNewsClients(data.title, data);
 };
 
 async function scrapeShareSansar() {

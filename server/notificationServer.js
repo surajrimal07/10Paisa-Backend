@@ -89,12 +89,11 @@ export const NotifyNepseClients = (title, body) => {
 };
 
 export async function NotifyNewsClients(title, body) {
-    const encodedTitle = Buffer.from(JSON.stringify(title)).toString('base64');
-    console.log('sending news notification');
+    const encodedTitle = Buffer.from(title).toString('base64');
 
     if (isServerPrimary) {
         try {
-            fetch('https://notifications.surajr.com.np/NepseNews', {
+            await fetch('https://notifications.surajr.com.np/NepseNews', {
                 method: 'POST',
                 body: body.description,
                 headers: {
