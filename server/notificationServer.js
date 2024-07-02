@@ -1,4 +1,4 @@
-import Buffer from 'buffer';
+import { Buffer } from 'buffer';
 import TelegramBot from 'node-telegram-bot-api';
 import { isServerPrimary } from '../index.js';
 import { assetLogger, mainLogger } from "../utils/logger/logger.js";
@@ -88,28 +88,20 @@ export const NotifyNepseClients = (title, body) => {
     }
 };
 
-export const NotifyNewsClients = (title, body) => {
-    //console.log(title, body);
-
-    //const newsTitle = JSON.stringify(body.title);
+export async function NotifyNewsClients(title, body) {
     const encodedTitle = Buffer.from(JSON.stringify(title)).toString('base64');
-    // const base64 = Buffer.from(JSON.stringify(object)).toString('base64');
-
-    console.table({ encodedTitle });
-
-    console.log(`Title: ${encodedTitle}`);
 
     if (isServerPrimary) {
-
         try {
             fetch('https://notifications.surajr.com.np/NepseNews', {
                 method: 'POST',
-                body: JSON.stringify(body.description),
+                body: body.description,
                 headers: {
-                    // 'Actions': `http, View News, ${body.link}, clear=true`,
                     'Attach': body.img_url,
                     'Click': body.link,
-                    'Title': `=?UTF-8?B?8J+HqfCfh6o=?=${encodedTitle}`,
+                    "label": "Close door",
+                    'Actions': `view, Open News, ${body.link}, clear=true`,
+                    'Title': `=?UTF-8?B?${encodedTitle}?=`,
                     'Priority': 'urgent',
                     'Tags': 'loudspeaker'
                 }
@@ -119,9 +111,7 @@ export const NotifyNewsClients = (title, body) => {
             console.error(`Error at NotifyNewsClients: ${error.message}`);
         }
     }
-
-};
-
+}
 
 export const NotifyNepseIndexClients = (title, body) => {
 

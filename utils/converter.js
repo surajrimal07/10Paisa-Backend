@@ -1,6 +1,15 @@
-export const formatTimeTo12Hour = timeString => {
-    const date = new Date(timeString), h = date.getHours(), m = date.getMinutes();
-    return `${h % 12 || 12}:${m < 10 ? '0' + m : m} ${h >= 12 ? 'PM' : 'AM'}`;
+// export const formatTimeTo12Hour = timeString => {
+//     const date = new Date(timeString), h = date.getHours(), m = date.getMinutes();
+//     return `${h % 12 || 12}:${m < 10 ? '0' + m : m} ${h >= 12 ? 'PM' : 'AM'} ${date}`;
+// };
+
+export const formatTimeTo12Hour = (timeString) => {
+    const date = new Date(timeString);
+    const h = date.getHours();
+    const m = date.getMinutes();
+    const month = date.toLocaleString('default', { month: 'short' });
+
+    return `${month} ${date.getDate()} ${h % 12 || 12}:${m < 10 ? '0' + m : m} ${h >= 12 ? 'PM' : 'AM'}`;
 };
 
 export function formatTurnover(turnover) {

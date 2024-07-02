@@ -10,11 +10,52 @@ import extractFeaturedImage from './imageServer.js';
 import { NotifyNewsClients } from './notificationServer.js';
 import { notifyRoomClients } from './websocket.js';
 
+import { startSession } from 'mongoose';
+
+async function insertNewsWithTransaction(newsData) {
+  const session = await startSession();
+  session.startTransaction();
+  try {
+    const existingItem = await newsModel.findOne({ unique_key: newsData.unique_key }).session(session);
+    if (existingItem) {
+      await session.abortTransaction();
+      session.endSession();
+      return false;
+    }
+
+    await newsModel.create([newsData], { session });
+    await session.commitTransaction();
+    session.endSession();
+    NotifyClients(newsData);
+    return true;
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    if (error.code === 11000 || error.code === 'E11000') {
+      return false;
+    }
+    throw error;
+  }
+}
+
 function generateUniqueKey(title, pubDate, link) {
   const hash = crypto.createHash('sha256');
   hash.update(title + pubDate + link);
   return hash.digest('hex');
 }
+// function generateUniqueKey(title, pubDate, link) {
+//   const normalizedTitle = title.trim().toLowerCase();
+//   const normalizedPubDate = pubDate.trim();
+//   const normalizedLink = link.trim();
+//   const data = normalizedTitle + normalizedPubDate + normalizedLink;
+
+//   const salt = 'myUniqueSalt';
+//   const saltedData = data + salt;
+//   const hash = crypto.createHash('sha256');
+//   hash.update(saltedData);
+
+//   return hash.digest('hex');
+// }
 
 async function isDuplicateArticle(uniqueKey) {
   const existing_item = await newsModel.findOne({
@@ -56,30 +97,33 @@ async function scrapeShareSansar() {
       const pubDate = $(element).find('span.text-org').text().trim();
       const unique_key = generateUniqueKey(title, pubDate, link);
 
+      if (await isDuplicateArticle(unique_key)) {
+        return;
+      }
+
       try {
-        if (!await isDuplicateArticle(unique_key)) {
-          const bodyResponse = await axios.get(link);
-          const body$ = cheerio.load(bodyResponse.data);
-          const description = body$('#newsdetail-content').find('p').first().text().trim();
+        const bodyResponse = await axios.get(link);
+        const body$ = cheerio.load(bodyResponse.data);
+        const description = body$('#newsdetail-content').find('p').first().text().trim();
 
-          const newsData = {
-            title,
-            img_url,
-            link,
-            pubDate,
-            description,
-            source: 'Share Sansar',
-            unique_key
-          };
+        const newsData = {
+          title,
+          img_url,
+          link,
+          pubDate,
+          description,
+          source: 'Share Sansar',
+          unique_key
+        };
 
-          await newsModel.create(newsData);
-          NotifyClients(newsData);
-        }
+        //await newsModel.create(newsData);
+        await insertNewsWithTransaction(newsData);
+
       } catch (error) {
         if (error.code === 11000 || error.code === 'E11000') {
           ///
         }
-        newsLogger.error(`Error Sharesansar body:  ${error.message}`);
+        //newsLogger.error(`Error Sharesansar body:  ${error.message}`);
       }
     });
 
@@ -107,21 +151,25 @@ async function scrapeMeroLagani() {
       news.source = 'Mero Lagani';
       news.unique_key = generateUniqueKey(news.title, news.pubDate, news.link);
 
-      try {
-        if (!await isDuplicateArticle(news.unique_key)) {
-          const response = await axios.get(news.link);
-          const body$ = cheerio.load(response.data);
-          news.description = body$('meta[property="og:description"]').attr('content');
-          news.img_url = body$('meta[property="og:image"]').attr('content');
+      if (await isDuplicateArticle(news.unique_key)) {
+        return;
+      }
 
-          await newsModel.create(news);
-          NotifyClients(news);
-        }
+      try {
+        //if (!await isDuplicateArticle(news.unique_key)) {
+        const response = await axios.get(news.link);
+        const body$ = cheerio.load(response.data);
+        news.description = body$('meta[property="og:description"]').attr('content');
+        news.img_url = body$('meta[property="og:image"]').attr('content');
+
+        // await newsModel.create(news);
+        await insertNewsWithTransaction(news);
+        //  }
       } catch (error) {
         if (error.code === 11000 || error.code === 'E11000') {
           //
         }
-        newsLogger.error(`Error fetching Merolagani body: ${error.message}`);
+        // newsLogger.error(`Error fetching Merolagani body: ${error.message}`);
       }
     });
 
@@ -161,15 +209,15 @@ async function scrapeEkantipur() {
         unique_key
       };
 
-      await newsModel.create(newsItem);
-      NotifyClients(newsItem);
+      // await newsModel.create(newsItem);
+      await insertNewsWithTransaction(newsItem);
     });
 
   } catch (error) {
     if (error.code === 11000 || error.code === 'E11000') {
       //
     }
-    newsLogger.error(`Error fetching Ekantipur news: ${error.message}`);
+    //newsLogger.error(`Error fetching Ekantipur news: ${error.message}`);
     return [];
   }
 }
@@ -225,7 +273,7 @@ async function startFetchingRSS(url, source) {
         const unique_key = generateUniqueKey(title, pubDate, link);
 
         if (await isDuplicateArticle(unique_key)) {
-          continue;
+          return
         }
 
         img_url = entry.image ? entry.image.url : '';
@@ -244,18 +292,15 @@ async function startFetchingRSS(url, source) {
           unique_key
         };
 
-        try {
-          await newsModel.create(new_item_data);
-        } catch (error) {
-          if (error.code === 11000 || error.code === 'E11000') {
-            //fuck this shit
-          }
-          else {
-            newsLogger.info('Error occured saving news in dababase');
-          }
-        }
+        // try {
+        //   await newsModel.create(new_item_data);
+        // } catch (error) {
+        //   if (error.code === 11000 || error.code === 'E11000') {
+        //     //fuck this shit
+        //   }
+        // }
 
-        NotifyClients(new_item_data);
+        await insertNewsWithTransaction(new_item_data);
 
       }
     }

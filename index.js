@@ -189,18 +189,15 @@ cloudinary.config({
   api_secret: process.env.API_SECRET,
 });
 
-
 //server
 if (isDevelopment) {
   const server = https.createServer(httpsOptions, app);
-  mainLogger.info("Starting Development Server");
   server.listen(port, () => {
-    mainLogger.info(`Development Server is running on port ${port}`);
+    mainLogger.info(`Development Server is running as ${isServerPrimary ? 'Primary Server' : 'Secondary Server'} on port ${port}`);
   });
 } else {
-  mainLogger.info("Starting Production Server");
   app.listen(port, () => {
-    mainLogger.info(`Production Server is running on port ${port}`);
+    mainLogger.info(`Production Server is running as ${isServerPrimary ? 'Primary Server' : 'Secondary Server'} on port ${port}`);
   });
 
   io.init({

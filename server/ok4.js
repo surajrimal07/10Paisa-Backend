@@ -233,7 +233,7 @@ export async function startNewsServer(app) {
           }
         }
 
-        await newsModel.create(uniqueNewItems);
+       // await newsModel.create(uniqueNewItems);
 
         for (const data of uniqueNewItems) {
           const messageData = {
