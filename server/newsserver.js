@@ -2,6 +2,7 @@ import { extract } from '@extractus/feed-extractor';
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 import crypto from 'crypto';
+import { isServerPrimary } from '../index.js';
 import newsSources from '../middleware/newsUrl.js';
 import newsModel from '../models/newsModel.js';
 import { createheaders } from '../utils/headers.js';
@@ -43,19 +44,6 @@ function generateUniqueKey(title, pubDate, link) {
   hash.update(title + pubDate + link);
   return hash.digest('hex');
 }
-// function generateUniqueKey(title, pubDate, link) {
-//   const normalizedTitle = title.trim().toLowerCase();
-//   const normalizedPubDate = pubDate.trim();
-//   const normalizedLink = link.trim();
-//   const data = normalizedTitle + normalizedPubDate + normalizedLink;
-
-//   const salt = 'myUniqueSalt';
-//   const saltedData = data + salt;
-//   const hash = crypto.createHash('sha256');
-//   hash.update(saltedData);
-
-//   return hash.digest('hex');
-// }
 
 async function isDuplicateArticle(uniqueKey) {
   const existing_item = await newsModel.findOne({
@@ -315,34 +303,38 @@ async function startFetchingRSS(url, source) {
 }
 
 export async function initiateNewsFetch() {
-  newsLogger.info('Initiating news fetch');
+  if (isServerPrimary) {
+    newsLogger.info('Initiating news fetch');
 
-  const fetchAndDelay = async ({ url, source }) => {
-    await startFetchingRSS(url, source);
-    await new Promise((resolve) => setTimeout(resolve, 2 * 1000));
-  };
+    const fetchAndDelay = async ({ url, source }) => {
+      await startFetchingRSS(url, source);
+      await new Promise((resolve) => setTimeout(resolve, 2 * 1000));
+    };
 
-  async function fetchAndScrape() {
-    try {
-      for (const newsSource of newsSources) {
-        await fetchAndDelay(newsSource);
+    async function fetchAndScrape() {
+      try {
+        for (const newsSource of newsSources) {
+          await fetchAndDelay(newsSource);
+        }
+        await new Promise((resolve) => setTimeout(resolve, 2 * 1000));
+        await scrapeEkantipur();
+
+        await new Promise((resolve) => setTimeout(resolve, 2 * 1000));
+        await scrapeShareSansar();
+
+        await new Promise((resolve) => setTimeout(resolve, 2 * 1000));
+        await scrapeMeroLagani();
+
+      } catch (error) {
+        newsLogger.error('Error in fetch and scrape:', error.message);
       }
-      await new Promise((resolve) => setTimeout(resolve, 2 * 1000));
-      await scrapeEkantipur();
-
-      await new Promise((resolve) => setTimeout(resolve, 2 * 1000));
-      await scrapeShareSansar();
-
-      await new Promise((resolve) => setTimeout(resolve, 2 * 1000));
-      await scrapeMeroLagani();
-
-    } catch (error) {
-      newsLogger.error('Error in fetch and scrape:', error.message);
+      setTimeout(fetchAndScrape, 100 * 1000);
     }
-    setTimeout(fetchAndScrape, 100 * 1000);
-  }
 
-  await fetchAndScrape();
+    await fetchAndScrape();
+  } else {
+    newsLogger.info('Secondary server, skipping news fetch');
+  }
 }
 
 //news code
@@ -401,11 +393,18 @@ export const getNews = async (req, res) => {
 
     const newsData = await fetchNews(page, limit, source, keyword);
 
-    if (newsData.length === 0) {
+    //filter out the duplicate news
+    const uniqueNewsData = newsData.filter((newsItem, index, self) =>
+      index === self.findIndex((t) => (
+        t.title === newsItem.title && t.source === newsItem.source
+      ))
+    );
+
+    if (uniqueNewsData.length === 0) {
       return res.status(404).json({ message: 'No news found with selected keyword and source.' });
     }
 
-    res.json(newsData);
+    res.json(uniqueNewsData);
   } catch (error) {
     newsLogger.error('Error fetching news:', error);
     res.status(500).json({ error: 'Internal Server Error' });
