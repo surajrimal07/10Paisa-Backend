@@ -119,8 +119,10 @@ async function wipeCachesAndRefreshData() {
 
     let newIndexData = await getIndexIntraday(true);
     if (newIndexData) {
-      const title = `Nepse Index ${newIndexData.close}`;
-      const body = `Nepse Index: ${newIndexData.close} (${newIndexData.change} points) ${newIndexData.percentage}`;
+      const title = `Nepse Index • ${newIndexData.change}`;
+      const body = `Nepse Index: ${newIndexData.close} • Point change ${newIndexData.change} • Percentage Change ${newIndexData.percentageChange}%`;
+
+
       notifyRoomClients('news', { type: "index", data: newIndexData });
       NotifyNepseIndexClients(title, body);
     }
