@@ -1,12 +1,12 @@
 /* eslint-disable no-undef */
 //package imports
-import 'dotenv/config';
-import initializeRefreshMechanism from "./controllers/refreshController.js";
 import { v2 as cloudinary } from "cloudinary";
 import multipart from "connect-multiparty";
 import cors from "cors";
+import 'dotenv/config';
 import express from "express";
 import httpsOptions from "./certificate/httpOptions.js";
+import initializeRefreshMechanism from "./controllers/refreshController.js";
 //
 import io from '@pm2/io';
 import compression from "compression";
@@ -31,6 +31,8 @@ import { redisclient } from "./server/redisServer.js";
 import { startWebSocketServer } from "./server/websocket.js";
 import { errorHandler, mainLogger } from './utils/logger/logger.js';
 import dynamicRoutes from "./utils/routesforIndex.js";
+
+export const isServerPrimary = process.env.IS_PRIMARY_SERVER === 'true';
 
 //Express Middlewares
 const app = express();

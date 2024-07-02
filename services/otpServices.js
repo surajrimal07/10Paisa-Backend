@@ -254,7 +254,7 @@ export const sendOTP = (params, callback) => {
     body: otpMessage
   };
 
-  emailServices.sendEmail(model, (error, result) => {
+  emailServices.sendEmail(model, (error) => {
     if (error) {
       return callback(error);
     }
@@ -312,7 +312,7 @@ export const forgotpass = (emails, callback) => {
     body: otpMessage
   };
 
-  emailServices.sendEmail(model, (error, result) => {
+  emailServices.sendEmail(model, (error) => {
     if (error) {
       return callback(error);
     } else {

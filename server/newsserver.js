@@ -7,6 +7,7 @@ import newsModel from '../models/newsModel.js';
 import { createheaders } from '../utils/headers.js';
 import { newsLogger } from '../utils/logger/logger.js';
 import extractFeaturedImage from './imageServer.js';
+import { NotifyNewsClients } from './notificationServer.js';
 import { notifyRoomClients } from './websocket.js';
 
 function generateUniqueKey(title, pubDate, link) {
@@ -37,6 +38,7 @@ function NotifyClients(data) {
     }
   );
 
+  NotifyNewsClients(data.title, data);
 };
 
 async function scrapeShareSansar() {

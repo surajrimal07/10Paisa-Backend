@@ -12,6 +12,7 @@ import {
   topTurnoversShare,
   topgainersShare,
 } from "../server/assetServer.js";
+import { NotifyNepseIndexClients } from "../server/notificationServer.js";
 import { notifyRoomClients, wss } from "../server/websocket.js";
 import { nepseLogger } from '../utils/logger/logger.js';
 import { saveToCache } from "./savefetchCache.js";
@@ -118,7 +119,10 @@ async function wipeCachesAndRefreshData() {
 
     let newIndexData = await getIndexIntraday(true);
     if (newIndexData) {
+      const title = `Nepse Index ${newIndexData.close}`;
+      const body = `Nepse Index: ${newIndexData.close} (${newIndexData.change} points) ${newIndexData.percentage}`;
       notifyRoomClients('news', { type: "index", data: newIndexData });
+      NotifyNepseIndexClients(title, body);
     }
 
     //send the updated portfolio to those who subscribed to live portfolio using websocket

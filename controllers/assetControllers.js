@@ -264,7 +264,7 @@ export const CommodityData = async (req, res) => {
       mergedData
     );
   } catch (error) {
-    assetLogger.error(`Error fetching or logging commodity data: ${error.message}`);
+    assetLogger.error(`Error fetchirg or logging commodity data: ${error.message}`);
     return respondWithError(
       res,
       "INTERNAL_SERVER_ERROR",
