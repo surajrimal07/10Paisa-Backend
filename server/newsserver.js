@@ -27,7 +27,7 @@ async function insertNewsWithTransaction(newsData) {
     await newsModel.create([newsData], { session });
     await session.commitTransaction();
     session.endSession();
-    NotifyClients(newsData);
+    await NotifyClients(newsData);
     return true;
   } catch (error) {
     await session.abortTransaction();
@@ -53,7 +53,7 @@ async function isDuplicateArticle(uniqueKey) {
   return existing_item !== null;
 }
 
-function NotifyClients(data) {
+async function NotifyClients(data) {
   notifyRoomClients('news',
     {
       type: 'news',
@@ -67,7 +67,7 @@ function NotifyClients(data) {
     }
   );
 
-  NotifyNewsClients(data.title, data.description);
+  await NotifyNewsClients(data.title, data.description);
 };
 
 async function scrapeShareSansar() {

@@ -90,6 +90,7 @@ export const NotifyNepseClients = (title, body) => {
 
 export async function NotifyNewsClients(title, body) {
     const encodedTitle = Buffer.from(JSON.stringify(title)).toString('base64');
+    console.log('sending news notification');
 
     if (isServerPrimary) {
         try {
