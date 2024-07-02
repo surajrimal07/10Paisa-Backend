@@ -14,6 +14,7 @@ import {
 } from "../server/assetServer.js";
 import { NotifyNepseIndexClients } from "../server/notificationServer.js";
 import { notifyRoomClients, wss } from "../server/websocket.js";
+import { formatTimeTo12Hour, formatTurnover } from "../utils/converter.js";
 import { nepseLogger } from '../utils/logger/logger.js';
 import { saveToCache } from "./savefetchCache.js";
 
@@ -119,9 +120,9 @@ async function wipeCachesAndRefreshData() {
 
     let newIndexData = await getIndexIntraday(true);
     if (newIndexData) {
-      const title = `Nepse Index • ${newIndexData.change}`;
-      const body = `Nepse Index: ${newIndexData.close} • Point change ${newIndexData.change} • Percentage Change ${newIndexData.percentageChange}%`;
-
+      const asOf = `as of ${formatTimeTo12Hour(newIndexData.time)}`
+      const title = `Nepse Index ${newIndexData.change} ${newIndexData.change > 0 ? "Up" : "Down"} ${asOf}`;
+      const body = `Nepse Index: ${newIndexData.close} • Point change ${newIndexData.change} • Percentage Change ${newIndexData.percentageChange}% • High ${newIndexData.high} • Low ${newIndexData.low} • Turnover ${formatTurnover(newIndexData.turnover)} `;
 
       notifyRoomClients('news', { type: "index", data: newIndexData });
       NotifyNepseIndexClients(title, body);
@@ -130,7 +131,7 @@ async function wipeCachesAndRefreshData() {
     //send the updated portfolio to those who subscribed to live portfolio using websocket
     notifyUsersWithUpdatedData();
 
-    nepseLogger.info(`Refresh Successful at ${new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })}`);
+    nepseLogger.info(`Refresh Successful at ${new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })}, Data as of ${formatTimeTo12Hour(newIndexData.time)}`);
   } catch (error) {
     nepseLogger.error(`Error refreshing Nepse data: ${error.message}`);
   }
@@ -169,7 +170,6 @@ export default async function initializeRefreshMechanism() {
       }
 
       if (checkIsNepseOpenNow || closeCounter >= 0) {
-        nepseLogger.info(`performing Nepse data fetch. Close counter: ${closeCounter}`)
         await wipeCachesAndRefreshData(); // Refresh data if Nepse is currently open
         if (!checkIsNepseOpenNow) {
           closeCounter--; // Decrease the counter if Nepse is closed
@@ -180,3 +180,5 @@ export default async function initializeRefreshMechanism() {
     nepseLogger.error(`Error initializing Nepse refresh mechanism ${error.message}`);
   }
 }
+
+//setup timer for 24 hour

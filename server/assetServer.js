@@ -1,11 +1,12 @@
+/* eslint-disable no-unused-vars */
 import * as cheerio from 'cheerio';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { NEPSE_ACTIVE_API_URL, isNepseOpen, switchServer } from "../controllers/refreshController.js";
 import { fetchFromCache, saveToCache } from "../controllers/savefetchCache.js";
-import {SendNotification} from '../server/notificationServer.js';
 import { fetchFunction } from '../server/fetchFunction.js';
+import { SendNotification } from '../server/notificationServer.js';
 import { assetLogger } from '../utils/logger/logger.js';
 
 const nepseIndexes = [
@@ -321,7 +322,7 @@ const mergeBuySellData = (item, side, matchingList) => {
 
       const body = `${item.symbol} Buy order ${modifiedItem.totalBuyOrder}, Sell order ${modifiedItem.totalSellOrder}, Buy quantity ${modifiedItem.totalBuyQuantity}, Sell quantity ${modifiedItem.totalSellQuantity}, ${ratioComparison}`;
 
-      SendNotification('all',title, body);
+      SendNotification('all', title, body);
     }
   }
   delete modifiedItem.totalOrder;
@@ -330,6 +331,24 @@ const mergeBuySellData = (item, side, matchingList) => {
   delete item.orderSide;
 
   return modifiedItem;
+};
+
+// const isStockExists = async (symbol) => {
+//   try {
+//     const symbols = await fetchAvailableNepseSymbol(true);
+//     return symbols.some(existingSymbol => existingSymbol === symbol);
+//   } catch (error) {
+//     return false;
+//   }
+// };
+
+let symbols = [];
+
+const isStockExists = async (symbol) => {
+  if (symbols.length === 0) {
+    symbols = await fetchFromCache("AvailableNepseSymbols");
+  }
+  return symbols.includes(symbol);
 };
 
 export async function SupplyDemandData(refresh = false) {
@@ -354,6 +373,19 @@ export async function SupplyDemandData(refresh = false) {
 
     const { supplyList, demandList } = data;
 
+    //filter out mutuals fund caling isStockExists
+    const [filteredDemandList, filteredSupplyList] = await Promise.all([
+      Promise.all(demandList.map(async (item) => {
+        const exists = await isStockExists(item.symbol);
+        return exists ? item : null;
+      })).then(filtered => filtered.filter(item => item !== null)), // Filter out null items
+      Promise.all(supplyList.map(async (item) => {
+        const exists = await isStockExists(item.symbol);
+        return exists ? item : null;
+      })).then(filtered => filtered.filter(item => item !== null)) // Filter out null items
+    ]);
+
+
     const calculateQuantityPerOrder = (list, side) => {
       return list
         .filter(item => item.totalQuantity != null)
@@ -369,13 +401,13 @@ export async function SupplyDemandData(refresh = false) {
         });
     };
 
-    const demandWithQuantityPerOrder = calculateQuantityPerOrder(demandList, 'Demand Side');
-    const supplyWithQuantityPerOrder = calculateQuantityPerOrder(supplyList, 'Supply Side');
+    const demandWithQuantityPerOrder = calculateQuantityPerOrder(filteredDemandList, 'Demand Side');
+    const supplyWithQuantityPerOrder = calculateQuantityPerOrder(filteredSupplyList, 'Supply Side');
 
     const combineAndSortTopItems = (highestDemand, highestSupply) => {
       const combinedList = [
-        ...highestDemand.map(item => mergeBuySellData(item, 'Demand Side', supplyList)),
-        ...highestSupply.map(item => mergeBuySellData(item, 'Supply Side', demandList))
+        ...highestDemand.map(item => mergeBuySellData(item, 'Demand Side', filteredSupplyList)),
+        ...highestSupply.map(item => mergeBuySellData(item, 'Supply Side', filteredDemandList))
       ];
 
       const sortedList = combinedList

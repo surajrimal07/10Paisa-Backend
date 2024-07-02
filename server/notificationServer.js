@@ -91,16 +91,18 @@ export const NotifyNepseClients = (title, body) => {
 export const NotifyNewsClients = (title, body) => {
     //console.log(title, body);
 
-    const newsTitle = JSON.stringify(body.title);
+    //const newsTitle = JSON.stringify(body.title);
     const encodedTitle = Buffer.from(JSON.stringify(title)).toString('base64');
     // const base64 = Buffer.from(JSON.stringify(object)).toString('base64');
 
     console.table({ encodedTitle });
 
+    console.log(`Title: ${encodedTitle}`);
+
     if (isServerPrimary) {
 
         try {
-            const response = fetch('https://notifications.surajr.com.np/NepseNews', {
+            fetch('https://notifications.surajr.com.np/NepseNews', {
                 method: 'POST',
                 body: JSON.stringify(body.description),
                 headers: {
@@ -113,13 +115,6 @@ export const NotifyNewsClients = (title, body) => {
                 }
             });
 
-            response.then(res => {
-                if (!res.ok) {
-                    console.error(`Failed to send notification to Nepse news clients. Status: ${res.status}`);
-                }
-            }).catch(error => {
-                console.error(`Error sending notification: ${error.message}`);
-            });
         } catch (error) {
             console.error(`Error at NotifyNewsClients: ${error.message}`);
         }
@@ -130,11 +125,9 @@ export const NotifyNewsClients = (title, body) => {
 
 export const NotifyNepseIndexClients = (title, body) => {
 
-    console.log(title, body);
-
     if (isServerPrimary) {
         try {
-            const response = fetch('https://notifications.surajr.com.np/NepseIndex', {
+            fetch('https://notifications.surajr.com.np/NepseIndex', {
                 method: 'POST',
                 body: body,
                 headers: {
@@ -144,10 +137,6 @@ export const NotifyNepseIndexClients = (title, body) => {
                     'Tags': 'loudspeaker'
                 }
             });
-
-            if (!response.ok) {
-                assetLogger.error(`Failed to send notification to Nepse index clients`);
-            }
         } catch (error) {
             assetLogger.error(`Error at NotifyNepseClients: ${error.message}`);
         }

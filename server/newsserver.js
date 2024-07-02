@@ -38,7 +38,7 @@ function NotifyClients(data) {
     }
   );
 
-  NotifyNewsClients(data.title, data);
+  NotifyNewsClients(data.title, data.description);
 };
 
 async function scrapeShareSansar() {
@@ -76,6 +76,9 @@ async function scrapeShareSansar() {
           NotifyClients(newsData);
         }
       } catch (error) {
+        if (error.code === 11000 || error.code === 'E11000') {
+          ///
+        }
         newsLogger.error(`Error Sharesansar body:  ${error.message}`);
       }
     });
@@ -115,6 +118,9 @@ async function scrapeMeroLagani() {
           NotifyClients(news);
         }
       } catch (error) {
+        if (error.code === 11000 || error.code === 'E11000') {
+          //
+        }
         newsLogger.error(`Error fetching Merolagani body: ${error.message}`);
       }
     });
@@ -160,6 +166,9 @@ async function scrapeEkantipur() {
     });
 
   } catch (error) {
+    if (error.code === 11000 || error.code === 'E11000') {
+      //
+    }
     newsLogger.error(`Error fetching Ekantipur news: ${error.message}`);
     return [];
   }
@@ -189,91 +198,6 @@ async function startFetchingRSS(url, source) {
   try {
     const result = await extract(url, { normalization: true }, { headers });
 
-    //     const response = await axios.get(url, { headers });
-    //     if (response.status === 200 && response.data) {
-    //       const result = await new xml2js.Parser().parseStringPromise(response.data);
-
-    //       if (
-    //         result.rss &&
-    //         result.rss.channel &&
-    //         result.rss.channel[0] &&
-    //         result.rss.channel[0].item
-    //       ) {
-    //         for (const item_elem of result.rss.channel[0].item) {
-    //           const title = cleanDescription(item_elem.title && item_elem.title[0]);
-
-    //           const link = item_elem.link && item_elem.link[0].trim();
-
-    //           const pubDateN = item_elem.pubDate && new Date(item_elem.pubDate[0]);
-
-    //           const pubDate = pubDateN || fallbackDate;
-
-    //           let img_url = '';
-    //           let description = '';
-
-    //           const unique_key = generateUniqueKey(title, pubDate);
-
-    //           if (await isDuplicateArticle(unique_key)) {
-    //             continue;
-    //           }
-
-    //           if (source === 'Nepal News') {
-    //             const contentEncoded = item_elem['content:encoded'] && item_elem['content:encoded'][0];
-    //             description = cleanDescription(contentEncoded);
-
-    //             const regex = /<img[^>]+src="([^">]+)/g;
-    //             const match = regex.exec(contentEncoded);
-    //             if (match && match[1]) {
-    //               img_url = match[1];
-    //             }
-    //           } else if (source === 'News Of Nepal') {
-    //             description = cleanDescription(item_elem.description && item_elem.description[0]);
-
-    //             const imageUrlRegex = /<img[^>]*src="([^"]*)"[^>]*>/;
-    //             const contentEncoded = item_elem['content:encoded'] && item_elem['content:encoded'][0];
-    //             const imageUrlMatch = contentEncoded.match(imageUrlRegex);
-    //             img_url = imageUrlMatch ? imageUrlMatch[1] : '';
-
-    //           } else if (source === 'Himalayan Times') {
-    //             img_url = item_elem['media:thumbnail'][0].$.url;
-    //             description = cleanDescription(item_elem.description[0]);
-    //           } else {
-    //             img_url = item_elem['media:content'] && item_elem['media:content'][0] && item_elem['media:content'][0].$ && item_elem['media:content'][0].$.url && item_elem['media:content'][0].$.url.trim();
-    //             description = cleanDescription(item_elem.description && item_elem.description[0]);
-    //           }
-
-    //           if (!img_url) {
-    //             img_url = await extractFeaturedImage(link, source);
-    //           };
-
-    //           const new_item_data = {
-    //             title,
-    //             link,
-    //             description,
-    //             img_url,
-    //             pubDate,
-    //             source,
-    //             unique_key
-    //           };
-
-    //           await newsModel.create(new_item_data);
-    //           NotifyClients(new_item_data);
-    //         }
-    //       }
-    //       else {
-    //         newsLogger.error(`RSS structure not found in: ${source} ${url}`);
-    //       }
-    //     }
-    //     else {
-    //       newsLogger.error(`fetching news from url failed: ${response.status} ${url}`);
-    //     }
-    //   } catch (error) {
-    //     if (error.response && error.response.status === 403) {
-    //       newsLogger.error(`Error fetching news on : ${source} : Sarping is blocked by the server`);
-    //     }
-    //     newsLogger.error(`Error fetching news data: ${url} : ${error}`);
-    //   }
-    // }
     if (result && result.entries) {
       for (const entry of result.entries) {
         const title = cleanDescription(entry.title);
@@ -320,10 +244,18 @@ async function startFetchingRSS(url, source) {
           unique_key
         };
 
-        await newsModel.create(new_item_data);
-        NotifyClients(new_item_data);
+        try {
+          await newsModel.create(new_item_data);
+        } catch (error) {
+          if (error.code === 11000 || error.code === 'E11000') {
+            //fuck this shit
+          }
+          else {
+            newsLogger.info('Error occured saving news in dababase');
+          }
+        }
 
-        await newsModel.create(new_item_data);
+        NotifyClients(new_item_data);
 
       }
     }
@@ -334,7 +266,6 @@ async function startFetchingRSS(url, source) {
     if (error.response && error.response.status === 403) {
       newsLogger.error(`Error fetching news on : ${source} : Sarping is blocked by the server`);
     }
-    //newsLogger.error(`Error fetching news data: ${url} : ${error}`);
   }
 }
 

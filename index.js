@@ -271,12 +271,12 @@ app.on("close", () => {
   redisclient.disconnect();
 });
 
-// process.on('uncaughtException', (err) => {
-//   mainLogger.error(`Uncaught Exception: ${err.message}`);
-// });
+process.on('uncaughtException', (err) => {
+  mainLogger.error(`Uncaught Exception: ${err.message}`);
+});
 
-// process.on('unhandledRejection', (reason) => {
-//   mainLogger.error(`Unhandled Rejection, Reason is : ${reason}`);
-// });
+process.on('unhandledRejection', (reason) => {
+  mainLogger.error(`Unhandled Rejection, Reason is : ${reason}`);
+});
 
 export default app;
