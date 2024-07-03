@@ -1060,7 +1060,7 @@ export const fetchFunctionforNepseAlphaORSystemxlite = async (symbolIndex, timeF
   if (!response || !isValidData(response)) {
     assetLogger.error('Fetching data from systemxlite.com failed. Trying nepsealpha.com');
     response = await fetch(
-      `https://www.nepsealpha.com/trading/1/history?${force_key}=rrfdwdwdsdfdg&symbol=${requestedSymbol}&from=${fromEpochTime}&to=${currentEpochTime}&resolution=${timeFrame}&pass=ok&fs=${force_key}&shouldCache=1`,
+      `https://www.nepsealpha.com/trading/1/history?${force_key}=rrfdwdwdsdfdg&symbol=${symbolIndex}&from=${fromEpochTime}&to=${currentEpochTime}&resolution=${timeFrame}&pass=ok&fs=${force_key}&shouldCache=1`,
       {
         headers: {
           accept: "application/json, text/plain, */*",
