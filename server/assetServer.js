@@ -265,9 +265,71 @@ export async function FetchSingleCompanyDatafromAPI(symbol) {
 }
 
 
+//supply demand code
+
+async function sendSupplyDemandNotification(modifiedItem) {
+  if (modifiedItem.buyToSellOrderRatio > 7 || modifiedItem.buyToSellQuantityRatio > 7) {
+    let ratioComparison = '';
+    const title = `Bulk Orders at ${modifiedItem.symbol}`;
+
+    if (modifiedItem.buyToSellOrderRatio > 1) {
+      ratioComparison += `Buy order is ${modifiedItem.buyToSellOrderRatio.toFixed(1)} times higher than sell order and `;
+    } else {
+      ratioComparison += `Sell order is ${(1 / modifiedItem.buyToSellOrderRatio).toFixed(1)} times higher than buy order and `;
+    }
+
+    if (modifiedItem.buyToSellQuantityRatio > 1) {
+      ratioComparison += `buy quantity is ${modifiedItem.buyToSellQuantityRatio.toFixed(1)} times higher than sell quantity`;
+    } else {
+      ratioComparison += `sell quantity is ${(1 / modifiedItem.buyToSellQuantityRatio).toFixed(1)} times higher than buy quantity`;
+    }
+
+    const body = `Buy order ${modifiedItem.totalBuyOrder}, Sell order ${modifiedItem.totalSellOrder}, Buy quantity ${modifiedItem.totalBuyQuantity}, Sell quantity ${modifiedItem.totalSellQuantity}, ${ratioComparison}`;
+
+    await SendNotification('all', title, body);
+  }
+}
+
 // eslint-disable-next-line no-undef
 const nepseNotification = process.env.IS_NEPSE_NOTIFICATION_ENABLED === 'true' ? true : false;
-async function mergeBuySellData(item, side, matchingList) {
+
+const calculatePercentageDifference = (oldValue, newValue) => {
+  if (oldValue === 0) return newValue !== 0;
+  return Math.abs((newValue - oldValue) / oldValue) > 0.2;
+};
+
+const hasSignificantChange = (previousList, currentList) => {
+  const previousMap = new Map(previousList.map(item => [item.symbol, item]));
+
+  for (const currentItem of currentList) {
+    const previousItem = previousMap.get(currentItem.symbol);
+    if (!previousItem) {
+      return true;
+    }
+    if (
+      calculatePercentageDifference(previousItem.totalBuyQuantity, currentItem.totalBuyQuantity) ||
+      calculatePercentageDifference(previousItem.totalSellQuantity, currentItem.totalSellQuantity)
+    ) {
+      return true;
+    }
+  }
+  return false;
+};
+
+const sendNotificationsIfNeeded = async (currentHighestQuantityPerOrder) => {
+  const previousHighestQuantityPerOrder = await fetchFromCache("previousHighestQuantityPerOrder");
+
+  if (hasSignificantChange(previousHighestQuantityPerOrder, currentHighestQuantityPerOrder)) {
+    if (nepseNotification) {
+      for (const item of currentHighestQuantityPerOrder) {
+        await sendSupplyDemandNotification(item, item);
+      }
+    }
+    await saveToCache("previousHighestQuantityPerOrder", currentHighestQuantityPerOrder);
+  }
+};
+
+const mergeBuySellData = async (item, side, matchingList) => {
   const modifiedItem = { ...item };
 
   if (side === 'Demand Side') {
@@ -303,28 +365,9 @@ async function mergeBuySellData(item, side, matchingList) {
   modifiedItem.buyToSellOrderRatio = parseFloat((modifiedItem.totalBuyOrder / modifiedItem.totalSellOrder).toFixed(1));
   modifiedItem.buyToSellQuantityRatio = parseFloat((modifiedItem.totalBuyQuantity / modifiedItem.totalSellQuantity).toFixed(1));
 
-  if (nepseNotification) {
-    if (modifiedItem.buyToSellOrderRatio > 7 || modifiedItem.buyToSellQuantityRatio > 7) {
-      let ratioComparison = '';
-      const title = "Bulk Orders Detected";
-
-      if (modifiedItem.buyToSellOrderRatio > 1) {
-        ratioComparison += `Buy order is ${modifiedItem.buyToSellOrderRatio.toFixed(1)} times higher than sell order and `;
-      } else {
-        ratioComparison += `Sell order is ${(1 / modifiedItem.buyToSellOrderRatio).toFixed(1)} times higher than buy order and `;
-      }
-
-      if (modifiedItem.buyToSellQuantityRatio > 1) {
-        ratioComparison += `buy quantity is ${modifiedItem.buyToSellQuantityRatio.toFixed(1)} times higher than sell quantity`;
-      } else {
-        ratioComparison += `sell quantity is ${(1 / modifiedItem.buyToSellQuantityRatio).toFixed(1)} times higher than buy quantity`;
-      }
-
-      const body = `${item.symbol} Buy order ${modifiedItem.totalBuyOrder}, Sell order ${modifiedItem.totalSellOrder}, Buy quantity ${modifiedItem.totalBuyQuantity}, Sell quantity ${modifiedItem.totalSellQuantity}, ${ratioComparison}`;
-
-      await SendNotification('all', title, body);
-    }
-  }
+  // if (nepseNotification) {
+  //   await sendSupplyDemandNotification(modifiedItem, item);
+  // }
   delete modifiedItem.totalOrder;
   delete modifiedItem.totalQuantity;
   delete modifiedItem.quantityPerOrder;
@@ -333,36 +376,6 @@ async function mergeBuySellData(item, side, matchingList) {
   return modifiedItem;
 };
 
-// const isStockExists = async (symbol) => {
-//   try {
-//     const symbols = await fetchAvailableNepseSymbol(true);
-//     return symbols.some(existingSymbol => existingSymbol === symbol);
-//   } catch (error) {
-//     return false;
-//   }
-// };
-
-let symbols = [];
-
-const isStockExists = async (symbol) => {
-  if (symbols.length === 0) {
-    symbols = await fetchFromCache("AvailableNepseSymbols");
-  }
-  return symbols.includes(symbol);
-};
-
-async function combineAndSortTopItems(highestDemand, highestSupply, filteredDemandList, filteredSupplyList) {
-  const combinedList = [
-    ...highestDemand.map(async item => await mergeBuySellData(item, 'Demand Side', filteredSupplyList)),
-    ...highestSupply.map(async item => await mergeBuySellData(item, 'Supply Side', filteredDemandList))
-  ];
-
-  const sortedList = combinedList
-    .sort((a, b) => b.quantityPerOrder - a.quantityPerOrder)
-    .slice(0, 40);
-
-  return sortedList;
-};
 
 export async function SupplyDemandData(refresh = false) {
   const url = "/SupplyDemand";
@@ -386,19 +399,6 @@ export async function SupplyDemandData(refresh = false) {
 
     const { supplyList, demandList } = data;
 
-    //filter out mutuals fund caling isStockExists
-    const [filteredDemandList, filteredSupplyList] = await Promise.all([
-      Promise.all(demandList.map(async (item) => {
-        const exists = await isStockExists(item.symbol);
-        return exists ? item : null;
-      })).then(filtered => filtered.filter(item => item !== null)), // Filter out null items
-      Promise.all(supplyList.map(async (item) => {
-        const exists = await isStockExists(item.symbol);
-        return exists ? item : null;
-      })).then(filtered => filtered.filter(item => item !== null)) // Filter out null items
-    ]);
-
-
     const calculateQuantityPerOrder = (list, side) => {
       return list
         .filter(item => item.totalQuantity != null)
@@ -414,18 +414,34 @@ export async function SupplyDemandData(refresh = false) {
         });
     };
 
-    const demandWithQuantityPerOrder = calculateQuantityPerOrder(filteredDemandList, 'Demand Side');
-    const supplyWithQuantityPerOrder = calculateQuantityPerOrder(filteredSupplyList, 'Supply Side');
+    const demandWithQuantityPerOrder = calculateQuantityPerOrder(demandList, 'Demand Side');
+    const supplyWithQuantityPerOrder = calculateQuantityPerOrder(supplyList, 'Supply Side');
 
+    const combineAndSortTopItems = async (highestDemand, highestSupply) => {
+
+      const combinedList = [
+        ...(await Promise.all(highestDemand.map(async (item) => await mergeBuySellData(item, 'Demand Side', supplyList)))),
+        ...(await Promise.all(highestSupply.map(async (item) => await mergeBuySellData(item, 'Supply Side', demandList))))
+      ];
+
+      const sortedList = combinedList
+        .sort((a, b) => b.quantityPerOrder - a.quantityPerOrder)
+        .slice(0, 40);
+
+      return sortedList;
+    };
 
     const highestDemand = demandWithQuantityPerOrder.slice(0, 40);
     const highestSupply = supplyWithQuantityPerOrder.slice(0, 40);
 
-    const highestQuantityperOrder = await combineAndSortTopItems(highestDemand, highestSupply, filteredDemandList, filteredSupplyList);
+    const highestQuantityperOrder = await combineAndSortTopItems(highestDemand, highestSupply);
 
-    await saveToCache("highestSupply", highestSupply);
-    await saveToCache("highestDemand", highestDemand);
-    await saveToCache("highestQuantityperOrder", highestQuantityperOrder);
+    await Promise.all([
+      saveToCache("highestSupply", highestSupply),
+      saveToCache("highestDemand", highestDemand),
+      saveToCache("highestQuantityperOrder", highestQuantityperOrder),
+      sendNotificationsIfNeeded(highestQuantityperOrder)
+    ]);
 
     return { highestQuantityperOrder, highestSupply, highestDemand };
   } catch (error) {
@@ -434,6 +450,8 @@ export async function SupplyDemandData(refresh = false) {
   }
 }
 
+
+//end of supply demand code
 
 // export async function AddCategoryAndSector(stockData) {
 //   try {
@@ -822,54 +840,41 @@ export async function getIndexIntraday(refresh) {
 }
 
 export async function intradayIndexGraph(refresh) {
-  const maxRetries = 2;
-  let attempt = 0;
 
-  while (attempt < maxRetries) {
-    const url = NEPSE_ACTIVE_API_URL + "/DailyNepseIndexGraph";
+  const url = "/DailyNepseIndexGraph";
 
-    try {
-      const cachedData = await fetchFromCache("intradayIndexGraph");
-      if (!refresh && cachedData != null) {
-        return cachedData;
-      }
-
-      const data = await fetch(url).then((response) => response.json());
-      if (!Array.isArray(data) && cachedData != null) {
-        await switchServer();
-        assetLogger.error("Invalid data received from the API in DailyNepseIndexGraph.");
-        attempt++;
-        continue;
-      }
-
-      const processedData = data.map((entry) => ({
-        timeepoch: entry[0],
-        time: new Date(entry[0] * 1000).toLocaleTimeString("en-US", {
-          hour: "numeric",
-          minute: "numeric",
-          second: "numeric",
-          hour12: true,
-        }),
-        index: entry[1],
-      }));
-
-      await Promise.all([
-        saveToCache("intradayIndexGraph", processedData),
-        saveToCache("intradayGraph", processedData)
-      ]);
-
-      return processedData;
-    } catch (error) {
-      await switchServer();
-      attempt++;
-      assetLogger.error(`Error at intradayIndexGraph attempt ${attempt}: ${error.message}`);
+  try {
+    const cachedData = await fetchFromCache("intradayIndexGraph");
+    if (!refresh && cachedData != null) {
+      return cachedData;
     }
+
+    const data = await fetchFunction(url);
+    if (!Array.isArray(data) && cachedData != null) {
+      return cachedData;
+    }
+
+    const processedData = data.map((entry) => ({
+      timeepoch: entry[0],
+      time: new Date(entry[0] * 1000).toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "numeric",
+        second: "numeric",
+        hour12: true,
+      }),
+      index: entry[1],
+    }));
+
+    await Promise.all([
+      saveToCache("intradayIndexGraph", processedData),
+      saveToCache("intradayGraph", processedData)
+    ]);
+
+    return processedData;
+  } catch (error) {
+    assetLogger.error(`Error at intradayIndexGraph ${error.message}`);
   }
-
-  console.error(`All attempts failed for intradayIndexGraph.`);
-  return null;
 }
-
 // export async function r(refresh) {
 //   const url = NEPSE_ACTIVE_API_URL + "/Summary";
 //   try {

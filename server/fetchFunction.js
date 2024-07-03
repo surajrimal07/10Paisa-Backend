@@ -7,15 +7,32 @@ async function fetchData(url, timeout) {
 
     const completeUrl = NEPSE_ACTIVE_API_URL + `${url}`;
 
-    const data = await fetch(completeUrl, { signal: controller.signal });
-    clearTimeout(timeoutId);
-    if (!data.ok || !data) {
+    console.log(`Fetching data from: ${completeUrl}`);
+
+    try {
+        const response = await fetch(completeUrl, { signal: controller.signal });
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+            assetLogger.error(`HTTP error! status: ${response.status}`);
+            return null;
+        }
+
+        return response;
+    } catch (error) {
+        clearTimeout(timeoutId);
+        if (error.name === 'AbortError') {
+            assetLogger.error(`Request aborted due to timeout after ${timeout} ms`);
+        } else {
+            assetLogger.error(`Fetch error: ${error.message}`);
+        }
+
         return null;
     }
-    return data;
 }
 
-export async function fetchFunction(url, timeout = 15000) {
+
+export async function fetchFunction(url, timeout = 80000) {
     let response;
     let data;
 
@@ -23,15 +40,15 @@ export async function fetchFunction(url, timeout = 15000) {
         try {
             response = await fetchData(url, timeout);
             if (!response) {
-                assetLogger.error(`HTTP error! status: ${response ? response.status : 'unknown'}`);
-                switchServer();
+                assetLogger.error(`Fetch failed for URL: ${NEPSE_ACTIVE_API_URL} ${url}`);
+                await switchServer();
                 continue;
             }
 
             data = await response.json();
             if (Array.isArray(data) && data.length === 0) {
                 assetLogger.warn(`Received empty data for URL: ${NEPSE_ACTIVE_API_URL} ${url}`);
-                switchServer();
+                await switchServer();
                 continue;
             }
 
@@ -39,7 +56,7 @@ export async function fetchFunction(url, timeout = 15000) {
 
         } catch (error) {
             assetLogger.error(`Error at fetchFunction: ${error.message}`);
-            switchServer();
+            await switchServer();
         }
     }
 

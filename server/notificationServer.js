@@ -11,6 +11,8 @@ const channelId = process.env.TELEGRAM_CHANNEL_ID;
 const bot = new TelegramBot(token, { polling: false });
 
 export async function SendNotification(where = "all", title, body) {
+    console.log('send notification triggered');
+
     if (isServerPrimary) {
 
         if (where === "Telegram") {
@@ -108,11 +110,11 @@ export async function NotifyNewsClients(title, body) {
     }
 }
 
-export const NotifyNepseIndexClients = (title, body) => {
+export const NotifyNepseIndexClients = async (title, body) => {
 
     if (isServerPrimary) {
         try {
-            fetch('https://notifications.surajr.com.np/NepseIndex', {
+            await fetch('https://notifications.surajr.com.np/NepseIndex', {
                 method: 'POST',
                 body: body,
                 headers: {

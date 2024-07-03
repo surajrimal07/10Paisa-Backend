@@ -43,7 +43,7 @@ export async function GetFloorsheet(refresh = false) {
             }
         }
 
-        const response = await fetchFunction(url, 50000);
+        const response = await fetchFunction(url, 60000);
 
         if (!response) {
             apiLogger.error('Error fetching data from server');

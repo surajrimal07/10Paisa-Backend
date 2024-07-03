@@ -13,7 +13,7 @@ import {
   topgainersShare,
 } from "../server/assetServer.js";
 import { GetFloorsheet } from "../server/floorsheetServer.js";
-import { SendNotification } from "../server/notificationServer.js";
+import { NotifyNepseIndexClients } from "../server/notificationServer.js";
 import { notifyRoomClients, wss } from "../server/websocket.js";
 import { formatTimeTo12Hour, formatTurnover } from "../utils/converter.js";
 import { nepseLogger } from '../utils/logger/logger.js';
@@ -39,7 +39,10 @@ const NEPSE_API_URL2 = process.env.NEPSE_API_URL_BACKUP;
 // eslint-disable-next-line no-undef
 const NEPSE_API_URL3 = process.env.NEPSE_API_URL_BACKUP2
 
-export const serverUrls = [NEPSE_API_URL_INTERNAL, NEPSE_API_URL1, NEPSE_API_URL2, NEPSE_API_URL3];
+// eslint-disable-next-line no-undef
+const NEPSE_API_URL4 = process.env.NEPSE_API_URL_BACKUP3
+
+export const serverUrls = [NEPSE_API_URL_INTERNAL, NEPSE_API_URL1, NEPSE_API_URL2, NEPSE_API_URL3, NEPSE_API_URL4];
 
 export let NEPSE_ACTIVE_API_URL = NEPSE_API_URL_INTERNAL;
 export let isNepseOpen = false;
@@ -117,7 +120,7 @@ async function wipeCachesAndRefreshData() {
 
     for (const fetchFunction of fetchFunctions) {
       await fetchFunction(true);
-      await new Promise(resolve => setTimeout(resolve, 5000));
+      await new Promise(resolve => setTimeout(resolve, 15000));
     }
 
     let newIndexData = await getIndexIntraday(true);
@@ -127,7 +130,7 @@ async function wipeCachesAndRefreshData() {
       const body = `Nepse Index: ${newIndexData.close} • Point change ${newIndexData.change} • Percentage Change ${newIndexData.percentageChange}% • High ${newIndexData.high} • Low ${newIndexData.low} • Turnover ${formatTurnover(newIndexData.turnover)} `;
 
       notifyRoomClients('news', { type: "index", data: newIndexData });
-      await SendNotification(title, body);
+      await NotifyNepseIndexClients(title, body);
     }
 
     //send the updated portfolio to those who subscribed to live portfolio using websocket
@@ -177,7 +180,7 @@ export default async function initializeRefreshMechanism() {
           closeCounter--; // Decrease the counter if Nepse is closed
         }
       }
-    }, 60 * 1000);
+    }, 70 * 1000);
   } catch (error) {
     nepseLogger.error(`Error initializing Nepse refresh mechanism ${error.message}`);
   }
