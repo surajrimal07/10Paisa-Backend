@@ -7,8 +7,6 @@ async function fetchData(url, timeout) {
 
     const completeUrl = NEPSE_ACTIVE_API_URL + `${url}`;
 
-    console.log(`Fetching data from: ${completeUrl}`);
-
     try {
         const response = await fetch(completeUrl, { signal: controller.signal });
         clearTimeout(timeoutId);

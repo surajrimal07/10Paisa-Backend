@@ -1,4 +1,4 @@
-/* eslint-disable no-undef */
+
 /* eslint-disable no-undef */
 import { Buffer } from 'buffer';
 import TelegramBot from 'node-telegram-bot-api';
@@ -6,8 +6,6 @@ import { isServerPrimary } from '../index.js';
 import { assetLogger, mainLogger } from "../utils/logger/logger.js";
 import admin from './firebaseServer.js';
 
-const token = process.env.TELEGRAM_TOKEN;
-const channelId = process.env.TELEGRAM_CHANNEL_ID;
 const token = process.env.TELEGRAM_TOKEN;
 const channelId = process.env.TELEGRAM_CHANNEL_ID;
 
@@ -43,7 +41,6 @@ export async function SendNotification(where = "all", title, body) {
     }
 }
 
-export async function NotifyTelegram(body) {
 export async function NotifyTelegram(body) {
     if (isServerPrimary) {
         bot.sendMessage(channelId, body)
@@ -93,24 +90,9 @@ export async function NotifyNepseClients(title, body) {
             });
         } catch (error) {
             assetLogger.error(`Error at NotifyNepseClients: ${error.message}`);
-export async function NotifyNepseClients(title, body) {
-    if (isServerPrimary) {
-        try {
-            await fetch('https://notifications.surajr.com.np/NepseAlerts', {
-                method: 'POST',
-                body: body,
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Title': title,
-                    'Priority': 'urgent',
-                    'Tags': 'warning'
-                }
-            });
-        } catch (error) {
-            assetLogger.error(`Error at NotifyNepseClients: ${error.message}`);
         }
     }
-};
+}
 
 export async function NotifyNewsClients(title, body) {
     const encodedTitle = Buffer.from(title).toString('base64');
