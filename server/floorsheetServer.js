@@ -1,8 +1,9 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-//import { isNepseOpen } from "../controllers/refreshController.js";
+import { isNepseOpen } from "../controllers/refreshController.js";
 import { fetchFromCache, saveToCache } from "../controllers/savefetchCache.js";
+import { apiLogger } from '../utils/logger/logger.js';
 import { fetchFunction } from "./fetchFunction.js";
 
 export async function FindHighestContractQuantity(data) {
@@ -33,10 +34,11 @@ export async function GetFloorsheet(refresh = false) {
     const parentDir = path.resolve(__dirname, '..');
 
     try {
-        if (!refresh) { //|| !isNepseOpen()
-            const cachedfloorsheet = await fetchFromCache("floorsheet");
+        const cachedfloorsheet = await fetchFromCache("floorsheet");
 
+        if (!refresh || !isNepseOpen) {
             if (cachedfloorsheet !== null && cachedfloorsheet !== undefined) {
+                apiLogger.info('Fetching floorsheet data from cache');
                 return cachedfloorsheet;
             }
         }
@@ -44,18 +46,16 @@ export async function GetFloorsheet(refresh = false) {
         const response = await fetchFunction(url, 50000);
 
         if (!response) {
-            console.error('Error fetching data from server');
-            return null;
+            apiLogger.error('Error fetching data from server');
+            return cachedfloorsheet;
         }
 
         await saveToCache("floorsheet", response);
 
         const fileName = path.join(parentDir, `public/floorsheet/${lastBusinessDay}.json`);
 
-        console.log(`Writing floorsheet data to file: ${fileName}`);
-
         if (!fs.existsSync(fileName)) {
-            console.log(`Creating new file: ${fileName}`);
+            apiLogger.info(`Creating new file: ${fileName}`);
             fs.writeFileSync(fileName, JSON.stringify([response], null, 2));
         } else {
             const existingData = JSON.parse(fs.readFileSync(fileName, 'utf8'));
@@ -65,7 +65,7 @@ export async function GetFloorsheet(refresh = false) {
 
         return response;
     } catch (error) {
-        console.error(`Error fetching data from server: ${error.message}`);
-        return null;
+        apiLogger.error(`Error fetching data from server: ${error.message}`);
+        return [];
     }
 }

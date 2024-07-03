@@ -7,8 +7,6 @@ import { mainLogger } from '../utils/logger/logger.js';
 const isDevelopment = process.env.NODE_ENV == "development";
 const { set, get } = createCache({ defaultSecondsUntilExpiration: Infinity });
 // eslint-disable-next-line no-undef
-const useRedis = process.env.USEREDIS
-// eslint-disable-next-line no-undef
 const inMemory = process.env.INMEMORYCACHE
 
 export const fetchFromCache = async (cacheKey) => {
@@ -33,11 +31,9 @@ export const fetchFromCache = async (cacheKey) => {
       return localData;
     }
 
-    if (useRedis == 'true') {
-      const redisData = await fetchFromRedis(cacheKey);
-      if (redisData !== undefined && redisData !== null) {
-        return redisData;
-      }
+    const redisData = await fetchFromRedis(cacheKey);
+    if (redisData !== undefined && redisData !== null) {
+      return redisData;
     }
 
     mainLogger.error('Error: Data not found in any cache.');
@@ -53,9 +49,8 @@ export const saveToCache = async (cacheKey, data) => {
     if (inMemory === 'true') {
       set(cacheKey, data);
     }
-    if (useRedis === 'true') {
-      await saveToRedis(cacheKey, data);
-    }
+
+    await saveToRedis(cacheKey, data);
     await storage.setItem(cacheKey, data);
 
   } catch (error) {
@@ -68,9 +63,9 @@ export const deleteFromCache = async (cacheKey) => {
     if (inMemory === 'true') {
       set(cacheKey, null);
     }
-    if (useRedis == 'true') {
-      await deleteFromRedis(cacheKey);
-    }
+
+    await deleteFromRedis(cacheKey);
+
     await storage.removeItem(cacheKey);
   } catch (error) {
     mainLogger.error('Error deleting data to cache: ' + error.message);

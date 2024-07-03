@@ -1,27 +1,28 @@
+/* eslint-disable no-undef */
 import { Buffer } from 'buffer';
 import TelegramBot from 'node-telegram-bot-api';
 import { isServerPrimary } from '../index.js';
 import { assetLogger, mainLogger } from "../utils/logger/logger.js";
 import admin from './firebaseServer.js';
 
-const token = '7010309940:AAGZDzq6CqqOEUxvgvtStqPtAtwfGX9svjg';
-const channelId = '-1002235997071';
+const token = process.env.TELEGRAM_TOKEN;
+const channelId = process.env.TELEGRAM_CHANNEL_ID;
 
 const bot = new TelegramBot(token, { polling: false });
 
-export const SendNotification = (where = "all", title, body) => {
+export async function SendNotification(where = "all", title, body) {
     if (isServerPrimary) {
 
         if (where === "Telegram") {
 
-            NotifyNepseClients(title, body);
+            await NotifyNepseClients(title, body);
         } if (where === "ntfy") {
-            NotifyNepseClients(title, body);
+            await NotifyNepseClients(title, body);
 
 
         } if (where === "all") {
-            NotifyNepseClients(title, body);
-            NotifyTelegram(body);
+            await NotifyNepseClients(title, body);
+            await NotifyTelegram(body);
             // NotifyFirebase(title, body);
         }
         else {
@@ -33,16 +34,12 @@ export const SendNotification = (where = "all", title, body) => {
     }
 }
 
-export const NotifyTelegram = (body) => {
-
+export async function NotifyTelegram(body) {
     if (isServerPrimary) {
-        try {
-            bot.sendMessage(channelId, body);
-            // eslint-disable-next-line no-unused-vars
-        } catch (error) {
-            //console.log(error);
-            assetLogger.error(`Failed to send notification to Telegram`);
-        }
+        bot.sendMessage(channelId, body)
+            .catch((error) => {
+                assetLogger.error(`Failed to send notification , too many requests to Telegram: ${error.message}`);
+            });
     }
 }
 
@@ -67,24 +64,22 @@ export const NotifyFirebase = async (title, body) => {
 
 
 //notify app clients using ntfy
-export const NotifyNepseClients = (title, body) => {
-    try {
-        const response = fetch('https://notifications.surajr.com.np/NepseAlerts', {
-            method: 'POST',
-            body: body,
-            headers: {
-                'Content-Type': 'application/json',
-                'Title': title,
-                'Priority': 'urgent',
-                'Tags': 'warning'
-            }
-        });
-
-        if (!response.ok) {
-            assetLogger.error(`Failed to send notification to Nepse clients`);
+export async function NotifyNepseClients(title, body) {
+    if (isServerPrimary) {
+        try {
+            await fetch('https://notifications.surajr.com.np/NepseAlerts', {
+                method: 'POST',
+                body: body,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Title': title,
+                    'Priority': 'urgent',
+                    'Tags': 'warning'
+                }
+            });
+        } catch (error) {
+            assetLogger.error(`Error at NotifyNepseClients: ${error.message}`);
         }
-    } catch (error) {
-        assetLogger.error(`Error at NotifyNepseClients: ${error.message}`);
     }
 };
 

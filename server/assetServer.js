@@ -267,7 +267,7 @@ export async function FetchSingleCompanyDatafromAPI(symbol) {
 
 // eslint-disable-next-line no-undef
 const nepseNotification = process.env.IS_NEPSE_NOTIFICATION_ENABLED === 'true' ? true : false;
-const mergeBuySellData = (item, side, matchingList) => {
+async function mergeBuySellData(item, side, matchingList) {
   const modifiedItem = { ...item };
 
   if (side === 'Demand Side') {
@@ -322,7 +322,7 @@ const mergeBuySellData = (item, side, matchingList) => {
 
       const body = `${item.symbol} Buy order ${modifiedItem.totalBuyOrder}, Sell order ${modifiedItem.totalSellOrder}, Buy quantity ${modifiedItem.totalBuyQuantity}, Sell quantity ${modifiedItem.totalSellQuantity}, ${ratioComparison}`;
 
-      SendNotification('all', title, body);
+      await SendNotification('all', title, body);
     }
   }
   delete modifiedItem.totalOrder;
@@ -349,6 +349,19 @@ const isStockExists = async (symbol) => {
     symbols = await fetchFromCache("AvailableNepseSymbols");
   }
   return symbols.includes(symbol);
+};
+
+async function combineAndSortTopItems(highestDemand, highestSupply, filteredDemandList, filteredSupplyList) {
+  const combinedList = [
+    ...highestDemand.map(async item => await mergeBuySellData(item, 'Demand Side', filteredSupplyList)),
+    ...highestSupply.map(async item => await mergeBuySellData(item, 'Supply Side', filteredDemandList))
+  ];
+
+  const sortedList = combinedList
+    .sort((a, b) => b.quantityPerOrder - a.quantityPerOrder)
+    .slice(0, 40);
+
+  return sortedList;
 };
 
 export async function SupplyDemandData(refresh = false) {
@@ -404,23 +417,11 @@ export async function SupplyDemandData(refresh = false) {
     const demandWithQuantityPerOrder = calculateQuantityPerOrder(filteredDemandList, 'Demand Side');
     const supplyWithQuantityPerOrder = calculateQuantityPerOrder(filteredSupplyList, 'Supply Side');
 
-    const combineAndSortTopItems = (highestDemand, highestSupply) => {
-      const combinedList = [
-        ...highestDemand.map(item => mergeBuySellData(item, 'Demand Side', filteredSupplyList)),
-        ...highestSupply.map(item => mergeBuySellData(item, 'Supply Side', filteredDemandList))
-      ];
-
-      const sortedList = combinedList
-        .sort((a, b) => b.quantityPerOrder - a.quantityPerOrder)
-        .slice(0, 40);
-
-      return sortedList;
-    };
 
     const highestDemand = demandWithQuantityPerOrder.slice(0, 40);
     const highestSupply = supplyWithQuantityPerOrder.slice(0, 40);
 
-    const highestQuantityperOrder = combineAndSortTopItems(highestDemand, highestSupply);
+    const highestQuantityperOrder = await combineAndSortTopItems(highestDemand, highestSupply, filteredDemandList, filteredSupplyList);
 
     await saveToCache("highestSupply", highestSupply);
     await saveToCache("highestDemand", highestDemand);

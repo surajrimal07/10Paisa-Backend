@@ -12,7 +12,8 @@ import {
   topTurnoversShare,
   topgainersShare,
 } from "../server/assetServer.js";
-import { NotifyNepseIndexClients } from "../server/notificationServer.js";
+import { GetFloorsheet } from "../server/floorsheetServer.js";
+import { SendNotification } from "../server/notificationServer.js";
 import { notifyRoomClients, wss } from "../server/websocket.js";
 import { formatTimeTo12Hour, formatTurnover } from "../utils/converter.js";
 import { nepseLogger } from '../utils/logger/logger.js';
@@ -110,7 +111,8 @@ async function wipeCachesAndRefreshData() {
       topTradedShares,
       topTransactions,
       FetchSingularDataOfAsset,
-      SupplyDemandData
+      SupplyDemandData,
+      GetFloorsheet
     ];
 
     for (const fetchFunction of fetchFunctions) {
@@ -125,7 +127,7 @@ async function wipeCachesAndRefreshData() {
       const body = `Nepse Index: ${newIndexData.close} • Point change ${newIndexData.change} • Percentage Change ${newIndexData.percentageChange}% • High ${newIndexData.high} • Low ${newIndexData.low} • Turnover ${formatTurnover(newIndexData.turnover)} `;
 
       notifyRoomClients('news', { type: "index", data: newIndexData });
-      NotifyNepseIndexClients(title, body);
+      await SendNotification(title, body);
     }
 
     //send the updated portfolio to those who subscribed to live portfolio using websocket

@@ -41,12 +41,6 @@ app.use(helmet());
 //conect to redis earliy
 await redisclient.connect();
 
-mainLogger.info(
-  redisclient.isOpen
-    ? "Connected to Redis Server"
-    : "Not connected to Redis Server"
-);
-
 //session
 app.use(session({
   genid: function () {
