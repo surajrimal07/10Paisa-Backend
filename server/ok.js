@@ -1,31 +1,11 @@
-
-
 import { createClient } from 'redis';
-
-
-// export const redisclient = createClient({
-//   password: 'Ll+RXDbybHGJQuz996xK7iQ5aLygB8iRm42O1wj1JQyDcU3qrMf2tyx7DZOrVjViRYQYfBja/p+is4pC',
-//   socket: {
-//     host: 'redis.surajr.com.np',
-//     port: 6379
-//   },
-//   connectTimeout: 100000,
-
-//   retry_strategy: (options) => {
-//     console.log(`Redis Reconnect Attempt: ${options.attempt}`);
-//     if (options.attempt <= 5) {
-//       return Math.min(options.attempt * 100, 3000);
-//     }
-//     return 5000;
-//   }
-
-// });
 
 const redisClient = createClient({
   password: 'Ll+RXDbybHGJQuz996xK7iQ5aLygB8iRm42O1wj1JQyDcU3qrMf2tyx7DZOrVjViRYQYfBja/p+is4pC',
   socket: {
     host: 'redis.surajr.com.np',
-    port: 6379
+    port: 6443,
+    tls: true
   }
 });
 

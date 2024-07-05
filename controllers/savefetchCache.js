@@ -26,14 +26,14 @@ export const fetchFromCache = async (cacheKey) => {
       }
     }
 
-    const localData = await storage.getItem(cacheKey);
-    if (localData !== undefined && localData !== null) {
-      return localData;
-    }
-
     const redisData = await fetchFromRedis(cacheKey);
     if (redisData !== undefined && redisData !== null) {
       return redisData;
+    }
+
+    const localData = await storage.getItem(cacheKey);
+    if (localData !== undefined && localData !== null) {
+      return localData;
     }
 
     mainLogger.error('Error: Data not found in any cache.');

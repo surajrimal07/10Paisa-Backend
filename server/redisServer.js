@@ -10,12 +10,14 @@ const host = isPrimary & redisLocalhost ? process.env.REDIS_HOST_PROD_LOCAL : pr
 const port = isPrimary & redisLocalhost ? process.env.REDIS_PORT_PROD_LOCAL : process.env.REDIS_PORT_PROD
 const password = isPrimary & redisLocalhost ? process.env.REDIS_PASSWORD_PROD_LOCAL : process.env.REDIS_PASSWORD_PROD
 const timeout = parseInt(process.env.REDIS_TIMEOUT_PROD)
+const useTLS = isPrimary & redisLocalhost ? false : true
 
 redisclient = createClient({
     password: password,
     socket: {
         host: host,
-        port: port
+        port: port,
+        tls: useTLS
     },
     connect_timeout: timeout,
     retry_strategy: (options) => {
