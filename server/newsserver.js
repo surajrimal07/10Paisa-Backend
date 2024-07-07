@@ -30,9 +30,7 @@ async function insertNewsWithTransaction(newsData) {
     await newsModel.create([newsData], { session });
     await session.commitTransaction();
     session.endSession();
-    if (isNotificationEnabled && isServerPrimary) {
-      await NotifyClients(newsData);
-    };
+    await NotifyClients(newsData);
     return true;
   } catch (error) {
     await session.abortTransaction();
@@ -109,7 +107,6 @@ async function scrapeShareSansar() {
           unique_key
         };
 
-        //await newsModel.create(newsData);
         await insertNewsWithTransaction(newsData);
 
       } catch (error) {
@@ -149,15 +146,12 @@ async function scrapeMeroLagani() {
       }
 
       try {
-        //if (!await isDuplicateArticle(news.unique_key)) {
         const response = await axios.get(news.link);
         const body$ = cheerio.load(response.data);
         news.description = body$('meta[property="og:description"]').attr('content');
         news.img_url = body$('meta[property="og:image"]').attr('content');
 
-        // await newsModel.create(news);
         await insertNewsWithTransaction(news);
-        //  }
       } catch (error) {
         if (error.code === 11000 || error.code === 'E11000') {
           //
@@ -201,8 +195,6 @@ async function scrapeEkantipur() {
         source: 'Ekantipur',
         unique_key
       };
-
-      // await newsModel.create(newsItem);
       await insertNewsWithTransaction(newsItem);
     });
 
@@ -210,7 +202,6 @@ async function scrapeEkantipur() {
     if (error.code === 11000 || error.code === 'E11000') {
       //
     }
-    //newsLogger.error(`Error fetching Ekantipur news: ${error.message}`);
     return [];
   }
 }
@@ -308,8 +299,8 @@ async function startFetchingRSS(url, source) {
 }
 
 export async function initiateNewsFetch() {
-  if (isServerPrimary) {
-    newsLogger.info('Initiating news fetch');
+  if (isServerPrimary && isNotificationEnabled) {
+    newsLogger.info('Initiating news fetch function');
 
     const fetchAndDelay = async ({ url, source }) => {
       await startFetchingRSS(url, source);
@@ -342,8 +333,7 @@ export async function initiateNewsFetch() {
   }
 }
 
-//news code
-//fetch news
+//fetch news API
 export async function fetchNews(page = 1, limit = 100, source = null, keyword = null) {
   let query = {};
 
