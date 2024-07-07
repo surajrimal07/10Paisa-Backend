@@ -4,6 +4,7 @@ import mongoosePaginate from 'mongoose-paginate-v2';
 import mongooseSequence from 'mongoose-sequence';
 import classifyNews from './textClassify.js';
 
+
 const AutoIncrement = mongooseSequence(mongoose);
 
 const newsSchema = new mongoose.Schema({

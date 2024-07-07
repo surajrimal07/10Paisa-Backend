@@ -13,6 +13,9 @@ import { notifyRoomClients } from './websocket.js';
 
 import { startSession } from 'mongoose';
 
+// eslint-disable-next-line no-undef
+const isNotificationEnabled = process.env.NOTIFICATION_ENABLED === 'true';
+
 async function insertNewsWithTransaction(newsData) {
   const session = await startSession();
   session.startTransaction();
@@ -27,7 +30,9 @@ async function insertNewsWithTransaction(newsData) {
     await newsModel.create([newsData], { session });
     await session.commitTransaction();
     session.endSession();
-    //await NotifyClients(newsData);
+    if (isNotificationEnabled && isServerPrimary) {
+      await NotifyClients(newsData);
+    };
     return true;
   } catch (error) {
     await session.abortTransaction();
