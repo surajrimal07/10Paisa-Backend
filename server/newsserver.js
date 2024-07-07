@@ -27,7 +27,7 @@ async function insertNewsWithTransaction(newsData) {
     await newsModel.create([newsData], { session });
     await session.commitTransaction();
     session.endSession();
-    await NotifyClients(newsData);
+    //await NotifyClients(newsData);
     return true;
   } catch (error) {
     await session.abortTransaction();

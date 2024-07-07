@@ -28,7 +28,12 @@ const newsSchema = new mongoose.Schema({
     unique: true,
   },
   category: String,
-  readingTime: Number
+  readingTime: Number,
+  createdAt: {
+    type: Date,
+    default: Date.now,
+    expires: '30d'
+  }
 }, { collection: 'news' });
 
 newsSchema.plugin(AutoIncrement, { id: 'news_id', inc_field: 'id' });

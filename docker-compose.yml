@@ -1,0 +1,12 @@
+services:
+  tenpaisa_backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "4010:4000"
+      - "8091:8081"
+    command: ["node", "index.js"]
+    volumes:
+      - .:/app
+    working_dir: /app
