@@ -1,12 +1,17 @@
 import { NEPSE_ACTIVE_API_URL, serverUrls, switchServer } from "../controllers/refreshController.js";
 import { assetLogger } from "../utils/logger/logger.js";
 
-async function fetchData(url, timeout) {
+export async function fetchData(url, timeout, customurl = false) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeout);
 
-    const completeUrl = NEPSE_ACTIVE_API_URL + `${url}`;
-
+    let completeUrl;
+    if (customurl) {
+         completeUrl = url;
+    } else {
+         completeUrl = NEPSE_ACTIVE_API_URL + `${url}`;
+    }
+    
     try {
         const response = await fetch(completeUrl, { signal: controller.signal });
         clearTimeout(timeoutId);

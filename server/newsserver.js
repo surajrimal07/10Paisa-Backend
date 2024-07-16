@@ -14,7 +14,7 @@ import { notifyRoomClients } from './websocket.js';
 import { startSession } from 'mongoose';
 
 // eslint-disable-next-line no-undef
-const isNotificationEnabled = process.env.NOTIFICATION_ENABLED === 'true';
+const isNotificationEnabled = process.env.IS_NEWS_NOTIFICATION_ENABLED === 'true';
 
 async function insertNewsWithTransaction(newsData) {
   const session = await startSession();
@@ -70,7 +70,9 @@ async function NotifyClients(data) {
     }
   );
 
+  if (isNotificationEnabled){
   await NotifyNewsClients(data.title, data);
+  }
 };
 
 async function scrapeShareSansar() {
@@ -299,7 +301,7 @@ async function startFetchingRSS(url, source) {
 }
 
 export async function initiateNewsFetch() {
-  if (isServerPrimary && isNotificationEnabled) {
+  if (isServerPrimary ) {
     newsLogger.info('Initiating news fetch function');
 
     const fetchAndDelay = async ({ url, source }) => {

@@ -4,7 +4,7 @@ import { fileURLToPath } from 'url';
 import { isNepseOpen } from "../controllers/refreshController.js";
 import { fetchFromCache, saveToCache } from "../controllers/savefetchCache.js";
 import { apiLogger } from '../utils/logger/logger.js';
-import { fetchFunction } from "./fetchFunction.js";
+import { fetchFunction,fetchData } from "./fetchFunction.js";
 
 export async function FindHighestContractQuantity(data) {
     const filteredData = data.filter(item => item.contractQuantity != null);
@@ -43,7 +43,11 @@ export async function GetFloorsheet(refresh = false) {
             }
         }
 
-        const response = await fetchFunction(url, 60000);
+        let response = await fetchData('https://nepseapi.zorsha.com.np/Floorsheet', 60000, true);
+
+        if (!response) {
+            response = await fetchFunction(url, 60000);
+        }
 
         if (!response) {
             apiLogger.error('Error fetching data from server');
