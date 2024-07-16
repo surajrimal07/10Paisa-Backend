@@ -56,7 +56,7 @@ app.use(session({
   cookie: {
     httpsOnly: true,
     secure: true,
-    sameSite: false,
+    sameSite: true,
     maxAge: 10 * 24 * 60 * 60 * 1000,
     priority: 'High',
     path: '/'
@@ -217,7 +217,8 @@ const limiter = rateLimit({
   }),
 });
 
-app.set('trust proxy', 1); // trust first proxy for rate limiting
+//app.set('trust proxy', 1); // trust first proxy for rate limiting
+app.enable('trust proxy', 2);
 app.use(limiter);
 
 //others servers
