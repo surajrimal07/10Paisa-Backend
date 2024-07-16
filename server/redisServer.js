@@ -16,6 +16,7 @@ const timeout = parseInt(process.env.REDIS_TIMEOUT_PROD)
 const useTLS = isPrimary & redisLocalhost ? false : true
 
 console.log(`host: ${host}, port: ${port}, password: ${password}, timeout: ${timeout}, useTLS: ${useTLS}`)
+console.log(isPrimary & redisLocalhost ? 'Using Local Redis' : 'Using Remote Redis')
 
 redisclient = createClient({
     password: password,
