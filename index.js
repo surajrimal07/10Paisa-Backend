@@ -56,7 +56,7 @@ app.use(session({
   store: new RedisStore({ client: redisclient }),
   saveUninitialized: true,
   cookie: {
-    httpsOnly: false, //true
+    httpsOnly: true, //true
     secure: true,
     sameSite: 'none', //sameSite: true,
     maxAge: 10 * 24 * 60 * 60 * 1000,
