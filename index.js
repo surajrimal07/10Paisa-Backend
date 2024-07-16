@@ -61,7 +61,7 @@ app.use(session({
     secure: true,
     //sameSite: 'none', //sameSite: true,
     //sameSite: true,
-    sameSite: lax,
+    sameSite: 'lax',
     maxAge: 10 * 24 * 60 * 60 * 1000,
     priority: 'High',
     path: '/'
