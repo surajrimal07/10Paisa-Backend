@@ -37,7 +37,7 @@ export const isServerPrimary = process.env.IS_PRIMARY_SERVER === 'true';
 //Express Middlewares
 const app = express();
 app.use(helmet());
-//app.enable('trust proxy', 2);
+app.enable('trust proxy', 1);
 
 
 //conect to redis earliy
