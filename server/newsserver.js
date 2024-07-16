@@ -485,7 +485,7 @@ export const getNews = async (req, res) => {
 
 export const updateNewsViewCount = async (req, res) => {
   newsLogger.info('News view count update requested');
-  const newsId = req.params.id;
+  const newsId = req.query.id;
   const viewCount = parseInt(req.query.viewCount) || 1;
 
   try {
