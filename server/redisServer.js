@@ -15,6 +15,8 @@ const password = isPrimary & redisLocalhost ? process.env.REDIS_PASSWORD_PROD_LO
 const timeout = parseInt(process.env.REDIS_TIMEOUT_PROD)
 const useTLS = isPrimary & redisLocalhost ? false : true
 
+console.log(`host: ${host}, port: ${port}, password: ${password}, timeout: ${timeout}, useTLS: ${useTLS}`)
+
 redisclient = createClient({
     password: password,
     socket: {
