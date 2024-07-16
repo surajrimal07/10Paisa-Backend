@@ -56,7 +56,7 @@ app.use(session({
   cookie: {
     httpsOnly: true,
     secure: true,
-    sameSite: lax, //true
+    sameSite: false,
     maxAge: 10 * 24 * 60 * 60 * 1000,
     priority: 'High',
     path: '/'
