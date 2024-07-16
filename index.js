@@ -52,15 +52,14 @@ app.use(session({
 
   secret: process.env.SESSION_SECRET,
   resave: false,
-  proxy: true,
+  //  proxy: true,
   store: new RedisStore({ client: redisclient }),
   saveUninitialized: true,
   cookie: {
-    httpsOnly: false, //true // this cause issue with nginx and cloudflare proxy
-    //issue like session not persisting
-    secure: false,
-    sameSite: 'none', //sameSite: true,
-    //sameSite: true,
+    httpsOnly: false, //true // this cause
+    secure: true,
+    //sameSite: 'none', //sameSite: true,
+    sameSite: true,
     maxAge: 10 * 24 * 60 * 60 * 1000,
     priority: 'High',
     path: '/'
@@ -215,7 +214,6 @@ const limiter = rateLimit({
   limit: 500,
   standardHeaders: 'draft-7',
   legacyHeaders: false,
-  validate: { trustProxy: false },
   message: 'Too many requests, please try again later.',
   store: new RateLimitRedisStore({
     sendCommand: (...args) => redisclient.sendCommand(args),
