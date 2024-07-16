@@ -17,6 +17,7 @@ export function validateXsrfToken(req, res, next) {
     const token = req.headers['xsrf-token'] || req.body._csrf || req.query._csrf;
     const expectedToken = req.session.csrfToken;
     console.log(expectedToken);
+    console.log(req.session);
 
     if (!expectedToken || !expectedToken.token || !token) {
         userLogger.error(`User ${req.session.userEmail} sent request without XSRF token`);
