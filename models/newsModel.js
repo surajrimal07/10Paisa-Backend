@@ -30,6 +30,10 @@ const newsSchema = new mongoose.Schema({
   },
   category: String,
   readingTime: Number,
+  views: {
+    type: Number,
+    default: 0
+  },
   createdAt: {
     type: Date,
     default: Date.now,
@@ -55,13 +59,10 @@ newsSchema.pre('save', function (next) {
 });
 
 newsSchema.pre('save', function (next) {
-
   const readingTime = Math.ceil(this.description.split(' ').length / 3);
   this.readingTime = readingTime;
   next();
 });
-
-
 
 const newsModel = mongoose.model('newsModel', newsSchema);
 

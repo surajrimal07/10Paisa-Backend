@@ -336,15 +336,35 @@ export async function initiateNewsFetch() {
 }
 
 //fetch news API
+// fetch news API
 export async function fetchNews(page = 1, limit = 100, source = null, keyword = null) {
   let query = {};
+  let options = {
+    page: page,
+    limit: limit,
+    sort: { _id: -1 }
+  };
 
+  if (keyword === 'trending') {
+    query = { views: { $gt: 0 } };
+    options.sort = { views: -1 };
+
+    try {
+      const result = await newsModel.paginate(query, options);
+      return result.docs;
+    } catch (error) {
+      newsLogger.error('Error fetching trending news:', error);
+      return [];
+    }
+  }
+
+  // Existing functionality for other cases
   if (source && keyword) {
     query = {
       source: source,
       $or: [
         { title: { $regex: keyword, $options: 'i' } },
-        { description: { $regex: keyword, $options: 'i' } },
+        { description: { $regex: keyword, $options: 'i' } }
       ]
     };
   } else if (source) {
@@ -358,25 +378,80 @@ export async function fetchNews(page = 1, limit = 100, source = null, keyword = 
       query = {
         $or: [
           { title: { $regex: keyword, $options: 'i' } },
-          { description: { $regex: keyword, $options: 'i' } },
+          { description: { $regex: keyword, $options: 'i' } }
         ]
       };
     }
   }
-
-  const options = {
-    page: page,
-    limit: limit,
-    sort: { _id: -1 }
-  };
 
   try {
     const result = await newsModel.paginate(query, options);
     return result.docs;
   } catch (error) {
     newsLogger.error('Error fetching news:', error);
+    return [];
   }
 }
+
+// export async function fetchNews(page = 1, limit = 100, source = null, keyword = null) {
+//   let query = {};
+
+//   if (keyword === 'trending') {
+//     query = { views: { $gt: 0 } };
+
+//     const options = {
+//       page: page,
+//       limit: limit,
+//       sort: { views: -1 }
+//     };
+
+//     try {
+//       const result = await newsModel.paginate(query, options);
+//       return result.docs;
+//     }
+//     catch (error) {
+//       newsLogger.error('Error fetching news:', error);
+//     }
+//   }
+
+//   if (source && keyword) {
+//     query = {
+//       source: source,
+//       $or: [
+//         { title: { $regex: keyword, $options: 'i' } },
+//         { description: { $regex: keyword, $options: 'i' } },
+//       ]
+//     };
+//   } else if (source) {
+//     query = { source: source };
+//   } else if (keyword) {
+//     const categoryMatch = await newsModel.findOne({ category: { $regex: keyword, $options: 'i' } });
+
+//     if (categoryMatch) {
+//       query = { category: { $regex: keyword, $options: 'i' } };
+//     } else {
+//       query = {
+//         $or: [
+//           { title: { $regex: keyword, $options: 'i' } },
+//           { description: { $regex: keyword, $options: 'i' } },
+//         ]
+//       };
+//     }
+//   }
+
+//   const options = {
+//     page: page,
+//     limit: limit,
+//     sort: { _id: -1 }
+//   };
+
+//   try {
+//     const result = await newsModel.paginate(query, options);
+//     return result.docs;
+//   } catch (error) {
+//     newsLogger.error('Error fetching news:', error);
+//   }
+// }
 
 //api code
 export const getNews = async (req, res) => {
@@ -404,6 +479,31 @@ export const getNews = async (req, res) => {
     res.json(uniqueNewsData);
   } catch (error) {
     newsLogger.error('Error fetching news:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+
+export const updateNewsViewCount = async (req, res) => {
+  newsLogger.info('News view count update requested');
+  const newsId = req.params.id;
+  const viewCount = parseInt(req.query.viewCount) || 1;
+
+  try {
+    const news = await newsModel.findOneAndUpdate(
+      { unique_key: newsId },
+      { $inc: { views: viewCount } },
+      { new: true }
+    );
+
+    if (!news) {
+      newsLogger.warn(`News with id ${newsId} not found`);
+      return res.status(404).json({ error: 'News not found' });
+    }
+
+    newsLogger.info(`Updated view count for news id ${newsId}`);
+    res.status(200).json({ message: 'View count updated successfully'});
+  } catch (error) {
+    newsLogger.error('Error updating views count of news:', error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 };
