@@ -1,13 +1,11 @@
 /* eslint-disable no-undef */
 import nodemailer from 'nodemailer';
 
-
-
 const sendEmail = (params, callback) => {
     const transporter = nodemailer.createTransport({
         host: process.env.BREVO_EMAIL_HOST,
         port: process.env.BREVO_EMAIL_PORT,
-        secure: process.env.BREVO_EMAIL_SECURE,
+        secure: false,
         auth: {
             user: process.env.BREVO_EMAIL_USER,
             pass: process.env.BREVO_EMAIL_PASSWORD

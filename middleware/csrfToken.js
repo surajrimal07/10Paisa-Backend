@@ -13,6 +13,7 @@ export function generateXsrfToken() {
 }
 
 export function validateXsrfToken(req, res, next) {
+    console.log(req.headers);
     const token = req.headers['xsrf-token'] || req.body._csrf || req.query._csrf;
     const expectedToken = req.session.csrfToken;
 
