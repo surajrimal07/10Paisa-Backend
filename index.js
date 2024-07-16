@@ -60,7 +60,8 @@ app.use(session({
     //issue like session not persisting
     secure: true,
     //sameSite: 'none', //sameSite: true,
-    sameSite: true,
+    //sameSite: true,
+    sameSite: lax,
     maxAge: 10 * 24 * 60 * 60 * 1000,
     priority: 'High',
     path: '/'
@@ -215,7 +216,7 @@ const limiter = rateLimit({
   limit: 500,
   standardHeaders: 'draft-7',
   legacyHeaders: false,
-  vvalidate: { trustProxy: false },
+  validate: { trustProxy: false },
   message: 'Too many requests, please try again later.',
   store: new RateLimitRedisStore({
     sendCommand: (...args) => redisclient.sendCommand(args),
