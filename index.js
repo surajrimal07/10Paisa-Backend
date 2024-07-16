@@ -56,7 +56,8 @@ app.use(session({
   store: new RedisStore({ client: redisclient }),
   saveUninitialized: true,
   cookie: {
-    httpsOnly: false, //true // this cause
+    httpsOnly: false, //true // this cause issue with reverse proxies and cloudflare tunnels
+    //like session being random and not being able to login
     secure: true,
     sameSite: 'none', //sameSite: true,
     //sameSite: true,
@@ -214,6 +215,7 @@ const limiter = rateLimit({
   limit: 500,
   standardHeaders: 'draft-7',
   legacyHeaders: false,
+  validate: { xForwardedForHeader: false },
   message: 'Too many requests, please try again later.',
   store: new RateLimitRedisStore({
     sendCommand: (...args) => redisclient.sendCommand(args),
