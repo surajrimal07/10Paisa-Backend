@@ -52,7 +52,7 @@ app.use(session({
 
   secret: process.env.SESSION_SECRET,
   resave: false,
-  //proxy: true,
+  proxy: true,
   store: new RedisStore({ client: redisclient }),
   saveUninitialized: true,
   cookie: {
