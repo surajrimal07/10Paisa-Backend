@@ -6,6 +6,9 @@ export let redisclient;
 
 const isPrimary = process.env.IS_PRIMARY_SERVER
 const redisLocalhost = process.env.REDIS_LOCALHOST_AVAILABLE
+
+console.log(`isPrimary: ${isPrimary}, redisLocalhost: ${redisLocalhost}`)
+
 const host = isPrimary & redisLocalhost ? process.env.REDIS_HOST_PROD_LOCAL : process.env.REDIS_HOST_PROD
 const port = isPrimary & redisLocalhost ? process.env.REDIS_PORT_PROD_LOCAL : process.env.REDIS_PORT_PROD
 const password = isPrimary & redisLocalhost ? process.env.REDIS_PASSWORD_PROD_LOCAL : process.env.REDIS_PASSWORD_PROD
