@@ -37,6 +37,7 @@ export const isServerPrimary = process.env.IS_PRIMARY_SERVER === 'true';
 //Express Middlewares
 const app = express();
 app.use(helmet());
+app.enable('trust proxy', 2);
 
 //conect to redis earliy
 await redisclient.connect();
@@ -218,7 +219,7 @@ const limiter = rateLimit({
 });
 
 //app.set('trust proxy', 1); // trust first proxy for rate limiting
-app.enable('trust proxy', 2);
+//app.enable('trust proxy', 2); //trust nginx and cloudflare both
 app.use(limiter);
 
 //others servers
