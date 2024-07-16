@@ -52,14 +52,14 @@ app.use(session({
 
   secret: process.env.SESSION_SECRET,
   resave: false,
-  //  proxy: true,
+  proxy: true,
   store: new RedisStore({ client: redisclient }),
   saveUninitialized: true,
   cookie: {
     httpsOnly: false, //true // this cause issue with nginx and cloudflare proxy
     //issue like session not persisting
     secure: true,
-    sameSite: false, //sameSite: true,
+    sameSite: 'none', //sameSite: true,
     //sameSite: true,
     maxAge: 10 * 24 * 60 * 60 * 1000,
     priority: 'High',
