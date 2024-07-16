@@ -4,3 +4,4 @@ public/floorsheet
 .flaskenv*
 !.env.project
 !.env.vault
+node_modules/

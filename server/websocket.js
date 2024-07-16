@@ -328,9 +328,3 @@ export function startWebSocketServer() {
 
 
 export { wss };
-
-
-
-//who subscribed to what room
-
-//getNews
