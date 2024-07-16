@@ -58,8 +58,8 @@ app.use(session({
   cookie: {
     httpsOnly: false, //true // this cause
     secure: true,
-    //sameSite: 'none', //sameSite: true,
-    sameSite: true,
+    sameSite: 'none', //sameSite: true,
+    //sameSite: true,
     maxAge: 10 * 24 * 60 * 60 * 1000,
     priority: 'High',
     path: '/'
