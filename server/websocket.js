@@ -14,7 +14,7 @@ import { fetchNews } from './newsserver.js';
 let wss;
 let server;
 const connectedClients = new Map();
-const rooms = { asset: [], news: [], portfolio: [], profile: [], others: [] };
+const rooms = { asset: [], news: [], portfolio: [], profile: [], others: [], supplydemand: [] };
 let useremail = null;
 
 //sample url
@@ -79,7 +79,7 @@ export function createWebSocketServer() {
         return;
       }
 
-      if (!['asset', 'news', 'portfolio', 'profile', 'others'].includes(room)) {
+      if (!['asset', 'news', 'portfolio', 'profile', 'others', 'supplydemand'].includes(room)) {
         socketLogger.info("Invalid room specified");
         ws.send(JSON.stringify({ error: 'Invalid room specified' }));
         ws.close();
@@ -159,17 +159,23 @@ async function handleMessage(useremail, room, message, ws) {
     case "asset":
       switch (message) {
         case "index":
-          { const previousIndexData = await fetchFromCache('previousIndexData');
-          notifyClient(ws, { type: 'index', data: previousIndexData });
-          break; }
+          {
+            const previousIndexData = await fetchFromCache('previousIndexData');
+            notifyClient(ws, { type: 'index', data: previousIndexData });
+            break;
+          }
         case "isMarketOpen":
-          { const isMarketOpen = await fetchFromCache('isMarketOpen');
-          notifyClient(ws, { type: 'marketOpen', data: isMarketOpen });
-          break; }
+          {
+            const isMarketOpen = await fetchFromCache('isMarketOpen');
+            notifyClient(ws, { type: 'marketOpen', data: isMarketOpen });
+            break;
+          }
         case "companylatestdata":
-          { const companyLatestData = await fetchFromCache('AssetMergedDataShareSansar');
-          notifyClient(ws, { type: 'companylatestdata', data: companyLatestData });
-          break; }
+          {
+            const companyLatestData = await fetchFromCache('AssetMergedDataShareSansar');
+            notifyClient(ws, { type: 'companylatestdata', data: companyLatestData });
+            break;
+          }
         default:
           notifyClient(ws, { type: 'asset', data: 'Invalid command passed' });
       }
@@ -178,9 +184,11 @@ async function handleMessage(useremail, room, message, ws) {
     case "news":
       switch (message) {
         case "news":
-          { const newsData = await fetchNews(1, 10);
-          notifyClient(ws, { type: 'news', data: newsData });
-          break; }
+          {
+            const newsData = await fetchNews(1, 10);
+            notifyClient(ws, { type: 'news', data: newsData });
+            break;
+          }
         default:
           notifyClient(ws, { type: 'news', data: 'Invalid command passed' });
       }
@@ -207,9 +215,25 @@ async function handleMessage(useremail, room, message, ws) {
     case "others":
       switch (message) {
         case "others":
-          { const otherData = await fetchFromCache('otherData');
-          notifyClient(ws, { type: 'others', data: otherData });
-          break; }
+          {
+            const otherData = await fetchFromCache('otherData');
+            notifyClient(ws, { type: 'others', data: otherData });
+            break;
+          }
+      }
+      break;
+
+    case "supplydemand":
+      switch (message) {
+        case "supplydemand":
+          {
+            const highestSupply = await fetchFromCache('highestSupply');
+            const highestDemand = await fetchFromCache('highestDemand');
+            const highestQuantityperOrder = await fetchFromCache('highestQuantityperOrder');
+            const supplyDemandData = { highestSupply, highestDemand, highestQuantityperOrder };
+            notifyClient(ws, { type: 'supplydemand', data: supplyDemandData });
+            break;
+          }
       }
       break;
 
@@ -328,3 +352,4 @@ export function startWebSocketServer() {
 
 
 export { wss };
+

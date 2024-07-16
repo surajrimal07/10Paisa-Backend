@@ -8,6 +8,7 @@ import { fetchFromCache, saveToCache } from "../controllers/savefetchCache.js";
 import { fetchFunction } from '../server/fetchFunction.js';
 import { SendNotification } from '../server/notificationServer.js';
 import { assetLogger } from '../utils/logger/logger.js';
+import { notifyRoomClients } from './websocket.js';
 
 const nepseIndexes = [
   { field: "Banking SubIndex", symbol: "BANKING", name: "Commercial Banking" },
@@ -332,7 +333,7 @@ const sendNotificationsIfNeeded = async (currentHighestQuantityPerOrder) => {
 const mergeBuySellData = async (item, side, matchingList) => {
   const modifiedItem = { ...item };
 
-  if (side === 'Demand Side') {
+  if (side === 'Demand') {
     modifiedItem.totalBuyOrder = item.totalOrder;
     modifiedItem.totalBuyQuantity = item.totalQuantity;
 
@@ -346,7 +347,7 @@ const mergeBuySellData = async (item, side, matchingList) => {
       modifiedItem.totalSellOrder = 0;
       modifiedItem.totalSellQuantity = 0;
     }
-  } else if (side === 'Supply Side') {
+  } else if (side === 'Supply') {
     modifiedItem.totalSellOrder = item.totalOrder;
     modifiedItem.totalSellQuantity = item.totalQuantity;
 
@@ -414,14 +415,14 @@ export async function SupplyDemandData(refresh = false) {
         });
     };
 
-    const demandWithQuantityPerOrder = calculateQuantityPerOrder(demandList, 'Demand Side');
-    const supplyWithQuantityPerOrder = calculateQuantityPerOrder(supplyList, 'Supply Side');
+    const demandWithQuantityPerOrder = calculateQuantityPerOrder(demandList, 'Demand');
+    const supplyWithQuantityPerOrder = calculateQuantityPerOrder(supplyList, 'Supply');
 
     const combineAndSortTopItems = async (highestDemand, highestSupply) => {
 
       const combinedList = [
-        ...(await Promise.all(highestDemand.map(async (item) => await mergeBuySellData(item, 'Demand Side', supplyList)))),
-        ...(await Promise.all(highestSupply.map(async (item) => await mergeBuySellData(item, 'Supply Side', demandList))))
+        ...(await Promise.all(highestDemand.map(async (item) => await mergeBuySellData(item, 'Demand', supplyList)))),
+        ...(await Promise.all(highestSupply.map(async (item) => await mergeBuySellData(item, 'Supply', demandList))))
       ];
 
       const sortedList = combinedList
@@ -440,7 +441,16 @@ export async function SupplyDemandData(refresh = false) {
       saveToCache("highestSupply", highestSupply),
       saveToCache("highestDemand", highestDemand),
       saveToCache("highestQuantityperOrder", highestQuantityperOrder),
-      sendNotificationsIfNeeded(highestQuantityperOrder)
+      sendNotificationsIfNeeded(highestQuantityperOrder),
+
+      notifyRoomClients('supplydemand',
+        {
+          type: 'supplydemand',
+          highestQuantityperOrder: highestQuantityperOrder,
+          highestSupply: highestSupply,
+          highestDemand: highestDemand
+        })
+
     ]);
 
     return { highestQuantityperOrder, highestSupply, highestDemand };
