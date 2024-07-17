@@ -47,13 +47,6 @@ newsSchema.plugin(mongoosePaginate);
 newsSchema.index({ unique_key: 1 });
 
 newsSchema.pre('save', function (next) {
-  const hash = crypto.createHash('sha256');
-  hash.update(this.title + this.pubDate);
-  this.unique_key = hash.digest('hex');
-  next();
-});
-
-newsSchema.pre('save', function (next) {
   this.category = classifyNews(this.title + this.description);
   next();
 });

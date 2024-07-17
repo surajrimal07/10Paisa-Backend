@@ -42,9 +42,12 @@ async function insertNewsWithTransaction(newsData) {
   }
 }
 
-function generateUniqueKey(title, pubDate, link) {
+function generateUniqueKey(title, link) {
+  const timestamp = Date.now().toString();
+  const randomValue = crypto.randomBytes(16).toString('hex');
+  const data = title + link + timestamp + randomValue;
   const hash = crypto.createHash('sha256');
-  hash.update(title + pubDate + link);
+  hash.update(data);
   return hash.digest('hex');
 }
 
@@ -70,8 +73,8 @@ async function NotifyClients(data) {
     }
   );
 
-  if (isNotificationEnabled){
-  await NotifyNewsClients(data.title, data);
+  if (isNotificationEnabled) {
+    await NotifyNewsClients(data.title, data);
   }
 };
 
@@ -88,7 +91,7 @@ async function scrapeShareSansar() {
       const title = $(element).find('h4.featured-news-title').text().trim();
       const img_url = $(element).find('img').attr('src');
       const pubDate = $(element).find('span.text-org').text().trim();
-      const unique_key = generateUniqueKey(title, pubDate, link);
+      const unique_key = generateUniqueKey(title, link);
 
       if (await isDuplicateArticle(unique_key)) {
         return;
@@ -141,7 +144,7 @@ async function scrapeMeroLagani() {
       news.title = mediaBody.find('.media-title a').text();
       news.pubDate = mediaBody.find('.media-label').text().trim();
       news.source = 'Mero Lagani';
-      news.unique_key = generateUniqueKey(news.title, news.pubDate, news.link);
+      news.unique_key = generateUniqueKey(news.title, news.link);
 
       if (await isDuplicateArticle(news.unique_key)) {
         return;
@@ -182,7 +185,7 @@ async function scrapeEkantipur() {
       const link = `https://ekantipur.com${$(element).find('h2 a').attr('href').trim()}`;
       const imageSrc = $(element).find('img').attr('data-src');
       const img_url = imageSrc ? decodeURIComponent(imageSrc.split('src=')[1]).replace(/&w=301&h=0$/, '') : '';
-      const unique_key = generateUniqueKey(title, pubDate, link);
+      const unique_key = generateUniqueKey(title, link);
 
       if (await isDuplicateArticle(unique_key)) {
         return;
@@ -256,7 +259,7 @@ async function startFetchingRSS(url, source) {
         let img_url = '';
         const description = cleanDescription(entry.description);
 
-        const unique_key = generateUniqueKey(title, pubDate, link);
+        const unique_key = generateUniqueKey(title, link);
 
         if (await isDuplicateArticle(unique_key)) {
           return
@@ -301,7 +304,7 @@ async function startFetchingRSS(url, source) {
 }
 
 export async function initiateNewsFetch() {
-  if (isServerPrimary ) {
+  if (isServerPrimary) {
     newsLogger.info('Initiating news fetch function');
 
     const fetchAndDelay = async ({ url, source }) => {
@@ -501,7 +504,7 @@ export const updateNewsViewCount = async (req, res) => {
     }
 
     newsLogger.info(`Updated view count for news id ${newsId}`);
-    res.status(200).json({ message: 'View count updated successfully'});
+    res.status(200).json({ message: 'View count updated successfully' });
   } catch (error) {
     newsLogger.error('Error updating views count of news:', error);
     res.status(500).json({ error: 'Internal Server Error' });
