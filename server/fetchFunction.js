@@ -7,11 +7,11 @@ export async function fetchData(url, timeout, customurl = false) {
 
     let completeUrl;
     if (customurl) {
-         completeUrl = url;
+        completeUrl = url;
     } else {
-         completeUrl = NEPSE_ACTIVE_API_URL + `${url}`;
+        completeUrl = NEPSE_ACTIVE_API_URL + `${url}`;
     }
-    
+
     try {
         const response = await fetch(completeUrl, { signal: controller.signal });
         clearTimeout(timeoutId);
@@ -43,7 +43,7 @@ export async function fetchFunction(url, timeout = 80000) {
         try {
             response = await fetchData(url, timeout);
             if (!response) {
-                assetLogger.error(`Fetch failed for URL: ${NEPSE_ACTIVE_API_URL} ${url}`);
+                assetLogger.error(`Fetch failed for URL: ${NEPSE_ACTIVE_API_URL}${url}`);
                 await switchServer();
                 continue;
             }

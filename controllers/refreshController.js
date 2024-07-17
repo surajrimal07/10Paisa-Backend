@@ -12,7 +12,6 @@ import {
   topTurnoversShare,
   topgainersShare,
 } from "../server/assetServer.js";
-import { GetFloorsheet } from "../server/floorsheetServer.js";
 import { NotifyNepseIndexClients } from "../server/notificationServer.js";
 import { notifyRoomClients, wss } from "../server/websocket.js";
 import { formatTimeTo12Hour, formatTurnover } from "../utils/converter.js";
@@ -121,7 +120,7 @@ async function wipeCachesAndRefreshData() {
       topTransactions,
       FetchSingularDataOfAsset,
       SupplyDemandData,
-      GetFloorsheet
+      //   GetFloorsheet
     ];
 
     for (const fetchFunction of fetchFunctions) {
