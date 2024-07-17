@@ -43,9 +43,7 @@ async function insertNewsWithTransaction(newsData) {
 }
 
 function generateUniqueKey(title, link) {
-  const timestamp = Date.now().toString();
-  const randomValue = crypto.randomBytes(16).toString('hex');
-  const data = title + link + timestamp + randomValue;
+  const data = title + link
   const hash = crypto.createHash('sha256');
   hash.update(data);
   return hash.digest('hex');
