@@ -720,7 +720,7 @@ function getIndexName(index) {
 export const getCompanyOHLCNepseAlpha = async (req, res) => {
   const requestedSymbol = (req.query.symbol ? req.query.symbol.toUpperCase() : 'NEPSE');
   const timeFrame = (req.query.timeFrame ? req.query.timeFrame : '1D');
-  const force_key = (req.query.force_key ? req.query.force_key : 'rrfdwdwdsdfdg');
+  const force_key = (req.query.force_key ? req.query.force_key : 'ghghgfv');
   const is_intraday = (req.query.intradayupdate ? req.query.intradayupdate : 'false');
 
   assetLogger.info(`${is_intraday === 'true' ? 'Requested Intraday' : 'Requested Historical'} OHLC for symbol: ${requestedSymbol}, ${timeFrame}`);
@@ -812,7 +812,6 @@ export const getCompanyOHLCNepseAlpha = async (req, res) => {
     const currentEpochTime = Math.floor(Date.now() / 1000);
     const fromEpochTime = '768009600';
     const response = await fetchFunctionforNepseAlphaORSystemxlite(symbolIndex, timeFrame, fromEpochTime, currentEpochTime, force_key);
-
     if (!response || !isValidData(response)) {
       assetLogger.error('Failed to fetch data from both nepsealpha.com and systemxlite.com, trying to read from file.');
       const fileData = await fs.promises.readFile(fileName, 'utf8').catch(err => console.log(err));

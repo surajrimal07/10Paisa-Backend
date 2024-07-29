@@ -1049,49 +1049,55 @@ export function filterDuplicatesfromSystemX(existingData, newData) {
 
 //fetch dynamic ohlc data from systemx or nepsealpha
 export const fetchFunctionforNepseAlphaORSystemxlite = async (symbolIndex, timeFrame, fromEpochTime, currentEpochTime, force_key) => {
-  let response = await fetch(`https://api.npstocks.com/tv/tv/history?symbol=${symbolIndex}&resolution=${timeFrame}&from=${fromEpochTime}&to=${currentEpochTime}&countback=88`, {
-    "headers": {
-      "accept": "*/*",
-      "accept-language": "en-US,en;q=0.9,ne;q=0.8",
-      "if-none-match": "W/\"107d7-CkFswx0Zr81sX6ZUbikPAlgnJBA\"",
-      "sec-ch-ua": "\"Chromium\";v=\"124\", \"Microsoft Edge\";v=\"124\", \"Not-A.Brand\";v=\"99\"",
-      "sec-ch-ua-mobile": "?0",
-      "sec-ch-ua-platform": "\"Windows\"",
-      "sec-fetch-dest": "empty",
-      "sec-fetch-mode": "cors",
-      "sec-fetch-site": "same-site",
-      "sec-gpc": "1",
-      "Referer": "https://chart.npstocks.com/",
-      "Referrer-Policy": "strict-origin-when-cross-origin"
-    },
-    "method": "GET"
-  }).then((response) => response.json());
+  let response;
+  try {
+    response = await fetch(`https://api.npstocks.com/tv/tv/history?symbol=${symbolIndex}&resolution=${timeFrame}&from=${fromEpochTime}&to=${currentEpochTime}&countback=18`, {
+      headers: {
+        accept: "*/*",
+        "accept-language": "en-US,en;q=0.9,ne;q=0.8",
+        "if-none-match": "W/\"107d7-CkFswx0Zr81sX6ZUbikPAlgnJBA\"",
+        "sec-ch-ua": "\"Chromium\";v=\"124\", \"Microsoft Edge\";v=\"124\", \"Not-A.Brand\";v=\"99\"",
+        "sec-ch-ua-mobile": "?0",
+        "sec-ch-ua-platform": "\"Windows\"",
+        "sec-fetch-dest": "empty",
+        "sec-fetch-mode": "cors",
+        "sec-fetch-site": "same-site",
+        "sec-gpc": "1",
+        Referer: "https://chart.npstocks.com/",
+        "Referrer-Policy": "strict-origin-when-cross-origin"
+      },
+      method: "GET"
+    });
+    response = await response.json();
 
-  if (!response || !isValidData(response)) {
-    assetLogger.error('Fetching data from systemxlite.com failed. Trying nepsealpha.com');
-    response = await fetch(
-      `https://www.nepsealpha.com/trading/1/history?${force_key}=rrfdwdwdsdfdg&symbol=${symbolIndex}&from=${fromEpochTime}&to=${currentEpochTime}&resolution=${timeFrame}&pass=ok&fs=${force_key}&shouldCache=1`,
-      {
-        headers: {
-          accept: "application/json, text/plain, */*",
-          "sec-ch-ua":
-            '"Chromium";v="124", "Microsoft Edge";v="124", "Not-A.Brand";v="99"',
-          "sec-ch-ua-arch": '"x86"',
-          "sec-ch-ua-bitness": '"64"',
-          "sec-ch-ua-full-version": '"124.0.2478.67"',
-          "sec-ch-ua-full-version-list":
-            '"Chromium";v="124.0.6367.91", "Microsoft Edge";v="124.0.2478.67", "Not-A.Brand";v="99.0.0.0"',
-          "sec-ch-ua-mobile": "?0",
-          "sec-ch-ua-model": '""',
-          "sec-ch-ua-platform": '"Windows"',
-          "sec-ch-ua-platform-version": '"15.0.0"',
-          "x-requested-with": "XMLHttpRequest",
-          Referer: "https://www.nepsealpha.com/trading/chart?symbol=NEPSE",
-          "Referrer-Policy": "strict-origin-when-cross-origin",
-        },
-        "method": "GET",
-      }
-    );
+    if (!response || !isValidData(response)) {
+      throw new Error('Invalid data recieved from npstocks.com');
+    }
+  } catch (error) {
+    //console.error('Fetching data from npstocks.com failed. Trying nepsealpha.com', error);
+    assetLogger.error('Fetching data from npstocks.com failed. Trying nepsealpha.com');
+
+    //console.log(`https://www.nepsealpha.com/trading/1/history?force_key=${force_key}&symbol=${symbolIndex}&resolution=${timeFrame}&pass=ok&fs=${force_key}`);
+    //response = await fetch (`https://www.nepsealpha.com/trading/1/history?force_key=${force_key}&symbol=${symbolIndex}&resolution=${timeFrame}&pass=ok&fs=${force_key}`)
+    response = await fetch(`https://www.nepsealpha.com/trading/1/history?force_key=${force_key}&symbol=${symbolIndex}&resolution=${timeFrame}&pass=ok&fs=${force_key}`, {
+      headers: {
+        accept: "application/json, text/plain, */*",
+        "sec-ch-ua": '"Chromium";v="124", "Microsoft Edge";v="124", "Not-A.Brand";v="99"',
+        "sec-ch-ua-arch": '"x86"',
+        "sec-ch-ua-bitness": '"64"',
+        "sec-ch-ua-full-version": '"124.0.2478.67"',
+        "sec-ch-ua-full-version-list": '"Chromium";v="124.0.6367.91", "Microsoft Edge";v="124.0.2478.67", "Not-A.Brand";v="99.0.0.0"',
+        "sec-ch-ua-mobile": "?0",
+        "sec-ch-ua-model": '""',
+        "sec-ch-ua-platform": '"Windows"',
+        "sec-ch-ua-platform-version": '"15.0.0"',
+        "x-requested-with": "XMLHttpRequest",
+        Referer: "https://www.nepsealpha.com/trading/chart?symbol=NEPSE",
+        "Referrer-Policy": "strict-origin-when-cross-origin",
+      },
+      method: "GET"
+    });
+    response = await response.json();
   }
 
   return response;
