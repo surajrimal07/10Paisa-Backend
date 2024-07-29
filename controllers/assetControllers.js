@@ -764,7 +764,7 @@ export const getCompanyOHLCNepseAlpha = async (req, res) => {
         assetLogger.info('Fetching Intraday update from systemxlite.com');
         const symbolIndex = await getIndexName(requestedSymbol);
         const currentEpochTime = Math.floor(Date.now() / 1000);
-        const fromEpochTime = lastUpdatedTime ? JSON.parse(lastUpdatedTime).lastUpdated : '768009600';
+        const fromEpochTime = lastUpdatedTime ? JSON.parse(lastUpdatedTime).lastUpdated : '1070236800';
         const response = await fetchFunctionforNepseAlphaORSystemxlite(symbolIndex, timeFrame, fromEpochTime, currentEpochTime, force_key);
 
         if (!response || !isValidData(response)) {
@@ -810,7 +810,7 @@ export const getCompanyOHLCNepseAlpha = async (req, res) => {
     assetLogger.info('Fetching data from systemxlite.com');
     const symbolIndex = await getIndexName(requestedSymbol);
     const currentEpochTime = Math.floor(Date.now() / 1000);
-    const fromEpochTime = '768009600';
+    const fromEpochTime = '1070236800';
     const response = await fetchFunctionforNepseAlphaORSystemxlite(symbolIndex, timeFrame, fromEpochTime, currentEpochTime, force_key);
     if (!response || !isValidData(response)) {
       assetLogger.error('Failed to fetch data from both nepsealpha.com and systemxlite.com, trying to read from file.');
