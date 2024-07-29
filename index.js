@@ -215,7 +215,7 @@ const limiter = rateLimit({
   limit: 500,
   standardHeaders: 'draft-7',
   legacyHeaders: false,
-  validate: { xForwardedForHeader: false },
+  validate: { xForwardedForHeader: false, trustProxy: false },
   message: 'Too many requests, please try again later.',
   store: new RateLimitRedisStore({
     sendCommand: (...args) => redisclient.sendCommand(args),
