@@ -6,7 +6,7 @@ import { sessionLogger } from "../utils/logger/logger.js";
 
 async function fetchUserGeoLocationData(ipAddress, ipandsession) {
   try {
-    const cachedData = fetchFromCache(ipandsession);
+    const cachedData = fetchFromCache(ipAddress);
     if (cachedData == !null && cachedData !== undefined) {
       return cachedData;
     }
