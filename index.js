@@ -139,13 +139,19 @@ app.use(function (req, res, next) {
   console.log('Incoming request from origin:', req.headers.origin);
 
   const allowedDomains = ['https://localhost:3000', 'https://tenpaisa.tech'];
-  const origin = req.headers.origin;
+  let origin = req.headers.origin;
+  if (origin && !origin.startsWith('http')) {
+    origin = 'https://' + origin.split(':')[1];
+  }
+
+  console.log('Processed origin:', origin);
 
   if (allowedDomains.includes(origin)) {
     res.setHeader('Access-Control-Allow-Origin', origin);
     console.log('Setting Access-Control-Allow-Origin to:', origin);
   } else {
     console.log('Origin not in allowed list:', origin);
+    res.setHeader('Access-Control-Allow-Origin', origin);
   }
 
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
