@@ -136,11 +136,16 @@ app.use(
 
 
 app.use(function (req, res, next) {
+  console.log('Incoming request from origin:', req.headers.origin);
+
   const allowedDomains = ['https://localhost:3000', 'https://tenpaisa.tech'];
   const origin = req.headers.origin;
 
   if (allowedDomains.includes(origin)) {
     res.setHeader('Access-Control-Allow-Origin', origin);
+    console.log('Setting Access-Control-Allow-Origin to:', origin);
+  } else {
+    console.log('Origin not in allowed list:', origin);
   }
 
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
@@ -148,6 +153,7 @@ app.use(function (req, res, next) {
   res.setHeader('Access-Control-Allow-Credentials', 'true');
 
   if (req.method === 'OPTIONS') {
+    console.log('Handling OPTIONS request');
     return res.status(204).end();
   }
 
