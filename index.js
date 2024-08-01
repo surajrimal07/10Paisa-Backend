@@ -137,6 +137,10 @@ app.use(
 
 
 const allowedDomains = ['http:localhost:3000', 'https:tenpaisa.tech'];
+app.options('/*', (_, res) => {
+  res.sendStatus(200);
+});
+
 
 const corsOptions = {
   origin: function (origin, callback) {
@@ -163,8 +167,6 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
-// Handle preflight requests for all routes
-app.options('*', cors(corsOptions));
 // app.use(cors({
 //   origin: function (origin, callback) {
 //     if (!origin) return callback(null, true);
