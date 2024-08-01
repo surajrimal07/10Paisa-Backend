@@ -2,6 +2,7 @@
 //package imports
 import { v2 as cloudinary } from "cloudinary";
 import multipart from "connect-multiparty";
+import cors from "cors";
 import 'dotenv/config';
 import express from "express";
 import httpsOptions from "./certificate/httpOptions.js";
@@ -142,11 +143,8 @@ const corsOptions = {
     console.log('Incoming request from origin:', origin);
 
     if (!origin) {
-      // No origin means it's a same-origin request
       return callback(null, true);
     }
-
-    // Ensure the origin is properly formatted
     const processedOrigin = origin.replace(/^https?:/, 'https://');
     console.log('Processed origin:', processedOrigin);
 
