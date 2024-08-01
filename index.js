@@ -137,6 +137,7 @@ app.use(
 
 
 const allowedDomains = ['http:localhost:3000', 'https:tenpaisa.tech'];
+
 app.options('/*', (_, res) => {
   res.sendStatus(200);
 });
@@ -144,19 +145,9 @@ app.options('/*', (_, res) => {
 
 const corsOptions = {
   origin: function (origin, callback) {
-    console.log('Incoming request from origin:', origin);
-
-    // Handle same-origin requests (like curl or direct browser access)
-    if (!origin) return callback(null, true);
-
-    // Ensure the origin is properly formatted
-    const processedOrigin = origin.startsWith('http') ? origin : `https://${origin.split(':')[1]}`;
-    console.log('Processed origin:', processedOrigin);
-
-    if (allowedDomains.includes(processedOrigin)) {
+    if (allowedDomains.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
-      console.log('Origin not in allowed list:', processedOrigin);
       callback(new Error('Not allowed by CORS'));
     }
   },
