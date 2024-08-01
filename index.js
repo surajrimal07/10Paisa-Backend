@@ -2,7 +2,6 @@
 //package imports
 import { v2 as cloudinary } from "cloudinary";
 import multipart from "connect-multiparty";
-import cors from "cors";
 import 'dotenv/config';
 import express from "express";
 import httpsOptions from "./certificate/httpOptions.js";
@@ -135,24 +134,38 @@ app.use(
 );
 //origin: isDevelopment ? 'https://localhost:3000' : 'https://tenpaisa.tech',
 
-const allowedOrigins = ['https://tenpaisa.tech', 'http://localhost:3000'];
 
-app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) === -1) {
-      var msg = 'The CORS policy for this site does not ' +
-        'allow access from the specified Origin.';
-      return callback(new Error(msg), false);
-    }
-    return callback(null, true);
-  },
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization'],
-  credentials: true
-}));
+app.use(function (req, res, next) {
 
-app.options('*', cors());
+  var allowedDomains = ['https://localhost:3000', 'https://tenpaisa.tech'];
+  var origin = req.headers.origin;
+  if (allowedDomains.indexOf(origin) > -1) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
+
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
+  res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type, Accept');
+  res.setHeader('Access-Control-Allow-Credentials', true);
+
+  next();
+})
+
+// app.use(cors({
+//   origin: function (origin, callback) {
+//     if (!origin) return callback(null, true);
+//     if (allowedOrigins.indexOf(origin) === -1) {
+//       var msg = 'The CORS policy for this site does not ' +
+//         'allow access from the specified Origin.';
+//       return callback(new Error(msg), false);
+//     }
+//     return callback(null, true);
+//   },
+//   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+//   allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization'],
+//   credentials: true
+// }));
+
+// app.options('*', cors());
 
 
 // const allowedOrigins = [
