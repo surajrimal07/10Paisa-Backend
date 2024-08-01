@@ -135,16 +135,24 @@ app.use(
 );
 //origin: isDevelopment ? 'https://localhost:3000' : 'https://tenpaisa.tech',
 
-const allowedOrigins = ['https://localhost:3000', 'https://tenpaisa.tech'];
+const allowedOrigins = ['https://tenpaisa.tech', 'http://localhost:3000'];
 
-const corsOptions = {
-  origin: '*',
-  //origin: ['https://localhost:3000', 'https://tenpaisa.tech'],
-  methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST'],
-  credentials: true,
-  allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization', 'xsrf-token']
-};
-app.use(cors(corsOptions));
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) === -1) {
+      var msg = 'The CORS policy for this site does not ' +
+        'allow access from the specified Origin.';
+      return callback(new Error(msg), false);
+    }
+    return callback(null, true);
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization'],
+  credentials: true
+}));
+
+app.options('*', cors());
 
 
 // const allowedOrigins = [
