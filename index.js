@@ -136,25 +136,39 @@ app.use(
 //origin: isDevelopment ? 'https://localhost:3000' : 'https://tenpaisa.tech',
 
 
-const allowedDomains = ['http:localhost:3000', 'https:tenpaisa.tech'];
+var whitelist = ['http:localhost:3000', 'https:tenpaisa.tech'];
 
-app.options('/*', (_, res) => {
-  res.sendStatus(200);
-});
-
-
-const corsOptions = {
+var corsOptions = {
   origin: function (origin, callback) {
-    if (allowedDomains.indexOf(origin) !== -1) {
-      callback(null, true);
+    if (whitelist.indexOf(origin) !== -1) {
+      callback(null, true)
     } else {
-      callback(new Error('Not allowed by CORS'));
+      callback(new Error('Not allowed by CORS'))
     }
   },
   methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'OPTIONS', 'DELETE'],
   credentials: true,
   allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization', 'xsrf-token']
-};
+}
+
+
+// app.options('/*', (_, res) => {
+//   res.sendStatus(200);
+// });
+
+
+// const corsOptions = {
+//   origin: function (origin, callback) {
+//     if (allowedDomains.indexOf(origin) !== -1) {
+//       callback(null, true);
+//     } else {
+//       callback(new Error('Not allowed by CORS'));
+//     }
+//   },
+//   methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'OPTIONS', 'DELETE'],
+//   credentials: true,
+//   allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization', 'xsrf-token']
+// };
 
 app.use(cors(corsOptions));
 
