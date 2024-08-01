@@ -140,7 +140,9 @@ var whitelist = ['http:localhost:3000', 'https:tenpaisa.tech'];
 
 var corsOptions = {
   origin: function (origin, callback) {
+    console.log("origin", origin);
     if (whitelist.indexOf(origin) !== -1) {
+
       callback(null, true)
     } else {
       callback(new Error('Not allowed by CORS'))
