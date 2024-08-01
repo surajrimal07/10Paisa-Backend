@@ -135,8 +135,9 @@ app.use(
 );
 //origin: isDevelopment ? 'https://localhost:3000' : 'https://tenpaisa.tech',
 
+res.setHeader("Access-Control-Allow-Origin", "*");
 
-var whitelist = ['http:localhost:3000', 'https:tenpaisa.tech'];
+var whitelist = ['http://localhost:3000', 'https://tenpaisa.tech'];
 
 var corsOptions = {
   origin: function (origin, callback) {
