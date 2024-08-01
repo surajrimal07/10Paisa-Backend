@@ -136,19 +136,23 @@ app.use(
 
 
 app.use(function (req, res, next) {
+  const allowedDomains = ['https://localhost:3000', 'https://tenpaisa.tech'];
+  const origin = req.headers.origin;
 
-  var allowedDomains = ['https://localhost:3000', 'https://tenpaisa.tech'];
-  var origin = req.headers.origin;
-  if (allowedDomains.indexOf(origin) > -1) {
+  if (allowedDomains.includes(origin)) {
     res.setHeader('Access-Control-Allow-Origin', origin);
   }
 
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
-  res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type, Accept');
-  res.setHeader('Access-Control-Allow-Credentials', true);
+  res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With, Content-Type, Accept, Authorization');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(204).end();
+  }
 
   next();
-})
+});
 
 // app.use(cors({
 //   origin: function (origin, callback) {
