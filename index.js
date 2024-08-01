@@ -136,26 +136,27 @@ app.use(
 //origin: isDevelopment ? 'https://localhost:3000' : 'https://tenpaisa.tech',
 
 
-const allowedDomains = ['https:localhost:3000', 'https:tenpaisa.tech'];
+const allowedDomains = ['http://localhost:3000', 'https://tenpaisa.tech'];
 
 const corsOptions = {
   origin: function (origin, callback) {
     console.log('Incoming request from origin:', origin);
 
-    if (!origin) {
-      return callback(null, true);
-    }
-    const processedOrigin = origin.replace(/^https?:/, 'https://');
+    // Handle same-origin requests (like curl or direct browser access)
+    if (!origin) return callback(null, true);
+
+    // Ensure the origin is properly formatted
+    const processedOrigin = origin.startsWith('http') ? origin : `https://${origin.split(':')[1]}`;
     console.log('Processed origin:', processedOrigin);
 
     if (allowedDomains.includes(processedOrigin)) {
-      return callback(null, true);
+      callback(null, true);
     } else {
       console.log('Origin not in allowed list:', processedOrigin);
-      return callback(new Error('Not allowed by CORS'));
+      callback(new Error('Not allowed by CORS'));
     }
   },
-  methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST'],
+  methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'OPTIONS', 'DELETE'],
   credentials: true,
   allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization', 'xsrf-token']
 };
@@ -164,7 +165,6 @@ app.use(cors(corsOptions));
 
 // Handle preflight requests for all routes
 app.options('*', cors(corsOptions));
-
 // app.use(cors({
 //   origin: function (origin, callback) {
 //     if (!origin) return callback(null, true);
