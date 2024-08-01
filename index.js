@@ -36,9 +36,19 @@ export const isServerPrimary = process.env.IS_PRIMARY_SERVER === 'true';
 
 //Express Middlewares
 const app = express();
-app.use(helmet());
 app.enable('trust proxy', 1);
 
+const corsOptions = {
+  flightContinue: true,
+  //origin: isDevelopment ? 'https://localhost:3000' : 'https://tenpaisa.tech',
+  origin: ['https://localhost:3000', 'https://tenpaisa.tech', 'http://localhost:3000'],
+  methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST'],
+  credentials: true,
+  allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization', 'xsrf-token']
+};
+app.use(cors(corsOptions));
+
+app.use(helmet());
 
 //conect to redis earliy
 await redisclient.connect();
@@ -133,62 +143,9 @@ app.use(
     whiteList
   )
 );
-//origin: isDevelopment ? 'https://localhost:3000' : 'https://tenpaisa.tech',
 
-var whitelist = ['http://localhost:3000', 'https://tenpaisa.tech'];
+//const allowedOrigins = ['https://localhost:3000', 'https://tenpaisa.tech'];
 
-var corsOptions = {
-  origin: function (origin, callback) {
-    console.log("origin", origin);
-    if (whitelist.indexOf(origin) !== -1) {
-
-      callback(null, true)
-    } else {
-      callback(new Error('Not allowed by CORS'))
-    }
-  },
-  methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'OPTIONS', 'DELETE'],
-  credentials: true,
-  allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization', 'xsrf-token']
-}
-
-
-// app.options('/*', (_, res) => {
-//   res.sendStatus(200);
-// });
-
-
-// const corsOptions = {
-//   origin: function (origin, callback) {
-//     if (allowedDomains.indexOf(origin) !== -1) {
-//       callback(null, true);
-//     } else {
-//       callback(new Error('Not allowed by CORS'));
-//     }
-//   },
-//   methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'OPTIONS', 'DELETE'],
-//   credentials: true,
-//   allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization', 'xsrf-token']
-// };
-
-app.use(cors(corsOptions));
-
-// app.use(cors({
-//   origin: function (origin, callback) {
-//     if (!origin) return callback(null, true);
-//     if (allowedOrigins.indexOf(origin) === -1) {
-//       var msg = 'The CORS policy for this site does not ' +
-//         'allow access from the specified Origin.';
-//       return callback(new Error(msg), false);
-//     }
-//     return callback(null, true);
-//   },
-//   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-//   allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization'],
-//   credentials: true
-// }));
-
-// app.options('*', cors());
 
 
 // const allowedOrigins = [
