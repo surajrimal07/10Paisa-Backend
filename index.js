@@ -136,7 +136,7 @@ app.use(
 //origin: isDevelopment ? 'https://localhost:3000' : 'https://tenpaisa.tech',
 
 
-const allowedDomains = ['https://localhost:3000', 'https://tenpaisa.tech'];
+const allowedDomains = ['https:localhost:3000', 'https:tenpaisa.tech'];
 
 const corsOptions = {
   origin: function (origin, callback) {
