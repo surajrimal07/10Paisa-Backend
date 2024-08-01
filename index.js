@@ -139,13 +139,14 @@ const allowedOrigins = ['https://localhost:3000', 'https://tenpaisa.tech'];
 
 const corsOptions = {
   flightContinue: true,
+  origin: true,
   //origin: isDevelopment ? 'https://localhost:3000' : 'https://tenpaisa.tech',
-  origin: ['https://localhost:3000', 'https://tenpaisa.tech'],
+  //origin: ['https://localhost:3000', 'https://tenpaisa.tech'],
   methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST'],
   credentials: true,
   allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization', 'xsrf-token']
 };
-app.use('*', cors(corsOptions));
+app.use(cors(corsOptions));
 
 
 // const allowedOrigins = [
