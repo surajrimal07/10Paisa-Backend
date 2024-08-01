@@ -134,10 +134,18 @@ app.use(
   )
 );
 
+const allowedOrigins = ['https://localhost:3000', 'https://tenpaisa.tech'];
+
 const corsOptions = {
   flightContinue: true,
   //origin: isDevelopment ? 'https://localhost:3000' : 'https://tenpaisa.tech',
-  origin: ['https://localhost:3000', 'https://tenpaisa.tech'],
+  origin: function (origin, callback) {
+    if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST'],
   credentials: true,
   allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization', 'xsrf-token']
