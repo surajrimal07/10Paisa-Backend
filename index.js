@@ -133,14 +133,18 @@ app.use(
     whiteList
   )
 );
+//origin: isDevelopment ? 'https://localhost:3000' : 'https://tenpaisa.tech',
 
 const allowedOrigins = ['https://localhost:3000', 'https://tenpaisa.tech'];
 
-
 const corsOptions = {
-  flightContinue: true,
-  origin: true,
-  //origin: isDevelopment ? 'https://localhost:3000' : 'https://tenpaisa.tech',
+  origin: function (origin, callback) {
+    if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   //origin: ['https://localhost:3000', 'https://tenpaisa.tech'],
   methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST'],
   credentials: true,
