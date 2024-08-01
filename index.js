@@ -136,7 +136,8 @@ app.use(
 
 const corsOptions = {
   flightContinue: true,
-  origin: isDevelopment ? 'https://localhost:3000' : 'https://tenpaisa.tech',
+  //origin: isDevelopment ? 'https://localhost:3000' : 'https://tenpaisa.tech',
+  origin: ['https://localhost:3000', 'https://tenpaisa.tech'],
   methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST'],
   credentials: true,
   allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization', 'xsrf-token']
