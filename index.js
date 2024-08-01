@@ -135,36 +135,37 @@ app.use(
 //origin: isDevelopment ? 'https://localhost:3000' : 'https://tenpaisa.tech',
 
 
-app.use(function (req, res, next) {
-  console.log('Incoming request from origin:', req.headers.origin);
+const allowedDomains = ['https://localhost:3000', 'https://tenpaisa.tech'];
 
-  const allowedDomains = ['https://localhost:3000', 'https://tenpaisa.tech'];
-  let origin = req.headers.origin;
-  if (origin && !origin.startsWith('http')) {
-    origin = 'https://' + origin.split(':')[1];
-  }
+const corsOptions = {
+  origin: function (origin, callback) {
+    console.log('Incoming request from origin:', origin);
 
-  console.log('Processed origin:', origin);
+    if (!origin) {
+      // No origin means it's a same-origin request
+      return callback(null, true);
+    }
 
-  if (allowedDomains.includes(origin)) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-    console.log('Setting Access-Control-Allow-Origin to:', origin);
-  } else {
-    console.log('Origin not in allowed list:', origin);
-    res.setHeader('Access-Control-Allow-Origin', origin);
-  }
+    // Ensure the origin is properly formatted
+    const processedOrigin = origin.replace(/^https?:/, 'https://');
+    console.log('Processed origin:', processedOrigin);
 
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
-  res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With, Content-Type, Accept, Authorization');
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
+    if (allowedDomains.includes(processedOrigin)) {
+      return callback(null, true);
+    } else {
+      console.log('Origin not in allowed list:', processedOrigin);
+      return callback(new Error('Not allowed by CORS'));
+    }
+  },
+  methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST'],
+  credentials: true,
+  allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization', 'xsrf-token']
+};
 
-  if (req.method === 'OPTIONS') {
-    console.log('Handling OPTIONS request');
-    return res.status(204).end();
-  }
+app.use(cors(corsOptions));
 
-  next();
-});
+// Handle preflight requests for all routes
+app.options('*', cors(corsOptions));
 
 // app.use(cors({
 //   origin: function (origin, callback) {
