@@ -16,6 +16,10 @@ import { startSession } from 'mongoose';
 // eslint-disable-next-line no-undef
 const isNotificationEnabled = process.env.IS_NEWS_NOTIFICATION_ENABLED === 'true';
 
+// eslint-disable-next-line no-unused-vars, no-undef
+const MONGODB_URI = process.env.IS_LOCALMONGODB_AVAILABLE === 'true';
+
+
 async function insertNewsWithTransaction(newsData) {
   const session = await startSession();
   session.startTransaction();
@@ -279,14 +283,6 @@ async function startFetchingRSS(url, source) {
           unique_key
         };
 
-        // try {
-        //   await newsModel.create(new_item_data);
-        // } catch (error) {
-        //   if (error.code === 11000 || error.code === 'E11000') {
-        //     //fuck this shit
-        //   }
-        // }
-
         await insertNewsWithTransaction(new_item_data);
 
       }
@@ -393,66 +389,6 @@ export async function fetchNews(page = 1, limit = 100, source = null, keyword = 
     return [];
   }
 }
-
-// export async function fetchNews(page = 1, limit = 100, source = null, keyword = null) {
-//   let query = {};
-
-//   if (keyword === 'trending') {
-//     query = { views: { $gt: 0 } };
-
-//     const options = {
-//       page: page,
-//       limit: limit,
-//       sort: { views: -1 }
-//     };
-
-//     try {
-//       const result = await newsModel.paginate(query, options);
-//       return result.docs;
-//     }
-//     catch (error) {
-//       newsLogger.error('Error fetching news:', error);
-//     }
-//   }
-
-//   if (source && keyword) {
-//     query = {
-//       source: source,
-//       $or: [
-//         { title: { $regex: keyword, $options: 'i' } },
-//         { description: { $regex: keyword, $options: 'i' } },
-//       ]
-//     };
-//   } else if (source) {
-//     query = { source: source };
-//   } else if (keyword) {
-//     const categoryMatch = await newsModel.findOne({ category: { $regex: keyword, $options: 'i' } });
-
-//     if (categoryMatch) {
-//       query = { category: { $regex: keyword, $options: 'i' } };
-//     } else {
-//       query = {
-//         $or: [
-//           { title: { $regex: keyword, $options: 'i' } },
-//           { description: { $regex: keyword, $options: 'i' } },
-//         ]
-//       };
-//     }
-//   }
-
-//   const options = {
-//     page: page,
-//     limit: limit,
-//     sort: { _id: -1 }
-//   };
-
-//   try {
-//     const result = await newsModel.paginate(query, options);
-//     return result.docs;
-//   } catch (error) {
-//     newsLogger.error('Error fetching news:', error);
-//   }
-// }
 
 //api code
 export const getNews = async (req, res) => {

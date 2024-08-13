@@ -17,11 +17,6 @@ export async function Database() {
   const retryDelay = 5000;
   let dbURL = process.env.DB_URL;
 
-  // if (hostName == 'instance-20240618-2207') {
-  //   dbURL = process.env.DB_URL_PROD_LOCAL;
-  // }
-
-
   async function attemptConnection() {
     try {
 
@@ -56,7 +51,45 @@ export async function Database() {
   await attemptConnection();
 }
 
-export default { Database };
+export async function LocalDatabase() {
+  let isLocalConnected = false;
+  const retryDelay = 5000;
+  const localDBURL = process.env.DB_LOGS_NEWS;
+
+  async function attemptLocalConnection() {
+    try {
+      const localConnection = await mongoose.createConnection(localDBURL, clientOptions);
+      isLocalConnected = true;
+      mainLogger.info(`Connected to the local database. ReadyState is: ${localConnection.readyState}`);
+      localConnection.on('disconnected', () => {
+        isLocalConnected = false;
+        mainLogger.info('Local MongoDB is Disconnected');
+        reconnectLocal();
+      });
+      localConnection.on('reconnected', () => {
+        isLocalConnected = true;
+        mainLogger.info('Local MongoDB is Reconnected');
+      });
+      localConnection.on('disconnecting', () => mainLogger.info('Local MongoDB is Disconnecting'));
+      localConnection.on('close', () => mainLogger.info('Local MongoDB is Closed'));
+      return localConnection;
+    } catch (error) {
+      reconnectLocal();
+      mainLogger.error(`Error connecting to the local database: ${error}`);
+    }
+  }
+
+  function reconnectLocal() {
+    if (!isLocalConnected) {
+      mainLogger.error(`Error connecting to the local database: Device seems offline. Retrying MongoDB connection in ${retryDelay / 1000} seconds...`);
+      setTimeout(attemptLocalConnection, retryDelay);
+    }
+  }
+
+  return await attemptLocalConnection();
+}
+
+export default { Database, LocalDatabase };
 
 
 process.on('SIGINT', () => {
