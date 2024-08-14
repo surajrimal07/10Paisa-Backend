@@ -268,7 +268,24 @@ export async function FetchSingleCompanyDatafromAPI(symbol) {
 
 //supply demand code
 
+let recentlyNotifiedSymbols = new Set();
+
+const clearNotificationCache = () => {
+  recentlyNotifiedSymbols.clear();
+  setTimeout(clearNotificationCache, 60 * 1000);
+};
+
+clearNotificationCache();
+
 async function sendSupplyDemandNotification(modifiedItem) {
+
+  // Skip notification if already notified in the last 1 minutes
+  //hacky way to not spam notifications
+  if (recentlyNotifiedSymbols.has(modifiedItem.symbol)) {
+    nepseLogger.info(`Notification for ${modifiedItem.symbol} skipped due to recent notification.`);
+    return;
+  }
+
   if (modifiedItem.buyToSellOrderRatio > 7 || modifiedItem.buyToSellQuantityRatio > 7) {
     let ratioComparison = '';
     const title = `Bulk Orders at ${modifiedItem.symbol}`;
