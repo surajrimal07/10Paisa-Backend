@@ -11,9 +11,6 @@ import extractFeaturedImage from './imageServer.js';
 import { NotifyNewsClients } from './notificationServer.js';
 import { notifyRoomClients } from './websocket.js';
 
-//import { startSession } from 'mongoose';
-//import { secondaryDatabase } from '../database/db.js';
-
 // eslint-disable-next-line no-undef
 const isNotificationEnabled = process.env.IS_NEWS_NOTIFICATION_ENABLED === 'true';
 

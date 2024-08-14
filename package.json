@@ -39,6 +39,7 @@
     "hpp-prevent": "^2.0.0",
     "jsdom": "^24.1.0",
     "jsonwebtoken": "^9.0.2",
+    "maxmind": "^4.3.21",
     "mime": "^4.0.3",
     "mongoose": "^8.4.1",
     "mongoose-paginate-v2": "^1.8.2",
