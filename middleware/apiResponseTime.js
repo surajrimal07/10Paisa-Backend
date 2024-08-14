@@ -25,7 +25,7 @@ try {
 
 async function fetchUserGeoLocationData(ipAddress, ipandsession) {
   try {
-    const cachedData = fetchFromCache(ipAddress);
+    const cachedData = await fetchFromCache(ipAddress);
     if (cachedData == !null && cachedData !== undefined) {
       return cachedData;
     }

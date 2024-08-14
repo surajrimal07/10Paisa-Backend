@@ -2,72 +2,63 @@ import storage from 'node-persist';
 import { createCache } from 'simple-in-memory-cache';
 import { deleteFromRedis, fetchFromRedis, saveToRedis } from '../server/redisServer.js';
 import { mainLogger } from '../utils/logger/logger.js';
+import { isDevelopment } from '../database/db.js';
 
-// eslint-disable-next-line no-undef
-const isDevelopment = process.env.NODE_ENV == "development";
 const { set, get } = createCache({ defaultSecondsUntilExpiration: Infinity });
 // eslint-disable-next-line no-undef
-const inMemory = process.env.INMEMORYCACHE
+const inMemory = process.env.INMEMORYCACHE === 'true';
 
-export const fetchFromCache = async (cacheKey) => {
+// Utility function to check if data is not null or undefined
+const isValidData = (data) => data !== undefined && data !== null;
+
+// Fetch data from a specific cache source
+const fetchData = async (source, cacheKey) => {
   try {
-
-    if (isDevelopment) {
-      const localData = await storage.getItem(cacheKey);
-      if (localData !== undefined && localData !== null) {
-        return localData;
-      }
-    }
-
-    if (inMemory == 'true') {
-      const cachedData = get(cacheKey);
-      if (cachedData !== undefined && cachedData !== null) {
-        return cachedData;
-      }
-    }
-
-    const redisData = await fetchFromRedis(cacheKey);
-    if (redisData !== undefined && redisData !== null) {
-      return redisData;
-    }
-
-    const localData = await storage.getItem(cacheKey);
-    if (localData !== undefined && localData !== null) {
-      return localData;
-    }
-
-    mainLogger.error('Error: Data not found in any cache.');
-    return null;
+    const data = await source(cacheKey);
+    return isValidData(data) ? data : null;
   } catch (error) {
-    mainLogger.error('Error fetching data from cache: ' + error.message);
+    mainLogger.error(`Error fetching data from ${source.name}: ${error.message}`);
     return null;
   }
 };
 
+// Fetch data from in-memory cache, local storage, or Redis in that order
+export const fetchFromCache = async (cacheKey) => {
+  if (isDevelopment) {
+    const localData = await fetchData(storage.getItem.bind(storage), cacheKey);
+    if (localData) return localData;
+  }
+
+  if (inMemory) {
+    const inMemoryData = fetchData(get, cacheKey);
+    if (inMemoryData) return inMemoryData;
+  }
+
+  const redisData = await fetchData(fetchFromRedis, cacheKey);
+  if (redisData) return redisData;
+
+  mainLogger.error('Error: Data not found in any cache.');
+  return null;
+};
+
+// Save data to all relevant caches
 export const saveToCache = async (cacheKey, data) => {
   try {
-    if (inMemory === 'true') {
-      set(cacheKey, data);
-    }
-
+    if (inMemory) set(cacheKey, data);
+    if (isDevelopment) await storage.setItem(cacheKey, data);
     await saveToRedis(cacheKey, data);
-    await storage.setItem(cacheKey, data);
-
   } catch (error) {
     mainLogger.error('Error saving data to cache: ' + error.message);
   }
 };
 
+// Delete data from all relevant caches
 export const deleteFromCache = async (cacheKey) => {
   try {
-    if (inMemory === 'true') {
-      set(cacheKey, null);
-    }
-
+    if (inMemory) set(cacheKey, null);
+    if (isDevelopment) await storage.removeItem(cacheKey);
     await deleteFromRedis(cacheKey);
-
-    await storage.removeItem(cacheKey);
   } catch (error) {
-    mainLogger.error('Error deleting data to cache: ' + error.message);
+    mainLogger.error('Error deleting data from cache: ' + error.message);
   }
 };
