@@ -107,7 +107,6 @@ export const makeadmin = async (req, res) => {
 };
 
 export const fetchUserLogs = async (req, res) => {
-    let db = new Mongoose();
     try {
 
         const collection = localDBURL.collection('sessionlogs');
@@ -136,13 +135,9 @@ export const fetchUserLogs = async (req, res) => {
             }
         }).filter(log => log !== null);
 
-        await db.disconnect();
         return respondWithData(res, 'SUCCESS', 'Logs fetched successfully', formattedLogs);
     }
     catch (error) {
-        if (db.connection.readyState !== 0) {
-            await db.disconnect();
-        } adminLogger.error(`Error while fetching logs: ${error}`);
         return respondWithError(res, 'INTERNAL_SERVER_ERROR', error.toString());
     }
 };
