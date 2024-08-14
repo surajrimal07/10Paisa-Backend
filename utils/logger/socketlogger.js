@@ -1,12 +1,12 @@
 import winston from "winston";
-import { dbURL } from "../../database/dbConfig.js";
+import { localDBURL } from "../../database/db.js";
 
 // eslint-disable-next-line no-undef
-const consoleLogEnabled = process.env.CONSOLE_LOG_ENABLED === 'true';
+import {consoleLogEnabled} from './mainlogger.js'
 
 const transports = [
 
-  new winston.transports.MongoDB({ db: dbURL, collection: 'socketlogs', level: 'info', tryReconnect: true, storeHost: true, poolSize: 50 }),
+  new winston.transports.MongoDB({ db: localDBURL, collection: 'socketlogs', level: 'info', tryReconnect: true, storeHost: true, poolSize: 50 }),
 ];
 
 if (consoleLogEnabled) {

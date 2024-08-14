@@ -5,6 +5,7 @@
 
 export let dbURL = process.env.NEW_DB_URL;
 
+
 // if (hostName == 'instance-20240618-2207') {
 //     dbURL = process.env.NEW_DB_URL_PROD_LOCAL;
 // }

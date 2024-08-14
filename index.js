@@ -8,7 +8,6 @@ import express from "express";
 import httpsOptions from "./certificate/httpOptions.js";
 import initializeRefreshMechanism from "./controllers/refreshController.js";
 //
-import io from '@pm2/io';
 import compression from "compression";
 import RedisStore from "connect-redis";
 import { rateLimit } from 'express-rate-limit';
@@ -22,7 +21,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 
 //file imports
-import { Database } from "./database/db.js";
+import { PrimaryDatabase } from "./database/db.js";
 import { responseTimeMiddleware } from "./middleware/apiResponseTime.js";
 //import { sessionMiddleware } from './middleware/session.js';
 import userRouter from "./routes/appRoutes.js";
@@ -31,6 +30,7 @@ import { redisclient } from "./server/redisServer.js";
 import { startWebSocketServer } from "./server/websocket.js";
 import { errorHandler, mainLogger } from './utils/logger/logger.js';
 import dynamicRoutes from "./utils/routesforIndex.js";
+import { isDevelopment } from "./database/db.js";
 
 export const isServerPrimary = process.env.IS_PRIMARY_SERVER === 'true';
 
@@ -115,8 +115,6 @@ app.use(
 
 const port = process.env.PORT || 4000;
 
-const isDevelopment = process.env.NODE_ENV == "development";
-
 // Use express.json() middleware to parse JSON bodies
 app.use(express.json());
 
@@ -179,7 +177,7 @@ app.use(compression({
 app.use(multipart());
 
 //database
-await Database();
+await PrimaryDatabase();
 
 //cloudnary config
 await cloudinary.config({
@@ -200,16 +198,6 @@ if (isDevelopment) {
 } else {
   app.listen(port, () => {
     mainLogger.info(`Production Server is running as ${isServerPrimary ? 'Primary Server' : 'Secondary Server'} on port ${port}`);
-  });
-
-  io.init({
-    transactions: true,
-    http: true,
-    errors: true,
-    memory: true,
-    cpu: true,
-    eventLoop: true,
-    counter: true,
   });
 }
 

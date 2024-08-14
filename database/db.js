@@ -1,100 +1,102 @@
 /* eslint-disable no-undef */
 import mongoose from 'mongoose';
-import { mainLogger } from '../utils/logger/logger.js';
-//import { hostName } from './dbConfig.js';
+
+export const isDevelopment = process.env.NODE_ENV === 'development';
+export const localDBURL = isDevelopment ? process.env.DB_LOGS_NEWS_PROD : process.env.DB_LOGS_NEWS_DEV; 
 
 export const clientOptions = {
   minPoolSize: 10,
   maxPoolSize: 100,
-  compressors: ["zstd"],
+  compressors: ['zstd'],
   connectTimeoutMS: 60000,
   socketTimeoutMS: 30000,
-  family: 4
+  family: 4,
 };
 
-export async function Database() {
-  let isConnected = false;
-  const retryDelay = 5000;
-  let dbURL = process.env.DB_URL;
+async function connectWithRetry(connectFn, dbName) {
+  try {
+    await connectFn();
+    const connection = mongoose.connection;
 
-  async function attemptConnection() {
-    try {
+    console.log(`Connected to the ${dbName}. ReadyState is: ${connection.readyState}`);
 
-      await mongoose.connect(dbURL, clientOptions);
-      isConnected = true;
-      mainLogger.info(`Connected to the database. ReadyState is: ${mongoose.connection.readyState}`);
-      mongoose.connection.on('disconnected', () => {
-        isConnected = false;
-        mainLogger.info('MongoDB is Disconnected');
-        reconnect();
-      });
-      mongoose.connection.on('reconnected', () => {
-        isConnected = true;
-        mainLogger.info('MongoDB is Reconnected');
-      });
-      mongoose.connection.on('disconnecting', () => mainLogger.info('MongoDB is Disconnecting'));
-      mongoose.connection.on('close', () => mainLogger.info('MongoDB is Closed'));
-      return mongoose.connection;
-    } catch (error) {
-      reconnect();
-      mainLogger.error(`Error connecting to the database: ${error}`);
-    }
+    connection.on('disconnected', () => {
+      console.log(`${dbName} is Disconnected`);
+      retryConnection(connectFn, dbName);
+    });
+
+    connection.on('reconnected', () => {
+      console.log(`${dbName} is Reconnected`);
+    });
+
+    connection.on('disconnecting', () => {
+      console.log(`${dbName} is Disconnecting`);
+    });
+
+    connection.on('close', () => {
+      console.log(`${dbName} is Closed`);
+    });
+
+    return connection;
+  } catch (error) {
+    console.error(`Error connecting to the ${dbName}: ${error}`);
+    retryConnection(connectFn, dbName);
   }
+}
 
-  function reconnect() {
-    if (!isConnected) {
-      mainLogger.error(`Error connecting to the database: Device seems offline. Retrying MongoDB connection in ${retryDelay / 1000} seconds...`);
-      setTimeout(attemptConnection, retryDelay);
-    }
-  }
+function retryConnection(connectFn, dbName, delay = 5000) {
+  console.error(`Error connecting to the ${dbName}: Device seems offline. Retrying MongoDB connection in ${delay / 1000} seconds...`);
+  setTimeout(() => connectWithRetry(connectFn, dbName), delay);
+}
 
-  await attemptConnection();
+export async function PrimaryDatabase() {
+  const dbURL = process.env.DB_URL;
+  return await connectWithRetry(() => mongoose.connect(dbURL, clientOptions), 'Primary Database');
 }
 
 export async function LocalDatabase() {
-  let isLocalConnected = false;
-  const retryDelay = 5000;
-  const localDBURL = process.env.DB_LOGS_NEWS;
+  const connection = await mongoose.createConnection(localDBURL, clientOptions);
+  
+  console.log(`Connected to the Secondary Database. ReadyState is: ${connection.readyState}`);
 
-  async function attemptLocalConnection() {
-    try {
-      const localConnection = await mongoose.createConnection(localDBURL, clientOptions);
-      isLocalConnected = true;
-      mainLogger.info(`Connected to the local database. ReadyState is: ${localConnection.readyState}`);
-      localConnection.on('disconnected', () => {
-        isLocalConnected = false;
-        mainLogger.info('Local MongoDB is Disconnected');
-        reconnectLocal();
-      });
-      localConnection.on('reconnected', () => {
-        isLocalConnected = true;
-        mainLogger.info('Local MongoDB is Reconnected');
-      });
-      localConnection.on('disconnecting', () => mainLogger.info('Local MongoDB is Disconnecting'));
-      localConnection.on('close', () => mainLogger.info('Local MongoDB is Closed'));
-      return localConnection;
-    } catch (error) {
-      reconnectLocal();
-      mainLogger.error(`Error connecting to the local database: ${error}`);
-    }
-  }
+  connection.on('disconnected', () => {
+    console.log('Secondary Database is Disconnected');
+    retryConnection(() => connection.openUri(localDBURL, clientOptions), 'Secondary Database');
+  });
 
-  function reconnectLocal() {
-    if (!isLocalConnected) {
-      mainLogger.error(`Error connecting to the local database: Device seems offline. Retrying MongoDB connection in ${retryDelay / 1000} seconds...`);
-      setTimeout(attemptLocalConnection, retryDelay);
-    }
-  }
+  connection.on('reconnected', () => {
+    console.log('Secondary Database is Reconnected');
+  });
 
-  return await attemptLocalConnection();
+  connection.on('disconnecting', () => {
+    console.log('Secondary Database is Disconnecting');
+  });
+
+  connection.on('close', () => {
+    console.log('Secondary Database is Closed');
+  });
+
+  return connection;
 }
 
-export default { Database, LocalDatabase };
+export const secondaryDatabase = await LocalDatabase();
 
+export default { PrimaryDatabase, secondaryDatabase };
 
-process.on('SIGINT', () => {
-  mongoose.connection.close().then(() => {
-    mainLogger.error(`Closing Mongodb due app termination`);
-    process.exit(0);
-  });
+process.on('SIGINT', async () => {
+  try {
+    await mongoose.connection.close();
+    console.log(`Closed Primary Database due to app termination`);
+  } catch (err) {
+    console.error(`Error closing Primary Database: ${err}`);
+  }
+
+  try {
+    await secondaryDatabase.close();
+    console.log(`Closed Secondary Database due to app termination`);
+  } catch (err) {
+    console.error(`Error closing Secondary Database: ${err}`);
+  }
+
+  process.exit(0);
 });

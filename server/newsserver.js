@@ -11,40 +11,56 @@ import extractFeaturedImage from './imageServer.js';
 import { NotifyNewsClients } from './notificationServer.js';
 import { notifyRoomClients } from './websocket.js';
 
-import { startSession } from 'mongoose';
+//import { startSession } from 'mongoose';
+//import { secondaryDatabase } from '../database/db.js';
 
 // eslint-disable-next-line no-undef
 const isNotificationEnabled = process.env.IS_NEWS_NOTIFICATION_ENABLED === 'true';
 
-// eslint-disable-next-line no-unused-vars, no-undef
-const MONGODB_URI = process.env.IS_LOCALMONGODB_AVAILABLE === 'true';
 
-
-async function insertNewsWithTransaction(newsData) {
-  const session = await startSession();
-  session.startTransaction();
+async function insertNewsWithoutTransaction(newsData) {
   try {
-    const existingItem = await newsModel.findOne({ unique_key: newsData.unique_key }).session(session);
+    const existingItem = await newsModel.findOne({ unique_key: newsData.unique_key });
     if (existingItem) {
-      await session.abortTransaction();
-      session.endSession();
       return false;
     }
 
-    await newsModel.create([newsData], { session });
-    await session.commitTransaction();
-    session.endSession();
+    await newsModel.create([newsData]);
     await NotifyClients(newsData);
     return true;
   } catch (error) {
-    await session.abortTransaction();
-    session.endSession();
     if (error.code === 11000 || error.code === 'E11000') {
       return false;
     }
     throw error;
   }
 }
+
+// async function insertNewsWithTransaction(newsData) {
+//   const session = await secondaryDatabase.startSession();
+//   session.startTransaction();
+//   try {
+//     const existingItem = await newsModel.findOne({ unique_key: newsData.unique_key }).session(session);
+//     if (existingItem) {
+//       await session.abortTransaction();
+//       session.endSession();
+//       return false;
+//     }
+
+//     await newsModel.create([newsData], { session });
+//     await session.commitTransaction();
+//     session.endSession();
+//     await NotifyClients(newsData);
+//     return true;
+//   } catch (error) {
+//     await session.abortTransaction();
+//     session.endSession();
+//     if (error.code === 11000 || error.code === 'E11000') {
+//       return false;
+//     }
+//     throw error;
+//   }
+// }
 
 function generateUniqueKey(title, link) {
   const data = title + link
@@ -114,7 +130,7 @@ async function scrapeShareSansar() {
           unique_key
         };
 
-        await insertNewsWithTransaction(newsData);
+        await insertNewsWithoutTransaction(newsData);
 
       } catch (error) {
         if (error.code === 11000 || error.code === 'E11000') {
@@ -158,7 +174,7 @@ async function scrapeMeroLagani() {
         news.description = body$('meta[property="og:description"]').attr('content');
         news.img_url = body$('meta[property="og:image"]').attr('content');
 
-        await insertNewsWithTransaction(news);
+        await insertNewsWithoutTransaction(news);
       } catch (error) {
         if (error.code === 11000 || error.code === 'E11000') {
           //
@@ -202,7 +218,7 @@ async function scrapeEkantipur() {
         source: 'Ekantipur',
         unique_key
       };
-      await insertNewsWithTransaction(newsItem);
+      await insertNewsWithoutTransaction(newsItem);
     });
 
   } catch (error) {
@@ -283,7 +299,7 @@ async function startFetchingRSS(url, source) {
           unique_key
         };
 
-        await insertNewsWithTransaction(new_item_data);
+        await insertNewsWithoutTransaction(new_item_data);
 
       }
     }
@@ -333,7 +349,6 @@ export async function initiateNewsFetch() {
 }
 
 //fetch news API
-// fetch news API
 export async function fetchNews(page = 1, limit = 100, source = null, keyword = null) {
   let query = {};
   let options = {

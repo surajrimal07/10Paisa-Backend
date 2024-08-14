@@ -7,7 +7,7 @@ import { NEPSE_ACTIVE_API_URL, isNepseOpen, switchServer } from "../controllers/
 import { fetchFromCache, saveToCache } from "../controllers/savefetchCache.js";
 import { fetchFunction } from '../server/fetchFunction.js';
 import { SendNotification } from '../server/notificationServer.js';
-import { assetLogger } from '../utils/logger/logger.js';
+import { assetLogger, nepseLogger } from '../utils/logger/logger.js';
 import { notifyRoomClients } from './websocket.js';
 
 const nepseIndexes = [
@@ -295,40 +295,64 @@ async function sendSupplyDemandNotification(modifiedItem) {
 const nepseNotification = process.env.IS_NEPSE_NOTIFICATION_ENABLED === 'true' ? true : false;
 
 const calculatePercentageDifference = (oldValue, newValue) => {
-  if (oldValue === 0) return newValue !== 0;
-  return Math.abs((newValue - oldValue) / oldValue) > 0.2;
-};
+  if (oldValue === 0 && newValue !== 0) return true;
+  if (newValue === 0 && oldValue !== 0) return true;
 
-const hasSignificantChange = (previousList, currentList) => {
-  const previousMap = new Map(previousList.map(item => [item.symbol, item]));
-
-  for (const currentItem of currentList) {
-    const previousItem = previousMap.get(currentItem.symbol);
-    if (!previousItem) {
-      return true;
-    }
-    if (
-      calculatePercentageDifference(previousItem.totalBuyQuantity, currentItem.totalBuyQuantity) ||
-      calculatePercentageDifference(previousItem.totalSellQuantity, currentItem.totalSellQuantity)
-    ) {
-      return true;
-    }
+  if (!isFinite(oldValue) && !isFinite(newValue)) {
+    return false;
   }
-  return false;
-};
 
+  return Math.abs((newValue - oldValue) / oldValue) > 0.4;
+};
 const sendNotificationsIfNeeded = async (currentHighestQuantityPerOrder) => {
   const previousHighestQuantityPerOrder = await fetchFromCache("previousHighestQuantityPerOrder");
 
-  if (hasSignificantChange(previousHighestQuantityPerOrder, currentHighestQuantityPerOrder)) {
+  if (!previousHighestQuantityPerOrder) {
+    nepseLogger.info("No previous data found, treating all items as significant change.");
+    await saveToCache("previousHighestQuantityPerOrder", currentHighestQuantityPerOrder);
+
     if (nepseNotification) {
       for (const item of currentHighestQuantityPerOrder) {
-        await sendSupplyDemandNotification(item, item);
+        await sendSupplyDemandNotification(item);
       }
     }
+    return;
+  }
+
+  const previousMap = new Map(previousHighestQuantityPerOrder.map(item => [item.symbol, item]));
+
+  let significantChangesDetected = false;
+
+  for (const currentItem of currentHighestQuantityPerOrder) {
+    const previousItem = previousMap.get(currentItem.symbol);
+
+    if (!previousItem) {
+      nepseLogger.info(`Significant change detected for new symbol: ${currentItem.symbol}`);
+      significantChangesDetected = true;
+
+      if (nepseNotification) {
+        await sendSupplyDemandNotification(currentItem);
+      }
+    } else {
+      const significantChangeInBuyQuantity = calculatePercentageDifference(previousItem.totalBuyQuantity, currentItem.totalBuyQuantity);
+      const significantChangeInSellQuantity = calculatePercentageDifference(previousItem.totalSellQuantity, currentItem.totalSellQuantity);
+
+      if (significantChangeInBuyQuantity || significantChangeInSellQuantity) {
+        nepseLogger.info(`Significant change detected for symbol: ${currentItem.symbol}`);
+        significantChangesDetected = true;
+
+        if (nepseNotification) {
+          await sendSupplyDemandNotification(currentItem);
+        }
+      }
+    }
+  }
+
+  if (significantChangesDetected) {
     await saveToCache("previousHighestQuantityPerOrder", currentHighestQuantityPerOrder);
   }
 };
+
 
 const mergeBuySellData = async (item, side, matchingList) => {
   const modifiedItem = { ...item };
@@ -366,9 +390,6 @@ const mergeBuySellData = async (item, side, matchingList) => {
   modifiedItem.buyToSellOrderRatio = parseFloat((modifiedItem.totalBuyOrder / modifiedItem.totalSellOrder).toFixed(1));
   modifiedItem.buyToSellQuantityRatio = parseFloat((modifiedItem.totalBuyQuantity / modifiedItem.totalSellQuantity).toFixed(1));
 
-  // if (nepseNotification) {
-  //   await sendSupplyDemandNotification(modifiedItem, item);
-  // }
   delete modifiedItem.totalOrder;
   delete modifiedItem.totalQuantity;
   delete modifiedItem.quantityPerOrder;
@@ -460,173 +481,6 @@ export async function SupplyDemandData(refresh = false) {
   }
 }
 
-
-//end of supply demand code
-
-// export async function AddCategoryAndSector(stockData) {
-//   try {
-//     stockData.forEach((stockInfo) => {
-//       const lowerCaseName = stockInfo.name.toLowerCase();
-
-//       if (stockInfo.ltp < 20 && lowerCaseName.includes("mutual fund")) {
-//         stockInfo.category = "Mutual Fund";
-//         stockInfo.sector = "Mutual Fund";
-//       } else if (lowerCaseName.includes("debenture")) {
-//         stockInfo.category = "Debenture";
-//         stockInfo.sector = "Debenture";
-//       } else {
-//         if (
-//           !stockInfo.sector &&
-//           !lowerCaseName.includes("debenture") &&
-//           !lowerCaseName.includes("mutual")
-//         ) {
-//           if (
-//             lowerCaseName.includes("bank") &&
-//             !lowerCaseName.includes("debenture") &&
-//             !lowerCaseName.includes("promotor share")
-//           ) {
-//             stockInfo.sector = "Bank";
-//           } else if (lowerCaseName.includes("finance")) {
-//             stockInfo.sector = "Finance";
-//           } else if (
-//             lowerCaseName.includes("hydro") ||
-//             lowerCaseName.includes("Hydro") ||
-//             lowerCaseName.includes("power") ||
-//             lowerCaseName.includes("Jal Vidhyut") ||
-//             lowerCaseName.includes("Khola")
-//           ) {
-//             stockInfo.sector = "Hydropower";
-//           } else if (
-//             lowerCaseName.includes("bikas") ||
-//             lowerCaseName.includes("development")
-//           ) {
-//             stockInfo.sector = "Development Banks";
-//           } else if (
-//             lowerCaseName.includes("microfinance") ||
-//             lowerCaseName.includes("laghubitta")
-//           ) {
-//             stockInfo.sector = "Microfinance";
-//           } else if (lowerCaseName.includes("life insurance")) {
-//             stockInfo.sector = "Life Insurance";
-//           } else if (lowerCaseName.includes("insurance")) {
-//             stockInfo.sector = "Insurance";
-//           } else if (lowerCaseName.includes("investment")) {
-//             stockInfo.sector = "Investment";
-//           } else {
-//             stockInfo.sector = "unknown";
-//           }
-//         }
-
-//         stockInfo.category = "Assets";
-//       }
-//     });
-
-//     return stockData;
-//   } catch (error) {
-//     console.error(error);
-//     throw error;
-//   }
-// }
-
-// export async function GetMutualFund() {
-//   try {
-//     const stockData = await fetchAndExtractStockData();
-//     const mutualFundStocks = stockData.filter((stock) => stock.LTP < 20);
-
-//     return mutualFundStocks;
-//   } catch (error) {
-//     console.error(error);
-//     throw error;
-//   }
-// }
-
-// export async function GetDebentures() {
-//   try {
-//     const stockData = await fetchAndExtractStockData();
-//     const debentureStocks = stockData.filter((stock) =>
-//       stock.name.toLowerCase().includes("debenture")
-//     );
-
-//     return debentureStocks;
-//   } catch (error) {
-//     console.error(error);
-//     throw error;
-//   }
-// }
-
-//not live but good and complete
-// export async function FetchOldData(refresh) {
-//   const hardcodedUrl = "https://www.sharesansar.com/today-share-price";
-
-//   try {
-//     if (!refresh) {
-//       const cachedData = await fetchFromCache("FetchOldData");
-//       if (cachedData != null) {
-//         return cachedData;
-//       }
-//     }
-
-//     const response = await axios.get(hardcodedUrl);
-
-//     if (!response.data) {
-//       assetLogger.error(`Failed to fetch data at FetchOldData. Status: ${response.status}`);
-//       return null;
-//     }
-
-//     const dom = new JSDOM(response.data);
-//     const document = dom.window.document;
-
-//     const scriptElements = document.querySelectorAll("script");
-//     let cmpjsonArray = [];
-
-//     scriptElements.forEach((scriptElement) => {
-//       if (scriptElement.textContent.includes("var cmpjson")) {
-//         const scriptContent = scriptElement.textContent;
-//         const jsonMatch = scriptContent.match(/var cmpjson = (\[.*\]);/);
-
-//         if (jsonMatch && jsonMatch[1]) {
-//           const jsonContent = jsonMatch[1];
-//           cmpjsonArray = JSON.parse(jsonContent);
-//         }
-//       }
-//     });
-
-//     const symbolToNameMap = cmpjsonArray.reduce((map, item) => {
-//       map[item.symbol] = item.companyname;
-//       return map;
-//     }, {});
-
-//     const stockDataWithoutName = [];
-
-//     const rows = document.querySelectorAll("#headFixed tbody tr");
-
-//     rows.forEach((row) => {
-//       const columns = row.querySelectorAll("td");
-
-//       const stockInfo = {
-//         symbol: columns[1].querySelector("a").textContent.trim(),
-//         vwap: parseInt(columns[7].textContent.trim()),
-//         Turnover: parseInt(columns[10].textContent.replace(/,/g, "")), //controvercial
-//         day120: parseInt(columns[17].textContent.replace(/,/g, "")),
-//         day180: parseInt(columns[18].textContent.replace(/,/g, "")),
-//         week52high: parseInt(columns[19].textContent.replace(/,/g, "")),
-//         week52low: parseInt(columns[20].textContent.replace(/,/g, "")),
-//         name:
-//           symbolToNameMap[columns[1].querySelector("a").textContent.trim()] ||
-//           "",
-//       };
-
-//       stockDataWithoutName.push(stockInfo);
-//     });
-
-//     const enrichedData = await AddCategoryAndSector(stockDataWithoutName);
-//     await saveToCache("FetchOldDatas", enrichedData);
-
-//     return enrichedData;
-//   } catch (error) {
-//     assetLogger.error(`Error at FetchOldData : ${error.message}`);
-//   }
-// }
 //nepseapi top gainers
 export const topgainersShare = async (refresh) => {
   const url = NEPSE_ACTIVE_API_URL + "/TopGainers";

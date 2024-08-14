@@ -12,7 +12,6 @@ const channelId = process.env.TELEGRAM_CHANNEL_ID;
 const bot = new TelegramBot(token, { polling: false });
 
 export async function SendNotification(where = "all", title, body) {
-    console.log('send notification triggered');
 
     if (isServerPrimary) {
 
@@ -30,7 +29,6 @@ export async function SendNotification(where = "all", title, body) {
             await NotifyTelegram(body);
             await NotifyNepseClients(title, body);
             await NotifyTelegram(body);
-            // NotifyFirebase(title, body);
         }
         else {
             mainLogger.error(`Invalid notification type: ${where}`);

@@ -1,9 +1,8 @@
-import crypto from 'crypto';
 import mongoose from 'mongoose';
 import mongoosePaginate from 'mongoose-paginate-v2';
 import mongooseSequence from 'mongoose-sequence';
 import classifyNews from './textClassify.js';
-
+import { secondaryDatabase } from '../database/db.js';
 
 const AutoIncrement = mongooseSequence(mongoose);
 
@@ -57,7 +56,7 @@ newsSchema.pre('save', function (next) {
   next();
 });
 
-const newsModel = mongoose.model('newsModel', newsSchema);
+const newsModel = secondaryDatabase.model('newsModel', newsSchema);
 
 export default newsModel;
 

@@ -1,11 +1,10 @@
 import { Mongoose } from 'mongoose';
-import { clientOptions } from '../database/db.js';
-import { dbURL } from "../database/dbConfig.js";
 import Portfolio from '../models/portfolioModel.js';
 import User from '../models/userModel.js';
 import Watchlist from '../models/watchlistModel.js';
 import { adminLogger } from '../utils/logger/adminlogger.js';
 import { respondWithData, respondWithError, respondWithSuccess } from '../utils/response_utils.js';
+import { localDBURL } from "../database/db.js";
 
 export const getAllUsers = async (req, res) => {
     try {
@@ -111,8 +110,7 @@ export const fetchUserLogs = async (req, res) => {
     let db = new Mongoose();
     try {
 
-        await db.connect(dbURL, clientOptions);
-        const collection = db.connection.collection('sessionlogs');
+        const collection = localDBURL.collection('sessionlogs');
         const logs = await collection.find({}).toArray();
 
 
