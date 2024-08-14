@@ -313,6 +313,7 @@ const sendNotificationsIfNeeded = async (currentHighestQuantityPerOrder) => {
 
     if (nepseNotification) {
       for (const item of currentHighestQuantityPerOrder) {
+        nepseLogger.info(`Notification triggered for new symbol: ${item.symbol}`);
         await sendSupplyDemandNotification(item);
       }
     }
@@ -331,6 +332,7 @@ const sendNotificationsIfNeeded = async (currentHighestQuantityPerOrder) => {
       significantChangesDetected = true;
 
       if (nepseNotification) {
+        nepseLogger.info(`Notification triggered for symbol: ${currentItem.symbol} - New Item`);
         await sendSupplyDemandNotification(currentItem);
       }
     } else {
@@ -342,6 +344,7 @@ const sendNotificationsIfNeeded = async (currentHighestQuantityPerOrder) => {
         significantChangesDetected = true;
 
         if (nepseNotification) {
+          nepseLogger.info(`Notification triggered for symbol: ${currentItem.symbol} - Updated Item`);
           await sendSupplyDemandNotification(currentItem);
         }
       }
@@ -349,6 +352,7 @@ const sendNotificationsIfNeeded = async (currentHighestQuantityPerOrder) => {
   }
 
   if (significantChangesDetected) {
+    nepseLogger.info("Updating cache with the latest significant changes.");
     await saveToCache("previousHighestQuantityPerOrder", currentHighestQuantityPerOrder);
   }
 };
