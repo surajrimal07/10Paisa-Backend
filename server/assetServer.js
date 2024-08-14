@@ -678,10 +678,10 @@ export async function getIndexIntraday(refresh) {
       fetchFromCache('isMarketOpen')
     ]);
 
-    // if (open === null || isOpen === null) {
-    //   assetLogger.error("Open or isOpen data is missing or undefined.");
-    //   return cachedData;
-    // }
+    if (open === null || isOpen === null || nepseIndexData === null || nepseSummaryData === null) {
+      assetLogger.error("Open or isOpen data is missing or undefined.");
+      return cachedData;
+    }
 
     // if (cachedData != null && !nepseIndexData || !nepseSummaryData) {
     //   await switchServer();
@@ -720,6 +720,10 @@ export async function getIndexIntraday(refresh) {
     return nepseIndexDataObj;
   } catch (error) {
     assetLogger.error(`Error at getIndexIntraday : ${error.message}`);
+    const cachedData = await fetchFromCache("intradayIndexData");
+    if (!refresh && cachedData != null) {
+      return cachedData;
+    }
     return null;
   }
 }
