@@ -1,7 +1,3 @@
-import {
-  fetchFromCache,
-  saveToCache
-} from "../controllers/savefetchCache.js";
 import path from 'path';
 import { sessionLogger } from "../utils/logger/logger.js";
 import maxmind from 'maxmind';
@@ -23,13 +19,8 @@ try {
 }
 
 
-async function fetchUserGeoLocationData(ipAddress, ipandsession) {
+async function fetchUserGeoLocationData(ipAddress) {
   try {
-    const cachedData = await fetchFromCache(ipAddress);
-    if (cachedData == !null && cachedData !== undefined) {
-      return cachedData;
-    }
-
     const geoData = cityLookup.get(ipAddress);
     const asnData = asnLookup.get(ipAddress);
 
@@ -45,7 +36,6 @@ async function fetchUserGeoLocationData(ipAddress, ipandsession) {
         as: asnData?.autonomous_system_organization || 'Unknown',
     };
 
-    await saveToCache(ipandsession, userGeoData);
     return userGeoData;
   } catch (error) {
     sessionLogger.error(`Error fetching geolocation data for IP: ${ipAddress} - ${error.message}`);
@@ -75,9 +65,9 @@ export async function responseTimeMiddleware(req, res, next) {
   };
 
   if (req.ip !== '::1') { //::1 is localhost
-    const ipandsession = req.ip + req.sessionID || 'no session';
+    //const ipandsession = req.ip + req.sessionID || 'no session';
 
-    const userInfo = await fetchUserGeoLocationData(req.ip, ipandsession)
+    const userInfo = await fetchUserGeoLocationData(req.ip);
 
     userinfo = {
       city: userInfo.city_name,
