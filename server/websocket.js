@@ -246,6 +246,8 @@ async function handleMessage(useremail, room, message, ws) {
 //optional params email
 //send in this room to this email client
 export function notifyRoomClients(room, message, email = null) {
+  console.log("notifyRoomClients called", room);
+
   if (!rooms[room]) {
     socketLogger.info(`Room ${room} does not exist.`);
     return;
@@ -275,6 +277,7 @@ export function notifyRoomClients(room, message, email = null) {
         ws.send(messageString);
       }
     });
+
   }
 }
 // notify a specific client based on WebSocket connection (ws)

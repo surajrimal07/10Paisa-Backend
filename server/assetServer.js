@@ -492,8 +492,9 @@ export async function SupplyDemandData(refresh = false) {
           highestSupply: highestSupply,
           highestDemand: highestDemand
         })
-
     ]);
+
+    console.log("Supply Demand Data sent to wss");
 
     return { highestQuantityperOrder, highestSupply, highestDemand };
   } catch (error) {
