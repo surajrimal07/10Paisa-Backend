@@ -149,7 +149,7 @@ async function wipeCachesAndRefreshData() {
 }
 
 async function fetchNepseFloorsheet() {
-  if (!isNepseOpen) {
+  if (await checkIsNepseOpen()) {
     nepseLogger.info('Nepse is closed. Skipping floorsheet data fetch.');
     return;
   }
