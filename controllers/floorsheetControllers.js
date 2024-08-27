@@ -2,7 +2,7 @@ import { FindHighestContractAmount, FindHighestContractQuantity, GetFloorsheet }
 import { apiLogger } from "../utils/logger/logger.js";
 import {respondWithError } from "../utils/response_utils.js";
 import { fetchFromCache, saveToCache, fetchFromStorage } from "./savefetchCache.js";
-import { fetchFloorsheetsInChunks} from '../server/nepse_server/singletonNepseServer.js';
+import { chunk_nepseFloorsheett} from '../server/floorsheetServer.js';
 
 export const fetchFloorsheetData = async (req, res) => {
     const refreshParam = req.query.refresh || "";
@@ -94,7 +94,7 @@ export async function chunk_nepseFloorsheet() {
             pageNumber = 1;
         }
 
-        const { data } = await fetchFloorsheetsInChunks(pageNumber);
+        const { data } = await chunk_nepseFloorsheett(pageNumber);
 
         if (!data || data.length === 0) {
             apiLogger.error("No floorsheet data received in chunk_nepseFloorsheet");

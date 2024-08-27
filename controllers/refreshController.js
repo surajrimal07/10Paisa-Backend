@@ -17,7 +17,7 @@ import { notifyRoomClients, wss } from "../server/websocket.js";
 import { formatTimeTo12Hour, formatTurnover } from "../utils/converter.js";
 import { nepseLogger } from '../utils/logger/logger.js';
 import { saveToCache } from "./savefetchCache.js";
-import { chunk_nepseFloorsheet, FindHighestContractAmount, FindHighestContractQuantity, GetFloorsheet } from '../server/floorsheetServer.js';
+import { chunk_nepseFloorsheett, FindHighestContractAmount, FindHighestContractQuantity, GetFloorsheet } from '../server/floorsheetServer.js';
 
 //initilizing storage here to prevent code racing
 const defaultDirectory = '/tmp/.node-persist';
@@ -121,7 +121,7 @@ async function wipeCachesAndRefreshData() {
       topTransactions,
       FetchSingularDataOfAsset,
       SupplyDemandData,
-      chunk_nepseFloorsheet
+      chunk_nepseFloorsheett
     ];
 
     for (const fetchFunction of fetchFunctions) {

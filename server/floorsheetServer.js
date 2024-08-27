@@ -25,7 +25,8 @@ export async function FindHighestContractAmount(data) {
     return top50HighestStocks;
 }
 
-export async function chunk_nepseFloorsheet(refresh = false) {
+//add FindHighestContractAmount and FindHighestContractQuantity here and send notification to clients
+export async function chunk_nepseFloorsheett(refresh = false) {
     try {
         apiLogger.info("Fetching floorsheet data in chunks");
 
@@ -34,11 +35,11 @@ export async function chunk_nepseFloorsheet(refresh = false) {
             fetchFromCache("lastChunkFloorsheetFetchedDate")
         ]);
 
-        let pageNumber = cachedPageNumber || 0;
+        let pageNumber = cachedPageNumber || 1;
         const currentTimestamp = Date.now();
 
         if (cachedFetchDate !== null && new Date(cachedFetchDate).toDateString() !== new Date(currentTimestamp).toDateString()) {
-            pageNumber = 0;
+            pageNumber = 1;
         }
 
         const { data, lastPageNumber } = await fetchFloorsheetsInChunks(pageNumber);
@@ -47,6 +48,8 @@ export async function chunk_nepseFloorsheet(refresh = false) {
             apiLogger.error("No floorsheet data received in chunk_nepseFloorsheet");
             return null;
         }
+
+
 
         await Promise.all([
             saveToCache("lastFloorsheetPageNumber", lastPageNumber),
