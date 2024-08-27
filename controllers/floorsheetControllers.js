@@ -94,18 +94,12 @@ export async function chunk_nepseFloorsheet() {
             pageNumber = 1;
         }
 
-        const { data, lastPageNumber } = await fetchFloorsheetsInChunks(pageNumber);
+        const { data } = await fetchFloorsheetsInChunks(pageNumber);
 
         if (!data || data.length === 0) {
             apiLogger.error("No floorsheet data received in chunk_nepseFloorsheet");
             return null;
         }
-
-        await Promise.all([
-            saveToCache("lastFloorsheetPageNumber", lastPageNumber),
-            saveToCache("lastChunkFloorsheetData", data),
-            saveToCache("lastChunkFloorsheetFetchedDate", currentTimestamp)
-        ]);
 
         return data;
 
