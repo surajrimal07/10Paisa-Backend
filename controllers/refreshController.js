@@ -10,13 +10,14 @@ import {
   topTradedShares,
   topTransactions,
   topTurnoversShare,
-  topgainersShare,
+  topgainersShare
 } from "../server/assetServer.js";
 import { NotifyNepseIndexClients } from "../server/notificationServer.js";
 import { notifyRoomClients, wss } from "../server/websocket.js";
 import { formatTimeTo12Hour, formatTurnover } from "../utils/converter.js";
 import { nepseLogger } from '../utils/logger/logger.js';
 import { saveToCache } from "./savefetchCache.js";
+import { chunk_nepseFloorsheet, FindHighestContractAmount, FindHighestContractQuantity, GetFloorsheet } from '../server/floorsheetServer.js';
 
 //initilizing storage here to prevent code racing
 const defaultDirectory = '/tmp/.node-persist';
@@ -120,7 +121,7 @@ async function wipeCachesAndRefreshData() {
       topTransactions,
       FetchSingularDataOfAsset,
       SupplyDemandData,
-      //   GetFloorsheet
+      chunk_nepseFloorsheet
     ];
 
     for (const fetchFunction of fetchFunctions) {
@@ -147,6 +148,27 @@ async function wipeCachesAndRefreshData() {
   }
 }
 
+async function fetchNepseFloorsheet() {
+  if (!isNepseOpen) {
+    nepseLogger.info('Nepse is closed. Skipping floorsheet data fetch.');
+    return;
+  }
+  try {
+    const floorsheetData = await GetFloorsheet();
+
+    if (!floorsheetData) {
+      nepseLogger.warn('No floorsheet data available.');
+      return;
+    }
+    await Promise.all([
+      FindHighestContractAmount(floorsheetData),
+      FindHighestContractQuantity(floorsheetData)
+    ]);
+  } catch (error) {
+    nepseLogger.error(`Error in fetching and processing floorsheet data: ${error.message}`);
+  }
+}
+
 
 //update the portfolios and send data
 async function notifyUsersWithUpdatedData() {
@@ -162,7 +184,7 @@ async function notifyUsersWithUpdatedData() {
 export default async function initializeRefreshMechanism() {
   try {
     await new Promise(resolve => setTimeout(resolve, 8000));
-    nepseLogger.info("Initializing Nepse refresh mechanism.");
+    nepseLogger.info("Initializing Nepse refresh server.");
     let checkIsNepseOpenPrevious = await checkIsNepseOpen(); // Store the initial state
     let closeCounter = 0;
     //await wipeCachesAndRefreshData(); // Refresh data if Nepse is initially open
@@ -191,7 +213,11 @@ export default async function initializeRefreshMechanism() {
   }
 }
 
-//setup timer for 24 hour
-
-
-//sdfsdfsedfds
+//fetch floorsheet data every 5 minutes
+export async function fetchFloorsheetData() {
+  nepseLogger.info("Initializing Nepse floorsheet server.");
+    await fetchNepseFloorsheet();
+    setInterval(async () => {
+      await fetchNepseFloorsheet();
+    }, 4 * 60 * 1000); // 4 minutes
+}

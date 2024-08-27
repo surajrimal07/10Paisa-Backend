@@ -2,9 +2,10 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { isNepseOpen } from "../controllers/refreshController.js";
-import { fetchFromCache, saveToCache } from "../controllers/savefetchCache.js";
+import { fetchFromCache, saveToCache, saveTOStorage, fetchFromStorage } from "../controllers/savefetchCache.js";
 import { apiLogger } from '../utils/logger/logger.js';
 import { fetchFunction,fetchData } from "./fetchFunction.js";
+import {fetchFloorsheetsInChunks} from '../server/nepse_server/singletonNepseServer.js';
 
 export async function FindHighestContractQuantity(data) {
     const filteredData = data.filter(item => item.contractQuantity != null);
@@ -24,6 +25,43 @@ export async function FindHighestContractAmount(data) {
     return top50HighestStocks;
 }
 
+export async function chunk_nepseFloorsheet(refresh = false) {
+    try {
+        apiLogger.info("Fetching floorsheet data in chunks");
+
+        const [cachedPageNumber, cachedFetchDate] = await Promise.all([
+            fetchFromCache("lastFloorsheetPageNumber"),
+            fetchFromCache("lastChunkFloorsheetFetchedDate")
+        ]);
+
+        let pageNumber = cachedPageNumber || 0;
+        const currentTimestamp = Date.now();
+
+        if (cachedFetchDate !== null && new Date(cachedFetchDate).toDateString() !== new Date(currentTimestamp).toDateString()) {
+            pageNumber = 0;
+        }
+
+        const { data, lastPageNumber } = await fetchFloorsheetsInChunks(pageNumber);
+
+        if (!data || data.length === 0) {
+            apiLogger.error("No floorsheet data received in chunk_nepseFloorsheet");
+            return null;
+        }
+
+        await Promise.all([
+            saveToCache("lastFloorsheetPageNumber", lastPageNumber),
+            saveToCache("lastChunkFloorsheetData", data),
+            saveToCache("lastChunkFloorsheetFetchedDate", currentTimestamp)
+        ]);
+
+        return data;
+
+    } catch (error) {
+        apiLogger.error(`Error fetching floorsheet data: ${error.message}`);
+        return null;
+    }
+}
+
 
 export async function GetFloorsheet(refresh = false) {
     const url = '/Floorsheet';
@@ -34,7 +72,7 @@ export async function GetFloorsheet(refresh = false) {
     const parentDir = path.resolve(__dirname, '..');
 
     try {
-        const cachedfloorsheet = await fetchFromCache("floorsheet");
+        const cachedfloorsheet = await fetchFromStorage("floorsheet");
 
         if (!refresh || !isNepseOpen) {
             if (cachedfloorsheet !== null && cachedfloorsheet !== undefined) {
@@ -43,7 +81,7 @@ export async function GetFloorsheet(refresh = false) {
             }
         }
 
-        let response = await fetchData('https://nepseapi.zorsha.com.np/Floorsheet', 60000, true);
+        let response = await fetchData('https://nepseapi.surajr.com.np/Floorsheet', 60000, true);
 
         if (!response) {
             response = await fetchFunction(url, 60000);
@@ -54,7 +92,7 @@ export async function GetFloorsheet(refresh = false) {
             return cachedfloorsheet;
         }
 
-        await saveToCache("floorsheet", response);
+        await saveTOStorage("floorsheet", response);
 
         const fileName = path.join(parentDir, `public/floorsheet/${lastBusinessDay}.json`);
 

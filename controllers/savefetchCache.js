@@ -11,6 +11,26 @@ const inMemory = process.env.INMEMORYCACHE === 'true';
 // Utility function to check if data is not null or undefined
 const isValidData = (data) => data !== undefined && data !== null;
 
+//2. this was made specific to save floorsheet data because it is not efficient to store it in redis or inmemeory cache due to its size
+export const saveTOStorage = async (cacheKey, data) => {
+  try {
+    await storage.setItem(cacheKey, data);
+  } catch (error) {
+    mainLogger.error('Error saving data to cache: ' + error.message);
+  }
+}
+
+export const fetchFromStorage = async (cacheKey) => {
+  try {
+    const data = await storage.getItem(cacheKey);
+    return isValidData(data) ? data : null;
+  } catch (error) {
+    mainLogger.error(`Error fetching data from storage: ${error.message}`);
+    return null;
+  }
+}
+// end of 2
+
 // Fetch data from a specific cache source
 const fetchData = async (source, cacheKey) => {
   try {

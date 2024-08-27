@@ -6,7 +6,7 @@ import cors from "cors";
 import 'dotenv/config';
 import express from "express";
 import httpsOptions from "./certificate/httpOptions.js";
-import initializeRefreshMechanism from "./controllers/refreshController.js";
+import initializeRefreshMechanism,  {fetchFloorsheetData} from "./controllers/refreshController.js";
 //
 import compression from "compression";
 import RedisStore from "connect-redis";
@@ -222,6 +222,7 @@ app.use(limiter);
 initializeRefreshMechanism();
 startWebSocketServer();
 initiateNewsFetch();
+fetchFloorsheetData();
 
 //app.use(cookieParser()); //using this cookie parser for csrf token to work
 //this is because session has its own cookie parser but someohow it is not working with csrf token

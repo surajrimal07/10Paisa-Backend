@@ -1,10 +1,9 @@
 /* eslint-disable no-unused-vars */
-
 /* eslint-disable no-undef */
 import https from 'https';
 import allCompanies from "./all_companies.js";
 import TokenManager from "./token_manager.js";
-import { mainLogger } from '../../utils/logger/mainlogger.js';
+//import { mainLogger } from '../../utils/logger/mainlogger.js';
 
 
 process.emitWarning = (warning) => {
@@ -54,7 +53,6 @@ async function getHeaders() {
     if (!isTokenManagerInitialized) {
         await initializeTokenManager();
         isTokenManagerInitialized = true;
-        mainLogger.info("Nepse Token Manager Initialized");
 
     }
     const headers = {
@@ -91,7 +89,7 @@ export const singleFetch = async (url, reqType) => {
             body = await preparePostRequestIndex().body;
         } else if (reqType === "NPOST") {
             body = await preparePostRequest();
-        } else { //floorsheet
+        } else { // else means this is requesting floorsheet data where we need to loop through the pages and merge the data
             body = (await preparePostRequestFloorsheet()).body;
         }
 
@@ -107,8 +105,9 @@ export const singleFetch = async (url, reqType) => {
             console.log("Error in fetching data", res.status, res.statusText, res.url);
             return {};
         }
-        console.log("response from nepse single fetch is "+res.json()   );
-        return res.json();
+
+        const jsonResponse = await res.json();
+        return jsonResponse;
     }
 
     const res = await fetch(baseURL + url, {
@@ -118,7 +117,6 @@ export const singleFetch = async (url, reqType) => {
     });
 
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = originalValue;
-    //error handling
     if (!res.ok || res.status !== 200) {
         return {};
     }
@@ -129,16 +127,6 @@ export const singleFetch = async (url, reqType) => {
 export async function is_NepseOpen() {
     return await singleFetch("/api/nots/nepse-data/market-open");
 }
-
-// async function generateDummyID() {
-//     // // const { headers, httpsAgent } = await getHeaders();
-//     // const response = await singleFetch("/api/nots/nepse-data/market-open");
-//     // // , {
-//     // //     headers: headers,
-//     // //     agent: httpsAgent
-//     // // });
-//     return await singleFetch("/api/nots/nepse-data/market-open");
-// }
 
 //works for majority but not all post requests //
 export async function preparePostRequest() {
@@ -167,7 +155,7 @@ export async function preparePostRequestIndex() {
 
 export async function preparePostRequestFloorsheet() {
     const normalPostRequest = await preparePostRequest();
-    const e = JSON.parse(normalPostRequest); //doubtful //if error then check here
+    const e = await JSON.parse(normalPostRequest); //doubtful //if error then check here
 
     const day = new Date().getDate();
 
@@ -178,7 +166,6 @@ export async function preparePostRequestFloorsheet() {
     );
 
     return { body: JSON.stringify({ "id": postPayloadId }) };
-
 }
 
 //other top level functions
@@ -366,8 +353,89 @@ export async function get_NepseCompanyFloorsheet(symbol = 'NABIL', business_date
 
 //working
 export async function get_NepseFloorsheet() {
-    return await singleFetch("/api/nots/nepse-data/floorsheet?&sort=contractId,desc", "FPOST");
+    let allFloorsheets = [];
+    let pageNumber = 0;
+    let totalPages = 1;
+    const pageSize = 500;
+    const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+    while (pageNumber < totalPages) {
+        let url = `/api/nots/nepse-data/floorsheet?page=${pageNumber}&size=${pageSize}&sort=contractId,desc`;
+
+        if (pageNumber == 0 ) {
+            url = `/api/nots/nepse-data/floorsheet?&size=500&sort=contractId,desc`;
+        }
+
+        try {
+            console.log('Fetching data from page:', pageNumber, 'of ', totalPages, 'url ', url);
+            const response = await singleFetch(url, 'FPOST');
+
+            if (response && response.floorsheets && response.floorsheets.content.length > 0) {
+                allFloorsheets = allFloorsheets.concat(response.floorsheets.content);
+                totalPages = response.floorsheets.totalPages;
+                pageNumber++;
+            } else {
+                console.log('Error fetching data or no more data available.');
+                break;
+            }
+
+            await delay(5000);
+
+        } catch (error) {
+            console.error('Error fetching data:', error);
+            break;
+        }
+    }
+
+    return allFloorsheets;
 }
+
+//experimental function to fetch floorsheet in chunk size, //works
+export const fetchFloorsheetsInChunks = async (startPageNumber = 0) => {
+    const pageSize = 500; // API's max page size
+    const chunkSize = 10000; // The total number of entries to fetch in one go
+    const totalPagesToFetch = Math.ceil(chunkSize / pageSize);
+    let allFloorsheets = [];
+    let hasMoreData = true;
+    let pageNumber = startPageNumber;
+
+    while (hasMoreData && (pageNumber - startPageNumber) < totalPagesToFetch) {
+        let url;
+
+        if (pageNumber == 0) {
+            url = `/api/nots/nepse-data/floorsheet?&size=500&sort=contractId,desc`;
+        } else {
+            url = `/api/nots/nepse-data/floorsheet?page=${pageNumber}&size=${pageSize}&sort=contractId,desc`;
+        }
+
+        const response = await singleFetch(url, 'FPOST');
+
+        if (response && response.floorsheets) {
+            const currentContent = response.floorsheets.content;
+
+            if (currentContent.length === 0) {
+                console.log('No more data available at this page.');
+                hasMoreData = false;
+                break;
+            }
+
+            allFloorsheets = allFloorsheets.concat(currentContent);
+
+            if (allFloorsheets.length >= chunkSize) {
+                allFloorsheets = allFloorsheets.slice(0, chunkSize);
+                hasMoreData = false;
+                break;
+            }
+
+            pageNumber++;
+        } else {
+            console.log('Error fetching data or no more data available.');
+            hasMoreData = false;
+        }
+    }
+
+    return { data: allFloorsheets, lastPageNumber: pageNumber };
+};
 
 export async function get_NepseIndexInfo() {
 

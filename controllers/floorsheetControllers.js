@@ -1,13 +1,13 @@
 import { FindHighestContractAmount, FindHighestContractQuantity, GetFloorsheet } from "../server/floorsheetServer.js";
 import { apiLogger } from "../utils/logger/logger.js";
-import { respondWithError } from "../utils/response_utils.js";
-import { fetchFromCache } from "./savefetchCache.js";
+import {respondWithError } from "../utils/response_utils.js";
+import { fetchFromCache, saveToCache, fetchFromStorage } from "./savefetchCache.js";
+import { fetchFloorsheetsInChunks} from '../server/nepse_server/singletonNepseServer.js';
 
 export const fetchFloorsheetData = async (req, res) => {
     const refreshParam = req.query.refresh || "";
 
     try {
-
         const data = await GetFloorsheet(refreshParam.toLowerCase() === "refresh");
         if (!data || data == undefined) {
             return respondWithError(
@@ -32,7 +32,7 @@ export const fetchFloorsheetData = async (req, res) => {
 export const fetchTopContractQuantity = async (req, res) => {
 
     try {
-        const data = await fetchFromCache("floorsheet");
+        const data = await fetchFromStorage("floorsheet");
         if (!data || data == undefined) {
             return respondWithError(
                 res,
@@ -56,7 +56,7 @@ export const fetchTopContractQuantity = async (req, res) => {
 
 export const fetchTopContractAmount = async (req, res) => {
     try {
-        const data = await fetchFromCache("floorsheet");
+        const data = await fetchFromStorage("floorsheet")
 
         if (!data) {
             return respondWithError(
@@ -78,3 +78,39 @@ export const fetchTopContractAmount = async (req, res) => {
         );
     }
 };
+
+
+export async function chunk_nepseFloorsheet() {
+    try {
+        const [cachedPageNumber, cachedFetchDate] = await Promise.all([
+            fetchFromCache("lastFloorsheetPageNumber"),
+            fetchFromCache("lastChunkFloorsheetFetchedDate")
+        ]);
+
+        let pageNumber = cachedPageNumber || 1;
+        const currentTimestamp = Date.now();
+
+        if (cachedFetchDate !== null && new Date(cachedFetchDate).toDateString() !== new Date(currentTimestamp).toDateString()) {
+            pageNumber = 1;
+        }
+
+        const { data, lastPageNumber } = await fetchFloorsheetsInChunks(pageNumber);
+
+        if (!data || data.length === 0) {
+            apiLogger.error("No floorsheet data received in chunk_nepseFloorsheet");
+            return null;
+        }
+
+        await Promise.all([
+            saveToCache("lastFloorsheetPageNumber", lastPageNumber),
+            saveToCache("lastChunkFloorsheetData", data),
+            saveToCache("lastChunkFloorsheetFetchedDate", currentTimestamp)
+        ]);
+
+        return data;
+
+    } catch (error) {
+        apiLogger.error(`Error fetching floorsheet data: ${error.message}`);
+        return null;
+    }
+}

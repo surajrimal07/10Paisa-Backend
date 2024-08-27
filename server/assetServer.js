@@ -319,7 +319,7 @@ const calculatePercentageDifference = (oldValue, newValue) => {
     return false;
   }
 
-  return Math.abs((newValue - oldValue) / oldValue) > 0.4;
+  return Math.abs((newValue - oldValue) / oldValue) > 0.5;
 };
 const sendNotificationsIfNeeded = async (currentHighestQuantityPerOrder) => {
   const previousHighestQuantityPerOrder = await fetchFromCache("previousHighestQuantityPerOrder");
