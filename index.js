@@ -40,7 +40,6 @@ app.enable('trust proxy', 1);
 
 const corsOptions = {
   flightContinue: true,
-  //origin: isDevelopment ? 'https://localhost:3000' : 'https://tenpaisa.tech',
   origin: ['https://localhost:3000', 'https://tenpaisa.tech', 'http://localhost:3000'],
   methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST'],
   credentials: true,
@@ -142,28 +141,6 @@ app.use(
   )
 );
 
-//const allowedOrigins = ['https://localhost:3000', 'https://tenpaisa.tech'];
-
-
-
-// const allowedOrigins = [
-//   process.env.CLIENT,
-//   process.env.LOCAL
-// ]
-// var corsOptions = {
-//   origin: function (origin, callback) {
-//       if (!origin || allowedOrigins.includes(origin)) {
-//           callback(null, true);
-//       } else {
-//           callback(new Error('Not allowed by CORS'));
-//       }
-//   },
-//   optionsSuccessStatus: 200
-// }
-
-// app.use(cors(corsOptions));
-
-
 //session middleware
 app.use(responseTimeMiddleware);
 
@@ -219,24 +196,19 @@ const limiter = rateLimit({
 app.use(limiter);
 
 //others servers
-initializeRefreshMechanism();
-startWebSocketServer();
-initiateNewsFetch();
-fetchFloorsheetData();
+// await initializeRefreshMechanism();
+// await startWebSocketServer();
+// await initializeTokenManager();  //this is throwing error
+// await initiateNewsFetch();
+// await fetchFloorsheetData();
 
-//app.use(cookieParser()); //using this cookie parser for csrf token to work
-//this is because session has its own cookie parser but someohow it is not working with csrf token
+(async function() {
+  await initializeRefreshMechanism();
+  await startWebSocketServer();
+  await initiateNewsFetch();
+  await fetchFloorsheetData();
+})();
 
-// app.use((req, res, next) => {
-//   const headers = req.headers;
-//   mainLogger.info(`Request Headers: ${JSON.stringify(headers)}`);
-//   next();
-// });
-// //add counter to any requests
-// app.use((req, res, next) => {
-//   counter.inc();
-//   next();
-// });
 
 //routes
 app.use("/api", userRouter);  //this route is protected with csrf token

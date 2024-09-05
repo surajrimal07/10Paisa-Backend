@@ -1,8 +1,8 @@
 import { FindHighestContractAmount, FindHighestContractQuantity, GetFloorsheet } from "../server/floorsheetServer.js";
 import { apiLogger } from "../utils/logger/logger.js";
 import {respondWithError } from "../utils/response_utils.js";
-import { fetchFromCache, saveToCache, fetchFromStorage } from "./savefetchCache.js";
-import { chunk_nepseFloorsheett} from '../server/floorsheetServer.js';
+import {fetchFromStorage } from "./savefetchCache.js";
+//import { chunk_nepseFloorsheett} from '../server/floorsheetServer.js';
 
 export const fetchFloorsheetData = async (req, res) => {
     const refreshParam = req.query.refresh || "";
@@ -80,31 +80,31 @@ export const fetchTopContractAmount = async (req, res) => {
 };
 
 
-export async function chunk_nepseFloorsheet() {
-    try {
-        const [cachedPageNumber, cachedFetchDate] = await Promise.all([
-            fetchFromCache("lastFloorsheetPageNumber"),
-            fetchFromCache("lastChunkFloorsheetFetchedDate")
-        ]);
+// export async function chunk_nepseFloorsheet() {
+//     try {
+//         const [cachedPageNumber, cachedFetchDate] = await Promise.all([
+//             fetchFromCache("lastFloorsheetPageNumber"),
+//             fetchFromCache("lastChunkFloorsheetFetchedDate")
+//         ]);
 
-        let pageNumber = cachedPageNumber || 1;
-        const currentTimestamp = Date.now();
+//         let pageNumber = cachedPageNumber || 1;
+//         const currentTimestamp = Date.now();
 
-        if (cachedFetchDate !== null && new Date(cachedFetchDate).toDateString() !== new Date(currentTimestamp).toDateString()) {
-            pageNumber = 1;
-        }
+//         if (cachedFetchDate !== null && new Date(cachedFetchDate).toDateString() !== new Date(currentTimestamp).toDateString()) {
+//             pageNumber = 1;
+//         }
 
-        const { data } = await chunk_nepseFloorsheett(pageNumber);
+//         const { data } = await chunk_nepseFloorsheett(pageNumber);
 
-        if (!data || data.length === 0) {
-            apiLogger.error("No floorsheet data received in chunk_nepseFloorsheet");
-            return null;
-        }
+//         if (!data || data.length === 0) {
+//             apiLogger.error("No floorsheet data received in chunk_nepseFloorsheet");
+//             return null;
+//         }
 
-        return data;
+//         return data;
 
-    } catch (error) {
-        apiLogger.error(`Error fetching floorsheet data: ${error.message}`);
-        return null;
-    }
-}
+//     } catch (error) {
+//         apiLogger.error(`Error fetching floorsheet data: ${error.message}`);
+//         return null;
+//     }
+// }

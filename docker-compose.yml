@@ -1,12 +1,17 @@
 services:
-  tenpaisa_backend:
-    build:
-      context: .
-      dockerfile: Dockerfile
+  tenpaisabackend:
+    image: surajrimal/tenpaisabackend:latest
+    container_name: tenpaisabackend
+    restart: always
     ports:
-      - "4010:4000"
-      - "8091:8081"
-    command: ["node", "index.js"]
+      - "4000:4000"
+      - "8081:8081"
     volumes:
-      - .:/app
-    working_dir: /app
+      - ./public:/app/public
+    env_file:
+      - .env
+
+networks:
+  default:
+    external: true
+    name: nginx

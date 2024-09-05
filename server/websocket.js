@@ -246,7 +246,6 @@ async function handleMessage(useremail, room, message, ws) {
 //optional params email
 //send in this room to this email client
 export function notifyRoomClients(room, message, email = null) {
-  console.log("notifyRoomClients called", room);
 
   if (!rooms[room]) {
     socketLogger.info(`Room ${room} does not exist.`);
@@ -347,7 +346,7 @@ export function notifyClients(message) {
   });
 }
 
-export function startWebSocketServer() {
+export async function startWebSocketServer() {
   if (!wss) {
     createWebSocketServer();
   }

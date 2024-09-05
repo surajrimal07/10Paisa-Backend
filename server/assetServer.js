@@ -324,7 +324,10 @@ const calculatePercentageDifference = (oldValue, newValue) => {
 const sendNotificationsIfNeeded = async (currentHighestQuantityPerOrder) => {
   const previousHighestQuantityPerOrder = await fetchFromCache("previousHighestQuantityPerOrder");
 
-  if (!previousHighestQuantityPerOrder) {
+  // console.log('previous highest data is', previousHighestQuantityPerOrder);
+  // console.log('current highest data is', currentHighestQuantityPerOrder);
+
+  if (!previousHighestQuantityPerOrder || previousHighestQuantityPerOrder.length === 0) {
     nepseLogger.info("No previous data found, treating all items as significant change.");
     await saveToCache("previousHighestQuantityPerOrder", currentHighestQuantityPerOrder);
 

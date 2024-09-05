@@ -1,5 +1,5 @@
 
-import { get_NepseTopData } from './nepse_server/singletonNepseServer.js';
+//import { get_NepseTopData } from './nepse_server/singletonNepseServer.js';
 
 
 // console.log(await is_NepseOpen());

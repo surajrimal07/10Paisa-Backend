@@ -65,7 +65,7 @@ class TokenParser {
     }
 }
 
-class TokenManager {
+export default class TokenManager {
     constructor(nepse) {
         this.nepse = nepse;
         this.MAX_UPDATE_PERIOD = 45;
@@ -136,5 +136,3 @@ class TokenManager {
         return await token_url.json();
     }
 }
-
-export default TokenManager;

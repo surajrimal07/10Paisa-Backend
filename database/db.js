@@ -2,6 +2,7 @@
 import mongoose from 'mongoose';
 
 export const isDevelopment = process.env.NODE_ENV === 'development';
+
 export const localDBURL = isDevelopment ? process.env.DB_LOGS_NEWS_PROD : process.env.DB_LOGS_NEWS_DEV; 
 
 export const clientOptions = {
