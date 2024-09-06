@@ -36,3 +36,20 @@ jobs:
           --platform linux/arm64 \
           -t docker.io/surajrimal/tenpaisabackend:latest \
           --push .
+
+        # Notify via ntfy
+        curl -X POST https://notifications.surajr.com.np \
+          -H "Content-Type: application/json" \
+          -d '{"title": "Docker Build Complete", "message": "Docker image surajrimal/tenpaisabackend:latest has been built and pushed successfully."}'
+
+    - name: Notify Jenkins of new build
+      run: |
+        curl -X POST http://jenkins.surajr.com.np/generic-webhook-trigger/invoke/ \
+          -H "Content-Type: application/json" \
+          -H "Authorization: Bearer ${{ secrets.JENKINS_WEBHOOK_TOKEN }}" \
+          -d '{"event": "docker_image_pushed", "repository": "docker.io/surajrimal/tenpaisabackend", "tag": "latest"}'
+
+        # Notify via ntfy
+        curl -X POST https://notifications.surajr.com.np \
+          -H "Content-Type: application/json" \
+          -d '{"title": "Jenkins Notification", "message": "Jenkins has been notified about the new Docker image build."}'
