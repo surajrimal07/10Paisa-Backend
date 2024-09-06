@@ -45,7 +45,7 @@ jobs:
 
     - name: Notify Jenkins of new build
       run: |
-        curl -L -X POST http://jenkins.surajr.com.np/generic-webhook-trigger/invoke/ \
+        curl -L -X POST http://jenkins.surajr.com.np/generic-webhook-trigger/invoke?token=${{ secrets.JENKINS_WEBHOOK_TOKEN }} \
           -H "Content-Type: application/json" \
           -H "Authorization: Bearer ${{ secrets.JENKINS_WEBHOOK_TOKEN }}" \
           -d '{"event": "docker_image_pushed", "repository": "docker.io/surajrimal/tenpaisabackend", "tag": "latest"}'
