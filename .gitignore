@@ -1,8 +1,6 @@
 node_modules
 public/floorsheet
-.env*
+.env
 .flaskenv*
-!.env.project
-!.env.vault
 node_modules/
 node_modules/bcrypt/lib/binding/napi-v3/bcrypt_lib.node
