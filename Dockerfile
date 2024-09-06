@@ -8,7 +8,7 @@ RUN npm install
 
 COPY . .
 
-COPY .env .env
+COPY .env.sample .env
 
 EXPOSE 4000 8081
 
