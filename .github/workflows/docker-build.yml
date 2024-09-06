@@ -14,7 +14,7 @@ jobs:
       run: |
         curl -X POST https://notifications.surajr.com.np/GithubWorkflow \
           -H "Content-Type: application/json" \
-          -d '{"title": "Github Build Started", "message": "Github has started building tenpaisabackend docker image."}'
+          -d '{"title": "Github Build Started", "message": "Github has started building image surajrimal/tenpaisabackend docker image."}'
 
     - name: Checkout code
       uses: actions/checkout@v3
