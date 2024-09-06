@@ -10,6 +10,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    - name: Notify ntfy that the build has started
+      run: |
+        curl -X POST https://notifications.surajr.com.np/GithubWorkflow \
+          -H "Content-Type: application/json" \
+          -d '{"title": "Github Build Started", "message": "Github has started building tenpaisabackend docker image."}'
+
     - name: Checkout code
       uses: actions/checkout@v3
 
