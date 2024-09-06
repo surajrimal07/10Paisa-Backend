@@ -10,11 +10,16 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Notify ntfy that the build has started
-      run: |
-        curl -X POST https://notifications.surajr.com.np/GithubWorkflow \
-          -H "Content-Type: application/json" \
-          -d '{"title": "Github Build Started", "message": "Github has started building image surajrimal/tenpaisabackend docker image."}'
+    - name: Notify via ntfy notification service
+      uses: niniyas/ntfy-action@master
+      with:
+        url: '${{ secrets.NTFY_URL }}'
+        topic: '${{ secrets.NTFY_TOPIC }}'
+        priority: 4
+        tags: +1,partying_face,action,successfully,completed
+        details: Github has started building image surajrimal/tenpaisabackend docker image.
+        icon: 'https://styles.redditmedia.com/t5_32uhe/styles/communityIcon_xnt6chtnr2j21.png'
+
 
     - name: Checkout code
       uses: actions/checkout@v3
@@ -44,10 +49,14 @@ jobs:
           --push .
 
     - name: Notify via ntfy notification service
-      run: |
-        curl -X POST https://notifications.surajr.com.np/GithubWorkflow \
-          -H "Content-Type: application/json" \
-          -d '{"title": "Docker Build Complete", "message": "Docker image surajrimal/tenpaisabackend:latest has been built and pushed successfully."}'
+      uses: niniyas/ntfy-action@master
+      with:
+        url: '${{ secrets.NTFY_URL }}'
+        topic: '${{ secrets.NTFY_TOPIC }}'
+        priority: 4
+        tags: +1,partying_face,action,successfully,completed
+        details: Docker image surajrimal/tenpaisabackend:latest has been built and pushed successfully.
+        icon: 'https://styles.redditmedia.com/t5_32uhe/styles/communityIcon_xnt6chtnr2j21.png'
 
     - name: Notify Jenkins of new build
       run: |
@@ -57,7 +66,34 @@ jobs:
           -d '{"event": "docker_image_pushed", "repository": "docker.io/surajrimal/tenpaisabackend", "tag": "latest"}'
 
     - name: Notify via ntfy notification service
-      run: |
-        curl -X POST https://notifications.surajr.com.np/Jenkins \
-          -H "Content-Type: application/json" \
-          -d '{"title": "Jenkins Notification", "message": "Jenkins has been notified about the new Docker image build."}'
+      uses: niniyas/ntfy-action@master
+      with:
+        url: '${{ secrets.NTFY_URL }}'
+        topic: '${{ secrets.NTFY_TOPIC }}'
+        priority: 4
+        tags: +1,partying_face,action,successfully,completed
+        details: Jenkins has been notified about the new Docker image surajrimal/tenpaisabackend build.
+        icon: 'https://styles.redditmedia.com/t5_32uhe/styles/communityIcon_xnt6chtnr2j21.png'
+
+
+    - name: ntfy-failed-notifications
+      uses: niniyas/ntfy-action@master
+      if: failure()
+      with:
+        url: '${{ secrets.NTFY_URL }}'
+        topic: '${{ secrets.NTFY_TOPIC }}'
+        priority: 5
+        tags: +1,partying_face,action,failed
+        details: Workflow has failed to build and push Docker image surajrimal/tenpaisabackend:latest.
+        actions: 'default'
+
+    - name: ntfy-cancelled-notifications
+      uses: niniyas/ntfy-action@master
+      if: cancelled()
+      with:
+        url: '${{ secrets.NTFY_URL }}'
+        topic: '${{ secrets.NTFY_TOPIC }}'
+        priority: 3
+        tags: +1,partying_face,action,cancelled
+        details: Workflow for building and pushing Docker image surajrimal/tenpaisabackend:latest has been cancelled.
+        actions: 'default'
