@@ -11,10 +11,19 @@ jobs:
 
     steps:
     - name: Notify via ntfy notification service
-      run: |
-        curl -X POST "${{ secrets.NTFY_URL }}/topic/${{ secrets.NTFY_TOPIC }}" \
-        -d '{"message": "Github has started building image surajrimal/tenpaisabackend docker image.", "priority": 4, "tags": "+1,partying_face"}' \
-        -H "Content-Type: application/json"
+      uses: niniyas/ntfy-action@master
+      with:
+        url: '${{ secrets.NTFY_URL }}'
+        topic: '${{ secrets.NTFY_TOPIC }}'
+        priority: 4
+        tags: +1,partying_face,action,successfully,completed
+        details: Github has started building image surajrimal/tenpaisabackend docker image.
+        icon: 'https://styles.redditmedia.com/t5_32uhe/styles/communityIcon_xnt6chtnr2j21.png'
+
+        # run: |
+        #   curl -X POST "${{ secrets.NTFY_URL }}/topic/${{ secrets.NTFY_TOPIC }}" \
+        #   -d '{"message": "Github has started building image surajrimal/tenpaisabackend docker image.", "priority": 4, "tags": "+1,partying_face"}' \
+        #   -H "Content-Type: application/json"
 
 
     - name: Checkout code
