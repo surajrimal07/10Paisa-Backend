@@ -76,23 +76,6 @@ app.use(session({
   },
 }));
 
-// app.use(
-//   helmet.hidePoweredBy,
-//   helmet.noSniff(),
-//   helmet.xssFilter(),
-//   helmet.frameguard(),
-//   helmet.dnsPrefetchControl(),
-//   helmet.contentSecurityPolicy({
-//     directives: {
-//       defaultSrc: ["'self'"],
-//       scriptSrc: ["'self'", "'unsafe-inline'"],
-//       styleSrc: ["'self'", "'unsafe-inline'"],
-//       imgSrc: ["'self'"],
-//       scriptSrcAttr: ["'unsafe-inline'"]
-//     },
-//   })
-// );
-
 app.use(
   helmet.hidePoweredBy(),
   helmet.noSniff(),
@@ -109,8 +92,6 @@ app.use(
     },
   })
 );
-
-
 
 const port = process.env.PORT || 4000;
 
