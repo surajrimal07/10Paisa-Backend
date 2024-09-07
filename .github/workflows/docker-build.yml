@@ -11,14 +11,10 @@ jobs:
 
     steps:
     - name: Notify via ntfy notification service
-      uses: blackshot/ntfy-action@master
-      with:
-        url: '${{ secrets.NTFY_URL }}'
-        topic: '${{ secrets.NTFY_TOPIC }}'
-        priority: 4
-        tags: +1,partying_face,action,successfully,completed
-        details: Github has started building image surajrimal/tenpaisabackend docker image.
-        image: true
+      run: |
+        curl -X POST "${{ secrets.NTFY_URL }}/topic/${{ secrets.NTFY_TOPIC }}" \
+        -d '{"message": "Github has started building image surajrimal/tenpaisabackend docker image.", "priority": 4, "tags": "+1,partying_face"}' \
+        -H "Content-Type: application/json"
 
 
     - name: Checkout code
@@ -49,14 +45,14 @@ jobs:
           --push .
 
     - name: Notify via ntfy notification service
-      uses: blackshot/ntfy-action@master
+      uses: niniyas/ntfy-action@master
       with:
         url: '${{ secrets.NTFY_URL }}'
         topic: '${{ secrets.NTFY_TOPIC }}'
         priority: 4
         tags: +1,partying_face,action,successfully,completed
         details: Docker image surajrimal/tenpaisabackend:latest has been built and pushed successfully.
-        image: true
+        icon: 'https://styles.redditmedia.com/t5_32uhe/styles/communityIcon_xnt6chtnr2j21.png'
 
     - name: Notify Jenkins of new build
       run: |
@@ -66,17 +62,18 @@ jobs:
           -d '{"event": "docker_image_pushed", "repository": "docker.io/surajrimal/tenpaisabackend", "tag": "latest"}'
 
     - name: Notify via ntfy notification service
-      uses: blackshot/ntfy-action@master
+      uses: niniyas/ntfy-action@master
       with:
         url: '${{ secrets.NTFY_URL }}'
         topic: '${{ secrets.NTFY_TOPIC }}'
         priority: 4
         tags: +1,partying_face,action,successfully,completed
         details: Jenkins has been notified about the new Docker image surajrimal/tenpaisabackend build.
-        image: true
+        icon: 'https://styles.redditmedia.com/t5_32uhe/styles/communityIcon_xnt6chtnr2j21.png'
+
 
     - name: ntfy-failed-notifications
-      uses: blackshot/ntfy-action@master
+      uses: niniyas/ntfy-action@master
       if: failure()
       with:
         url: '${{ secrets.NTFY_URL }}'
@@ -84,9 +81,10 @@ jobs:
         priority: 5
         tags: +1,partying_face,action,failed
         details: Workflow has failed to build and push Docker image surajrimal/tenpaisabackend:latest.
+        actions: 'default'
 
     - name: ntfy-cancelled-notifications
-      uses: blackshot/ntfy-action@master
+      uses: niniyas/ntfy-action@master
       if: cancelled()
       with:
         url: '${{ secrets.NTFY_URL }}'
@@ -94,3 +92,4 @@ jobs:
         priority: 3
         tags: +1,partying_face,action,cancelled
         details: Workflow for building and pushing Docker image surajrimal/tenpaisabackend:latest has been cancelled.
+        actions: 'default'
