@@ -25,7 +25,6 @@ jobs:
         #   -d '{"message": "Github has started building image surajrimal/tenpaisabackend docker image.", "priority": 4, "tags": "+1,partying_face"}' \
         #   -H "Content-Type: application/json"
 
-
     - name: Checkout code
       uses: actions/checkout@v3
 
