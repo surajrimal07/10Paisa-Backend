@@ -84,7 +84,6 @@ jobs:
         priority: 5
         tags: +1,partying_face,action,failed
         details: Workflow has failed to build and push Docker image surajrimal/tenpaisabackend:latest.
-        actions: 'default'
 
     - name: ntfy-cancelled-notifications
       uses: blackshot/ntfy-action@master
@@ -95,4 +94,3 @@ jobs:
         priority: 3
         tags: +1,partying_face,action,cancelled
         details: Workflow for building and pushing Docker image surajrimal/tenpaisabackend:latest has been cancelled.
-        actions: 'default'
