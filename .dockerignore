@@ -1,2 +1,11 @@
-public/floorsheet
-public/stock
+# Exclude everything
+*
+
+# Include everything outside of public
+!*/
+
+# Exclude the public directory
+public/
+
+# Include specific file from public/index_data
+!public/index_data/SymbolNameMap.json
