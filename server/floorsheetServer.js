@@ -1,7 +1,10 @@
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import { isNepseOpen } from "../controllers/refreshController.js";
+import {
+  isNepseOpen,
+  NEPSE_API_URL3,
+} from "../controllers/refreshController.js";
 import {
   fetchFromCache,
   saveTOStorage,
@@ -91,13 +94,7 @@ export async function GetFloorsheet(refresh = false) {
       }
     }
 
-    let response = await fetchData(
-      "https://nepseapi.surajr.com.np/Floorsheet",
-      60000,
-      true
-    );
-
-    console.log("we are here at fetching floorsheet data");
+    let response = await fetchData(`${NEPSE_API_URL3}/Floorsheet`, 60000, true);
 
     if (!response) {
       response = await fetchFunction(url, 60000);
@@ -109,8 +106,6 @@ export async function GetFloorsheet(refresh = false) {
     }
 
     await saveTOStorage("floorsheet", response);
-
-    console.log("we are here again at fetching floorsheet data");
 
     const fileName = path.join(
       parentDir,

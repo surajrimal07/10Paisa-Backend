@@ -34,15 +34,12 @@ await storage.init({
 });
 
 // eslint-disable-next-line no-undef
-const NEPSE_API_URL_INTERNAL = process.env.NEPSE_API_URL_INTERNAL;
-
-// eslint-disable-next-line no-undef
 const NEPSE_API_URL1 = process.env.NEPSE_API_URL;
 // eslint-disable-next-line no-undef
 const NEPSE_API_URL2 = process.env.NEPSE_API_URL_BACKUP;
 
 // eslint-disable-next-line no-undef
-const NEPSE_API_URL3 = process.env.NEPSE_API_URL_BACKUP1;
+export const NEPSE_API_URL3 = process.env.NEPSE_API_URL_BACKUP1;
 
 // eslint-disable-next-line no-undef
 const NEPSE_API_URL4 = process.env.NEPSE_API_URL_BACKUP2;
@@ -54,7 +51,6 @@ const NEPSE_API_URL5 = process.env.NEPSE_API_URL_BACKUP3;
 const NEPSE_API_URL6 = process.env.NEPSE_API_URL_BACKUP4;
 
 export const serverUrls = [
-  NEPSE_API_URL_INTERNAL,
   NEPSE_API_URL1,
   NEPSE_API_URL2,
   NEPSE_API_URL3,
@@ -63,7 +59,7 @@ export const serverUrls = [
   NEPSE_API_URL6,
 ];
 
-export let NEPSE_ACTIVE_API_URL = NEPSE_API_URL1;
+export let NEPSE_ACTIVE_API_URL = NEPSE_API_URL2;
 export let isNepseOpen = false;
 
 export async function switchServer() {
@@ -79,7 +75,7 @@ export async function switchServer() {
 }
 
 export async function checkIsNepseOpen() {
-  await new Promise((resolve) => setTimeout(resolve, 5000)); // wait for python unicorn server to start
+//  await new Promise((resolve) => setTimeout(resolve, 5000)); // wait for python unicorn server to start
 
   try {
     const response = await axios.get(NEPSE_ACTIVE_API_URL + "/IsNepseOpen");

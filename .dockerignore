@@ -1,1 +1,8 @@
 public/
+node_modules/
+npm-debug.log
+.git
+.github
+.vscode
+.devcontainer
+AssetData/
