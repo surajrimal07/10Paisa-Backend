@@ -23,7 +23,6 @@ import { v4 as uuidv4 } from 'uuid';
 //file imports
 import { PrimaryDatabase } from "./database/db.js";
 import { responseTimeMiddleware } from "./middleware/apiResponseTime.js";
-//import { sessionMiddleware } from './middleware/session.js';
 import userRouter from "./routes/appRoutes.js";
 import { getNews, initiateNewsFetch, updateNewsViewCount } from "./server/newsserver.js";
 import { redisclient } from "./server/redisServer.js";
@@ -172,16 +171,8 @@ const limiter = rateLimit({
   }),
 });
 
-//app.set('trust proxy', 1); // trust first proxy for rate limiting
-//app.enable('trust proxy', 2); //trust nginx and cloudflare both
-app.use(limiter);
 
-//others servers
-// await initializeRefreshMechanism();
-// await startWebSocketServer();
-// await initializeTokenManager();  //this is throwing error
-// await initiateNewsFetch();
-// await fetchFloorsheetData();
+app.use(limiter);
 
 (async function() {
   await initializeRefreshMechanism();
