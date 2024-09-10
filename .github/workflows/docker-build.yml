@@ -64,17 +64,6 @@ jobs:
           -H "Authorization: Bearer ${{ secrets.JENKINS_WEBHOOK_TOKEN }}" \
           -d '{"event": "docker_image_pushed", "repository": "docker.io/surajrimal/tenpaisabackend", "tag": "latest"}'
 
-    - name: Notify via ntfy notification service
-      uses: niniyas/ntfy-action@master
-      with:
-        url: '${{ secrets.NTFY_URL }}'
-        topic: '${{ secrets.NTFY_TOPIC }}'
-        priority: 4
-        tags: +1,partying_face,action,successfully,completed
-        details: Jenkins has been notified about the new Docker image surajrimal/tenpaisabackend build.
-        icon: 'https://styles.redditmedia.com/t5_32uhe/styles/communityIcon_xnt6chtnr2j21.png'
-
-
     - name: ntfy-failed-notifications
       uses: niniyas/ntfy-action@master
       if: failure()
